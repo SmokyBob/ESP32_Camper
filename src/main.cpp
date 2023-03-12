@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <SPIFFS.h>
+#include <LittleFS.h>
 #include <ESPmDNS.h>
 #ifdef ESP32
 #include <WiFi.h>
@@ -66,9 +66,9 @@ void setup()
   Serial.begin(115200);
   currSensor.begin();
 
-  if (!SPIFFS.begin(true))
+  if (!LittleFS.begin(true))
   {
-    Serial.println(F("An Error has occurred while mounting SPIFFS"));
+    Serial.println(F("An Error has occurred while mounting LittleFS"));
     return;
   }
   //  Start AP MODE
@@ -87,9 +87,9 @@ void setup()
   Serial.println(WiFi.softAPIP());
 
   Serial.println(F("Setting handlers"));
-  server.serveStatic("/", SPIFFS, "/"); // Try the FS first for static files
+  server.serveStatic("/", LittleFS, "/"); // Try the FS first for static files
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(SPIFFS, "/index.html", String(), false, nullptr); });
+            { request->send(LittleFS, "/index.html", String(), false, nullptr); });
   server.onNotFound([](AsyncWebServerRequest *request)
                     { request->send(200, "text/plain", "test connection distance"); });
   webSocket.onEvent(onWebSocketEvent); // Register WS event handler

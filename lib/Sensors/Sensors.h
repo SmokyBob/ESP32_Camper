@@ -1,5 +1,6 @@
 #pragma once
 #include "Arduino.h"
+#ifdef SENSORS
 #include "SimpleDHT.h"
 
 class Sensors
@@ -23,3 +24,4 @@ public:
   float getTemperature();
   float getHumidity();
 };
+#endif

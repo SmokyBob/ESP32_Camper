@@ -9,11 +9,13 @@
 #include <ESPAsyncTCP.h>
 #endif
 #include <ESPAsyncWebServer.h>
-
+#ifdef SENSORS
 #include "Sensors.h"
+#endif
 
 AsyncWebServer server(80);
 AsyncWebSocket webSocket("/ws");
+#ifdef SENSORS
 Sensors currSensor(32);
 
 void sendWebSocketMessage()
@@ -60,11 +62,14 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     break;
   }
 }
+#endif
 
 void setup()
 {
   Serial.begin(115200);
+#ifdef SENSORS
   currSensor.begin();
+#endif
 
   if (!LittleFS.begin(true))
   {
@@ -92,7 +97,9 @@ void setup()
             { request->send(LittleFS, "/index.html", String(), false, nullptr); });
   server.onNotFound([](AsyncWebServerRequest *request)
                     { request->send(200, "text/plain", "test connection distance"); });
+#ifdef SENSORS
   webSocket.onEvent(onWebSocketEvent); // Register WS event handler
+#endif
   server.addHandler(&webSocket);
   server.begin();
 }
@@ -104,10 +111,14 @@ void loop()
   // put your main code here, to run repeatedly:
   if ((unsigned long)(millis() - webSockeUpdate) >= 1000)
   {
-    sendWebSocketMessage();    // Update the root page with the latest data
+#ifdef SENSORS
+    sendWebSocketMessage(); // Update the root page with the latest data
+#endif
     webSockeUpdate = millis(); // Use the snapshot to set track time until next event
   }
+#ifdef SENSORS
   currSensor.read();
+#endif
 
   webSocket.cleanupClients();
 }

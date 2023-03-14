@@ -1,4 +1,5 @@
 #include "Arduino.h"
+#ifdef SENSORS
 #include "Sensors.h"
 
 Sensors::Sensors(int DHT11_pin)
@@ -36,3 +37,4 @@ float Sensors::getHumidity()
 {
   return _humidity;
 };
+#endif

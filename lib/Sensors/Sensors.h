@@ -9,19 +9,18 @@ private:
   /* data */
   int _DHT11_pin; // 0 = disabled
   SimpleDHT11 *dht11;
-  int _ACS712_pin;  // 0 = disabled
-  int _ACS712_amps; // used for scaling, possible values 5,20,30
 
-  int _mVperAmp = 0;
-  double _VoltageRead = 0;
-  double _VRMS = 0;
+  int _voltagePin; // 0 = disabled
+  int _vref;
 
   unsigned long lastCheck = 0;
   unsigned long maxSensorsPool = 1500;
-  float getVPP();
+
+  float getVoltage();
 
 public:
-  Sensors(int DHT11_pin, int ACS712_pin, int ACS712_amps);
+  Sensors();
+  Sensors(int currDHT11_pin, int currVoltage_pin);
 
   void begin();
   void read();
@@ -29,7 +28,6 @@ public:
   float temperature = 0;
   float humidity = 0;
 
-  int Watt = 0;
-  double AmpsRMS = 0;
+  float voltage = 0;
 };
 #endif

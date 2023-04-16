@@ -9,59 +9,18 @@
 #include <ESPAsyncTCP.h>
 #endif
 #include <ESPAsyncWebServer.h>
+#include "enums.h"
+#include "shared.h"
 #ifdef SENSORS
 #include "Sensors.h"
-#endif
-
-#ifdef E220
-#include "LoRa_E220.h"
-#endif
-
-#ifdef OLED
-// Libraries for LoRa
-#include <SPI.h>
-#include <LoRa.h>
-
-// Libraries for OLED Display
-#include <Wire.h>
-#include "SSD1306.h"
-
-// define the pins used by the LoRa transceiver module
-#define SCK 5
-#define MISO 19
-#define MOSI 27
-#define SS 18
-#define RST 14
-#define DIO0 26
-
-// 433E6 for Asia
-// 866E6 for Europe
-// 915E6 for North America
-#define BAND 866E6
-
-// OLED pins
-#define OLED_SDA 4
-#define OLED_SCL 15
-#define OLED_RST 16
-
-SSD1306 display(0x3c, OLED_SDA, OLED_SCL, GEOMETRY_128_64);
-
 #endif
 
 AsyncWebServer server(80);
 AsyncWebSocket webSocket("/ws");
 
-#ifdef E220
-LoRa_E220 e220ttl(&Serial2); // WeMos RX --> e220 TX - WeMos TX --> e220 RX
-#endif
+shared utils;
 #ifdef SENSORS
-Sensors currSensor(32, 34, 30);
-#else
-unsigned long lastLoraMillis;
-float lastTemp;
-float lastHum;
-int lastWatt;
-float lastAmps;
+Sensors currSensor(DHT11_pin, Voltage_pin);
 #endif
 
 void sendWebSocketMessage()
@@ -71,14 +30,12 @@ void sendWebSocketMessage()
   jsonString += "\"millis\":" + String(millis()) + ",";
   jsonString += "\"temperature\":" + String(currSensor.temperature) + ",";
   jsonString += "\"humidity\":" + String(currSensor.humidity) + ",";
-  jsonString += "\"watt\":" + String(currSensor.Watt) + ",";
-  jsonString += "\"amps\":" + String(currSensor.AmpsRMS) + ",";
+  jsonString += "\"voltage\":" + String(currSensor.voltage) + ",";
 #else
   jsonString += "\"millis\":" + String(lastLoraMillis) + ",";
   jsonString += "\"temperature\":" + String(lastTemp) + ",";
   jsonString += "\"humidity\":" + String(lastHum) + ",";
-  jsonString += "\"watt\":" + String(lastWatt) + ",";
-  jsonString += "\"amps\":" + String(lastAmps) + ",";
+  jsonString += "\"voltage\":" + String(lastVoltage) + ",";
 #endif
 
   jsonString += "\"dummy\":null}";
@@ -98,14 +55,8 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     break;
   case WS_EVT_DATA:
     // TODO: instead of post command, manage command received from UI
-    // TODO: parse command string
 #ifdef CAMPER
-    // TODO: elaborate the command
-#endif
-#ifdef HANDHELD
-    // TODO: relay the command with LORA to the CAMPER
-#endif
-
+    // TODO: parse and execute the command
     // AwsFrameInfo *info = (AwsFrameInfo *)arg;
     // if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
     // {
@@ -120,6 +71,12 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     //   notifyClients(direction);
     //   newRequest = true;
     // }
+#endif
+#ifdef HANDHELD
+    // TODO: relay the command with LORA to the CAMPER
+#endif
+
+    
     break;
   case WS_EVT_PONG:
   case WS_EVT_ERROR:
@@ -127,189 +84,32 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
   }
 }
 
-#ifdef OLED
-void startOLED()
-{
-  // reset OLED display via software
-  pinMode(OLED_RST, OUTPUT);
-  digitalWrite(OLED_RST, LOW);
-  delay(20);
-  digitalWrite(OLED_RST, HIGH);
-
-  // initialize OLED
-  display.init();
-
-  // display.flipScreenVertically();
-  display.setFont(ArialMT_Plain_10);
-  display.setColor(BLACK); // Display color
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-
-  display.clear();
-#ifdef HANDHELD
-  display.drawString(0, 0, "LORA RECEIVER");
-#endif
-#ifdef CAMPER
-  display.drawString(0, 0, "LORA SENDER");
-#endif
-}
-#endif
-
-// Initialize LoRa module
-void startLoRA()
-{
-  int counter;
-  String mex;
-#ifndef E220
-  // SPI LoRa pins
-  SPI.begin(SCK, MISO, MOSI, SS);
-  // setup LoRa transceiver module
-  LoRa.setPins(SS, RST, DIO0);
-
-  while (!LoRa.begin(BAND) && counter < 10)
-  {
-    Serial.print(".");
-    counter++;
-    delay(500);
-  }
-  if (counter == 10)
-  {
-    // Increment readingID on every new reading
-    mex = "Starting LoRa failed!";
-    Serial.println(mex);
-  }
-  else
-  {
-    mex = "LoRa Initialization OK!";
-    Serial.println(mex);
-  }
-#else
-  e220ttl.begin();
-
-  Serial.println("lora E220 test send");
-  ResponseStatus rs = e220ttl.sendMessage("test message on init");
-  // Check If there is some problem of successfully send
-  Serial.println(rs.getResponseDescription());
-  // TODO: check the e220 message result to decide if YaY or Nay
-#endif
-#ifdef OLED
-  display.clear();
-  display.setFont(ArialMT_Plain_10);
-#ifdef HANDHELD
-  display.drawString(0, 0, "LORA RECEIVER");
-#endif
-#ifdef CAMPER
-  display.drawString(0, 0, "LORA SENDER");
-#endif
-  display.setFont(ArialMT_Plain_16);
-  display.drawString(0, 10, mex);
-  display.display();
-#endif
-  delay(200);
-}
-
-int rssi;
-String loRaMessage;
-String temperature;
-String humidity;
-String readingID;
-
-// LoRaData format: Type&key=val
+unsigned long lastLORASend = 0;
+// LoRaData format:
 // String examples (0 = Sensor Data):
-//  0&temp=36
-//  0&hum=90
-//  0&watt=10
-//  0&amp=0.5
-//  0&relay1=LOW
+//  0?enum.data.TEMP=36
+//  0?enum.data.TEMP=36&enum.data.humidity=90&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
+//  0?enum.data.relay1=0
+// RealString
+//  0?0=20&1=35&2=13.23&3=12065&4=20230416113532
 // String examples (1 = Commands):
-//  1&relay1=HIGH
-//  1&relay1=LOW
-
-// Read LoRa packet and get the sensor readings
-void getLoRaData()
-{
-  Serial.print("Lora packet received: ");
-#ifdef OLED
-  display.clear();
-  display.setFont(ArialMT_Plain_10);
-#ifdef HANDHELD
-  display.drawString(0, 0, "LORA RECEIVER");
-#endif
-#ifdef CAMPER
-  display.drawString(0, 0, "LORA SENDER");
-#endif
-  display.setFont(ArialMT_Plain_16);
-  display.drawString(0, 10, "Lora packet received: ");
-#endif
-  String LoRaData;
-
-#ifdef E220
-  // Read packet
-  while (e220ttl.available())
-  {
-    // read the String message
-    ResponseContainer rc = e220ttl.receiveMessage();
-    LoRaData = rc.data;
-#else
-  // Read packet
-  while (LoRa.available())
-  {
-    LoRaData = LoRa.readString();
-#endif
-    // TODO: parse LoRa Data to identify the type
-
-    Serial.print(LoRaData);
-#ifdef OLED
-    display.print(LoRaData);
-#endif
-
-    // // Get readingID, temperature and humidity
-    // int pos1 = LoRaData.indexOf('/');
-    // int pos2 = LoRaData.indexOf('&');
-    // int pos3 = LoRaData.indexOf('#');
-    // readingID = LoRaData.substring(0, pos1);
-    // temperature = LoRaData.substring(pos1 +1, pos2);
-    // humidity = LoRaData.substring(pos2+1, pos3);
-  }
-#ifndef E220
-  // Get RSSI
-  rssi = LoRa.packetRssi();
-  Serial.print(" with RSSI ");
-  Serial.println(rssi);
-#ifdef OLED
-  display.print(" with RSSI ");
-  display.print(rssi);
-  display.display();
-#endif
-#endif
-}
-
-// LoRaData format: Type&key=val
-// String examples (0 = Sensor Data):
-//  0&temp=36
-//  0&hum=90
-//  0&watt=10
-//  0&amp=0.5
-//  0&relay1=LOW
-// String examples (1 = Commands):
-//  1&relay1=HIGH
-//  1&relay1=LOW
+//  1?enum.data.relay1=1
+//  1?enum.data.relay1=0
 void sendLoRaSensors()
 {
-  // TODO: get sensor data
-  String LoRaMessage = String(millis()) + "&" + String(1) + "#" + String(2);
-  sendLoRaData(LoRaMessage);
-}
-
-void sendLoRaData(String command)
-{
-#ifdef E220
-  e220ttl.sendMessage(command); // TODO: l'altro legge RSSI... devo usare la firma che lo aggiunge sempre?
-#else
-  // Send LoRa packet to receiver
-  LoRa.beginPacket();
-  LoRa.print(command);
-  LoRa.endPacket();
+  // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
+  if (millis() > (lastLORASend + (LORA_DC * 1000)))
+  {
+    String LoRaMessage = String(DATA) + "?" + String(MILLIS) + "=" + String(millis()) + "&";
+#ifdef SENSORS
+    LoRaMessage += String(DATA) + "?" + String(TEMPERATURE) + "=" + String(currSensor.temperature) + "|";
+    LoRaMessage += String(DATA) + "?" + String(HUMIDITY) + "=" + String(currSensor.humidity) + "|";
+    LoRaMessage += String(DATA) + "?" + String(VOLTS) + "=" + String(currSensor.voltage) + "|";
 #endif
+    // TODO: relays if configured
+    LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+    utils.loraSend(LoRaMessage);
+  }
 }
 
 void setup()
@@ -319,11 +119,7 @@ void setup()
   currSensor.begin();
 #endif
 
-#ifdef OLED
-  startOLED();
-#endif
-
-  startLoRA();
+  utils.begin(); // init oled,lora, etc.. as needed
 
   if (!LittleFS.begin(true))
   {
@@ -366,19 +162,17 @@ void loop()
   // put your main code here, to run repeatedly:
   if ((unsigned long)(millis() - webSockeUpdate) >= 1000)
   {
-#ifdef SENSORS
-    sendWebSocketMessage(); // Update the root page with the latest data
-#endif
+    sendWebSocketMessage();    // Update the root page with the latest data
     webSockeUpdate = millis(); // Use the snapshot to set track time until next event
   }
-#if defined(SENSORS)
+#ifdef SENSORS
   currSensor.read();
 #endif
-  getLoRaData();
 
 #ifdef CAMPER
   sendLoRaSensors();
 #endif
+  utils.loraReceive();//Always stay check if data has been received
 
   webSocket.cleanupClients();
 }

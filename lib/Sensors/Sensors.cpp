@@ -1,18 +1,14 @@
 #include "Arduino.h"
 #ifdef SENSORS
 #include "Sensors.h"
+#include "esp_adc_cal.h"
 
-/*
-IMPORTANT:
-Voltage diveder need to read from ACS712 (output 0-5v, ESP32 reads 0-3.3v)
-Ref. https://www.circuitschools.com/measure-ac-current-by-interfacing-acs712-sensor-with-esp32/
-*/
-
-Sensors::Sensors(int DHT11_pin, int ACS712_pin, int ACS712_amps)
+Sensors::Sensors(){
+}
+Sensors::Sensors(int currDHT11_pin, int currVoltage_pin)
 {
-  _DHT11_pin = DHT11_pin;
-  _ACS712_pin = ACS712_pin;
-  _ACS712_amps = ACS712_amps;
+  _DHT11_pin = currDHT11_pin;
+  _voltagePin = currVoltage_pin;
 }
 
 void Sensors::begin()
@@ -20,14 +16,12 @@ void Sensors::begin()
   if (_DHT11_pin != 0)
     dht11 = new SimpleDHT11(_DHT11_pin);
 
-  if (_ACS712_pin != 0)
+  if (_voltagePin != 0)
   {
-    if (_ACS712_amps == 5)
-      _mVperAmp = 185;
-    if (_ACS712_amps == 20)
-      _mVperAmp = 100;
-    if (_ACS712_amps == 30)
-      _mVperAmp = 66;
+    // Voltage measurements calibration
+    esp_adc_cal_characteristics_t adc_chars;
+    esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
+    _vref = adc_chars.vref; // Obtain the device ADC reference voltage
   }
 };
 
@@ -45,18 +39,15 @@ void Sensors::read()
         Serial.println(err);
       }
     }
-    if (_ACS712_pin != 0)
+    if (_voltagePin != 0)
     {
-      _VoltageRead = getVPP();
-      _VRMS = (_VoltageRead / 2.0) * 0.707; // root 2 is 0.707
-      AmpsRMS = ((_VRMS * 1000) / _mVperAmp);
-      Watt = (AmpsRMS*12);//amps x input Voltage
+      voltage = getVoltage();
     }
     lastCheck = millis();
   }
 }
 
-float Sensors::getVPP()
+float Sensors::getVoltage()
 {
   float result;
   int readValue;       // value read from the sensor
@@ -66,7 +57,7 @@ float Sensors::getVPP()
   uint32_t start_time = millis();
   while ((millis() - start_time) < 1000) // sample for 1 Sec
   {
-    readValue = analogRead(_ACS712_pin);
+    readValue = analogRead(_voltagePin);
     // see if you have a new maxValue
     if (readValue > maxValue)
     {
@@ -81,7 +72,21 @@ float Sensors::getVPP()
   }
 
   // Subtract min from max
-  result = ((maxValue - minValue) * 3.3) / 4096.0; // ESP32 ADC resolution 4096
+  //N.B. this formula assumes a 100k ohm based Voltage divider on the input voltage
+  result = ((maxValue - minValue) / 4095) // ADC Resolution (4096 = 0-4095)
+           * VDiv_MaxVolt                 // Max Input Voltage use during voltage divider calculation (Ex. 15)
+           * (1100 / _vref)               // Device Calibration offset
+           * (VDiv_Res_Calc               // Theorethical resistance calculated
+              / VDiv_Res_Real             // Real Installed resistance (Ex. 27k, or if you have not a 27k ... 20k + 5.1k + 2k in series )
+              ) *
+           VDiv_Calibration; 
+           
+  //Notes on VDiv_Calibration
+  //Calibration calculated by measurement with a multimiter 
+  //- 1: set VDiv_Calibration to 1
+  //- 2: measure volt input with a multimiter (Ex. 13.22)
+  //- 3: VDiv_Calibration = MULTIMETER_VOLTS/result
+  //- 4: update platformio.ini and rebuild 
 
   return result;
 }

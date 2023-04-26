@@ -1,81 +1,68 @@
 #include "Arduino.h"
-#include "shared.h"
+#include "LoraUtils.h"
 
 #ifdef E220
 // TODO: E220 defs
 #else
+SX1276 radio = nullptr;
+int loraState = RADIOLIB_ERR_NONE;
+volatile bool loraOperationDone = false;
+volatile bool interruptEnabled = true;
 
-void shared::setFlags()
+bool transmitFlag = false;
+// this function is called when a complete packet
+// is received by the module or when transmission is complete
+// IMPORTANT: this function MUST be 'void' type
+//            and MUST NOT have any arguments!
+
+void setLoraFlags(void)
 {
-  // https://github.com/jgromes/RadioLib/discussions/287#discussioncomment-2463000
-  shared instance = shared::getInstance();
-  if (!instance.interruptEnabled)
+  if (!interruptEnabled)
   {
     return;
   }
-  // TODO: test if this "if" works
+  // we sent or received a packet, set the flag
+  loraOperationDone = true;
   //  if we were transmitting, cleanup and delay are needed
-  if (instance.transmitFlag)
+  if (transmitFlag)
   {
 
     //  clean up after transmission is finished
     //  this will ensure transmitter is disabled,
     //  RF switch is powered down etc.
-    instance.radio.finishTransmit();
+    radio.finishTransmit();
+
+    // Start recieve mode back up
+    radio.startReceive();
+    transmitFlag = false;
+    loraOperationDone = false;
+    interruptEnabled = true;
   }
-  // we sent or received a packet, set the flag
-  instance.loraOperationDone = true;
 }
 #endif
 
-shared::shared()
+float last_Temp;
+float last_Hum;
+float last_Voltage;
+bool last_WINDOW;
+bool last_Relay1;
+bool last_Relay2;
+u_long last_Millis;
+String last_DateTime;
+
+float last_SNR;
+float last_RSSI;
+
+void initLora()
 {
-}
 
-shared::~shared()
-{
-}
-
-void shared::begin()
-{
-#ifdef OLED
-  Wire.begin(OLED_SDA, OLED_SCL);
-  // reset OLED display via software
-  pinMode(OLED_RST, OUTPUT);
-  digitalWrite(OLED_RST, HIGH);
-  delay(20);
-  digitalWrite(OLED_RST, LOW);
-  delay(20);
-  digitalWrite(OLED_RST, HIGH);
-  delay(20);
-
-  Wire.beginTransmission(0x3C);
-  if (Wire.endTransmission() == 0)
-  {
-    Serial.println("Started OLED");
-    u8g2 = new U8G2_SSD1306_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE);
-
-    u8g2->begin();
-    u8g2->clearBuffer();
-    u8g2->setFlipMode(1); // 180 Degree flip... because i like the buttons on the right side
-    u8g2->setFontMode(1); // Transparent
-    u8g2->setDrawColor(1);
-    u8g2->setFontDirection(0);
-
-    u8g2->setFont(u8g2_font_unifont_tr);
-    u8g2->drawStr(0, (1 * 10) + (2 * (1 - 1)), device_name.c_str());
-    u8g2->drawStr(0, (2 * 10) + (2 * (2 - 1)), "Starting ...");
-
-    u8g2->sendBuffer();
-
-    delay(3000);
-  }
-#endif
 // LORA INIT
 #ifdef E220
   // TODO: E220
 
 #else
+  radio = new Module(RADIO_CS_PIN, RADIO_DIO0_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+
   // SPI LoRa pins
   SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
   // When the power is turned on, a delay is required.
@@ -91,11 +78,6 @@ void shared::begin()
   if (counter == 10)
   {
     Serial.println("Starting LoRa failed!");
-#ifdef OLED
-    u8g2->clearBuffer();
-    u8g2->drawStr(0, 12, "Initializing: FAIL!");
-    u8g2->sendBuffer();
-#endif
   }
   else
   {
@@ -107,12 +89,12 @@ void shared::begin()
 
     // set the function that will be called
     // when new packet is received/transmitted
-    radio.setDio0Action(setFlags); // https://github.com/jgromes/RadioLib/discussions/287#discussioncomment-2463000
+    radio.setDio0Action(setLoraFlags);
 
 // different initial state for CAMPER and HANDHELD
 #ifdef CAMPER
     Serial.print(F("[SX1276] Starting to transmit ... "));
-    loraState = radio.startTransmit(device_name + " online");
+    loraState = radio.startTransmit(String(DEVICE_NAME) + " online");
     transmitFlag = true;
 #endif
 #ifdef HANDHELD
@@ -133,7 +115,7 @@ void shared::begin()
 // String examples (1 = Commands):
 //  1?enum.data.relay1=1
 //  1?enum.data.relay1=0
-void shared::loraReceive()
+void loraReceive()
 {
 #ifdef E220
 // TODO:.... Radio lib SHOULD support lcXXXX chip... maybe it's just a matter on init?
@@ -240,7 +222,8 @@ void shared::loraReceive()
   }
 #endif
 };
-void shared::loraSend(String message)
+
+void loraSend(String message)
 {
 #ifdef E220
 // TODO:.... Radio lib SHOULD support lcXXXX chip... maybe it's just a matter on init?

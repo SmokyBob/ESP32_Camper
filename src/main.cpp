@@ -10,7 +10,10 @@
 #endif
 #include <ESPAsyncWebServer.h>
 #include "enums.h"
-#include "shared.h"
+#include "LoraUtils.h"
+#ifdef OLED
+#include "OledUtil.h"
+#endif
 #ifdef SENSORS
 #include "Sensors.h"
 #endif
@@ -18,19 +21,14 @@
 AsyncWebServer server(80);
 AsyncWebSocket webSocket("/ws");
 
-shared utils;
-#ifdef SENSORS
-Sensors currSensor(DHT11_pin, Voltage_pin);
-#endif
-
 void sendWebSocketMessage()
 {
   String jsonString = "{";
 #ifdef SENSORS
   jsonString += "\"millis\":" + String(millis()) + ",";
-  jsonString += "\"temperature\":" + String(currSensor.temperature) + ",";
-  jsonString += "\"humidity\":" + String(currSensor.humidity) + ",";
-  jsonString += "\"voltage\":" + String(currSensor.voltage) + ",";
+  jsonString += "\"temperature\":" + String(temperature) + ",";
+  jsonString += "\"humidity\":" + String(humidity) + ",";
+  jsonString += "\"voltage\":" + String(voltage) + ",";
 #else
   jsonString += "\"millis\":" + String(lastLoraMillis) + ",";
   jsonString += "\"temperature\":" + String(lastTemp) + ",";
@@ -102,30 +100,37 @@ void sendLoRaSensors()
   {
     String LoRaMessage = String(DATA) + "?" + String(MILLIS) + "=" + String(millis()) + "&";
 #ifdef SENSORS
-    LoRaMessage += String(DATA) + "?" + String(TEMPERATURE) + "=" + String(currSensor.temperature) + "|";
-    LoRaMessage += String(DATA) + "?" + String(HUMIDITY) + "=" + String(currSensor.humidity) + "|";
-    LoRaMessage += String(DATA) + "?" + String(VOLTS) + "=" + String(currSensor.voltage) + "|";
+    LoRaMessage += String(DATA) + "?" + String(TEMPERATURE) + "=" + String(temperature) + "|";
+    LoRaMessage += String(DATA) + "?" + String(HUMIDITY) + "=" + String(humidity) + "|";
+    LoRaMessage += String(DATA) + "?" + String(VOLTS) + "=" + String(voltage) + "|";
 #endif
     // TODO: relays if configured
     LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
-    utils.loraSend(LoRaMessage);
+    loraSend(LoRaMessage);
   }
 }
 
 void setup()
 {
   Serial.begin(115200);
-#ifdef SENSORS
-  currSensor.begin();
-#endif
 
-  utils.begin(); // init oled,lora, etc.. as needed
+  //TODO: new function names
+  #ifdef SENSORS
+  initSensors();
+  #endif
+  #ifdef OLED
+  initOled();
+  #endif
+  initLora();
+  // utils.begin(); //base shared data
+  // display.begin(); //Oled init (if available)
 
   if (!LittleFS.begin(true))
   {
     Serial.println(F("An Error has occurred while mounting LittleFS"));
     return;
   }
+  //TODO: prop / build flag to indicate if 
   String SSID = "ESP32 " + String(DEVICE_NAME);
   //  Start AP MODE
   WiFi.softAP(SSID.c_str(), "B0bW4lker");
@@ -166,13 +171,17 @@ void loop()
     webSockeUpdate = millis(); // Use the snapshot to set track time until next event
   }
 #ifdef SENSORS
-  currSensor.read();
+  readSensors();
+#endif
+
+#if OLED
+//TODO: update display with data of the selected page
 #endif
 
 #ifdef CAMPER
   sendLoRaSensors();
 #endif
-  utils.loraReceive();//Always stay check if data has been received
+  loraReceive();//Always stay check if data has been received
 
   webSocket.cleanupClients();
 }

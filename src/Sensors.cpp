@@ -7,11 +7,6 @@ SimpleDHT11 *dht11;
 
 int _vref;
 
-float temperature = 0;
-float humidity = 0;
-
-float voltage = 0;
-
 void initSensors()
 {
 #ifdef DHT11_pin

@@ -1,15 +1,7 @@
 #include <Arduino.h>
-#include <LittleFS.h>
-#include <ESPmDNS.h>
-#ifdef ESP32
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
-#endif
-#include <ESPAsyncWebServer.h>
-#include "enums.h"
+#include "globals.h"
+
+#include "site.h"
 #include "LoraUtils.h"
 #ifdef OLED
 #include "OledUtil.h"
@@ -18,7 +10,8 @@
 #include "Sensors.h"
 #endif
 
-AsyncWebServer server(80);
+// WebSocket managed in main code for simpler management
+// the main code can send lora message, trigger relays, control servos, etc...
 AsyncWebSocket webSocket("/ws");
 
 void sendWebSocketMessage()
@@ -29,11 +22,13 @@ void sendWebSocketMessage()
   jsonString += "\"temperature\":" + String(temperature) + ",";
   jsonString += "\"humidity\":" + String(humidity) + ",";
   jsonString += "\"voltage\":" + String(voltage) + ",";
+  //TODO: send other data (datetime, window, relays)
 #else
-  jsonString += "\"millis\":" + String(lastLoraMillis) + ",";
-  jsonString += "\"temperature\":" + String(lastTemp) + ",";
-  jsonString += "\"humidity\":" + String(lastHum) + ",";
-  jsonString += "\"voltage\":" + String(lastVoltage) + ",";
+  jsonString += "\"millis\":" + String(last_Millis) + ",";
+  jsonString += "\"temperature\":" + String(last_Temperature) + ",";
+  jsonString += "\"humidity\":" + String(last_Humidity) + ",";
+  jsonString += "\"voltage\":" + String(last_Voltage) + ",";
+  //TODO: send other data (datetime, window, relays)
 #endif
 
   jsonString += "\"dummy\":null}";
@@ -74,7 +69,6 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     // TODO: relay the command with LORA to the CAMPER
 #endif
 
-    
     break;
   case WS_EVT_PONG:
   case WS_EVT_ERROR:
@@ -114,26 +108,19 @@ void setup()
 {
   Serial.begin(115200);
 
-  //TODO: new function names
-  #ifdef SENSORS
+#ifdef SENSORS
   initSensors();
-  #endif
-  #ifdef OLED
+#endif
+#ifdef OLED
   initOled();
-  #endif
+#endif
   initLora();
-  // utils.begin(); //base shared data
-  // display.begin(); //Oled init (if available)
 
-  if (!LittleFS.begin(true))
-  {
-    Serial.println(F("An Error has occurred while mounting LittleFS"));
-    return;
-  }
-  //TODO: prop / build flag to indicate if 
+  // Init Wifi
+  // TODO: prop / build flag to indicate if use wifi? or always active?
   String SSID = "ESP32 " + String(DEVICE_NAME);
   //  Start AP MODE
-  WiFi.softAP(SSID.c_str(), "B0bW4lker");
+  WiFi.softAP(SSID.c_str(), "B0bW4lker"); //TODO: change for prod
   String tmpDN = "esp32-" + String(DEVICE_NAME);
   if (!MDNS.begin(tmpDN.c_str()))
   {
@@ -148,23 +135,16 @@ void setup()
   Serial.println(F("IP address: "));
   Serial.println(WiFi.softAPIP());
 
-  Serial.println(F("Setting handlers"));
-  server.serveStatic("/", LittleFS, "/"); // Try the FS first for static files
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(LittleFS, "/index.html", String(), false, nullptr); });
-  // TODO: commands endpoint
-  server.onNotFound([](AsyncWebServerRequest *request)
-                    { request->send(200, "text/plain", "File not found"); });
+  // Init Site
   webSocket.onEvent(onWebSocketEvent); // Register WS event handler
-  server.addHandler(&webSocket);
-  server.begin();
+  initSite(webSocket);
 }
 
 unsigned long webSockeUpdate = 0;
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
+  // Update via websocket
   if ((unsigned long)(millis() - webSockeUpdate) >= 1000)
   {
     sendWebSocketMessage();    // Update the root page with the latest data
@@ -175,13 +155,14 @@ void loop()
 #endif
 
 #if OLED
-//TODO: update display with data of the selected page
+  // update display with data of the current page
+  drawPage();
 #endif
 
 #ifdef CAMPER
   sendLoRaSensors();
 #endif
-  loraReceive();//Always stay check if data has been received
+  loraReceive(); // Always stay in receive mode to check if data/commands have been received
 
   webSocket.cleanupClients();
 }

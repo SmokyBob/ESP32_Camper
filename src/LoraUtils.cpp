@@ -41,18 +41,6 @@ void setLoraFlags(void)
 }
 #endif
 
-float last_Temp;
-float last_Hum;
-float last_Voltage;
-bool last_WINDOW;
-bool last_Relay1;
-bool last_Relay2;
-u_long last_Millis;
-String last_DateTime;
-
-float last_SNR;
-float last_RSSI;
-
 void initLora()
 {
 
@@ -165,7 +153,7 @@ void loraReceive()
         {
 #ifndef SENSORS
         case TEMPERATURE:
-          last_Temp = dataVal.toFloat();
+          last_Temperature = dataVal.toFloat();
           break;
           // TODO: altri Case dei sensori
 #endif

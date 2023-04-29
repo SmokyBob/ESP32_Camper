@@ -22,13 +22,13 @@ void sendWebSocketMessage()
   jsonString += "\"temperature\":" + String(temperature) + ",";
   jsonString += "\"humidity\":" + String(humidity) + ",";
   jsonString += "\"voltage\":" + String(voltage) + ",";
-  //TODO: send other data (datetime, window, relays)
+  // TODO: send other data (datetime, window, relays)
 #else
   jsonString += "\"millis\":" + String(last_Millis) + ",";
   jsonString += "\"temperature\":" + String(last_Temperature) + ",";
   jsonString += "\"humidity\":" + String(last_Humidity) + ",";
   jsonString += "\"voltage\":" + String(last_Voltage) + ",";
-  //TODO: send other data (datetime, window, relays)
+  // TODO: send other data (datetime, window, relays)
 #endif
 
   jsonString += "\"dummy\":null}";
@@ -120,7 +120,7 @@ void setup()
   // TODO: prop / build flag to indicate if use wifi? or always active?
   String SSID = "ESP32 " + String(DEVICE_NAME);
   //  Start AP MODE
-  WiFi.softAP(SSID.c_str(), "B0bW4lker"); //TODO: change for prod
+  WiFi.softAP(SSID.c_str(), "B0bW4lker"); // TODO: change for prod
   String tmpDN = "esp32-" + String(DEVICE_NAME);
   if (!MDNS.begin(tmpDN.c_str()))
   {
@@ -140,15 +140,15 @@ void setup()
   initSite(webSocket);
 }
 
-unsigned long webSockeUpdate = 0;
+u_long webSockeUpdate = 0;
 
 void loop()
 {
   // Update via websocket
-  if ((unsigned long)(millis() - webSockeUpdate) >= 1000)
+  if ((u_long)(millis() - webSockeUpdate) >= 1000)
   {
-    sendWebSocketMessage();    // Update the root page with the latest data
-    webSockeUpdate = millis(); // Use the snapshot to set track time until next event
+    sendWebSocketMessage(); // Update the root page with the latest data
+    webSockeUpdate = millis();
   }
 #ifdef SENSORS
   readSensors();

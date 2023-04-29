@@ -3,6 +3,19 @@
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C *u8g2 = nullptr;
 OneButton *button;
 
+#define CONFIG_ICONS_FONT u8g2_font_waffle_t_all
+
+#define ICON_WIDTH 12
+#define ICON_HEIGHT 12
+#define ICON_GAP 4
+#define ICON_BGAP 2
+#define ICON_Y ICON_HEIGHT + ICON_GAP + ICON_BGAP
+
+// Page functions
+void drawNothing(){};
+void drawHomePage();
+void drawTemperaturePage();
+
 // Menus
 //- Home= display all base infos (temp, hum, volts, RSSI, date, time)
 //- Temperature= Big Icon and Text Value
@@ -12,30 +25,23 @@ OneButton *button;
 //- LORA configs= Freq, Bandwidth, RX
 struct menu_entry_type menu_entry_list[] =
     {
-        {CONFIG_ICONS_FONT, 184, "Home"},
-        {CONFIG_ICONS_FONT, 129, "Temperature"},
-        {CONFIG_ICONS_FONT, 152, "Humidity"},
-        {CONFIG_ICONS_FONT, 96, "Voltage"},
-        {CONFIG_ICONS_FONT, 247, "LORA Status"},
-        {CONFIG_ICONS_FONT, 253, "LORA Configs"},
-        {NULL, 0, NULL}};
+        {CONFIG_ICONS_FONT, 57840, "Home", drawHomePage},
+        {CONFIG_ICONS_FONT, 57373, "Temperature", drawTemperaturePage},
+        {CONFIG_ICONS_FONT, 57828, "Humidity", drawNothing},
+        {CONFIG_ICONS_FONT, 57857, "Voltage", drawNothing},
+        {CONFIG_ICONS_FONT, 58037, "LORA Status", drawNothing},
+        {CONFIG_ICONS_FONT, 58065, "LORA Configs", drawNothing},
+        {NULL, 0, NULL, drawNothing}};
 
 struct menu_state current_state = {ICON_BGAP, ICON_BGAP, 0};
 struct menu_state destination_state = {ICON_BGAP, ICON_BGAP, 0};
 
-void clearArea(int x, int y, int width, int height)
-{
-  // clear area (draw with background color)
-  u8g2->setDrawColor(0);
-  u8g2->drawBox(x, y, width, height);
-  u8g2->setDrawColor(1);
-}
-
 void drawMenu(struct menu_state *state)
 {
-  // int structLen = (sizeof(menu_entry_list) / sizeof(menu_entry_type)) - 1;
   // set cursor end line 2 pixel from the bottom
-  u8g2->setCursor(2, u8g2->getDisplayHeight() - ICON_HEIGHT - 2);
+  int y = u8g2->getDisplayHeight();
+  y = y - ICON_BGAP;
+  u8g2->setCursor(2, y);
 
   int16_t x;
   uint8_t i;
@@ -46,14 +52,13 @@ void drawMenu(struct menu_state *state)
     if (x >= -ICON_WIDTH && x < u8g2->getDisplayWidth())
     {
       u8g2->setFont(menu_entry_list[i].font);
-      u8g2->drawGlyph(x, ICON_Y, menu_entry_list[i].icon);
+      u8g2->drawGlyph(x, y, menu_entry_list[i].icon);
     }
     i++;
     x += ICON_WIDTH + ICON_GAP;
   }
-  u8g2->drawFrame(state->frame_position - 1, ICON_Y - ICON_HEIGHT - 1, ICON_WIDTH + 2, ICON_WIDTH + 2);
-  u8g2->drawFrame(state->frame_position - 2, ICON_Y - ICON_HEIGHT - 2, ICON_WIDTH + 4, ICON_WIDTH + 4);
-  u8g2->drawFrame(state->frame_position - 3, ICON_Y - ICON_HEIGHT - 3, ICON_WIDTH + 6, ICON_WIDTH + 6);
+  // Draw box over current icon (1 px width)
+  u8g2->drawFrame(state->frame_position - 1, y - ICON_HEIGHT - 1, ICON_WIDTH + ICON_BGAP, ICON_WIDTH + ICON_BGAP);
 };
 
 void to_right(struct menu_state *state)
@@ -72,6 +77,13 @@ void to_right(struct menu_state *state)
       state->menu_start = state->frame_position - state->position * ((int16_t)ICON_WIDTH + (int16_t)ICON_GAP);
     }
   }
+  else
+  {
+    // Loop back
+    state->position = 0;
+    state->frame_position = ICON_BGAP;
+    state->menu_start = ICON_BGAP;
+  }
 }
 
 void to_left(struct menu_state *state)
@@ -89,6 +101,14 @@ void to_left(struct menu_state *state)
       state->frame_position = ICON_BGAP;
       state->menu_start = state->frame_position - state->position * ((int16_t)ICON_WIDTH + (int16_t)ICON_GAP);
     }
+  }
+  else
+  {
+    // Go to last Menu
+    int menuLength = (sizeof(menu_entry_list) / sizeof(menu_entry_type)) - 1;
+    state->position = menuLength - 1;
+    state->frame_position = state->position * (ICON_WIDTH + (int16_t)ICON_GAP);
+    state->menu_start = state->frame_position - state->position * ((int16_t)ICON_WIDTH + (int16_t)ICON_GAP);
   }
 }
 
@@ -120,10 +140,12 @@ uint8_t towards(struct menu_state *current, struct menu_state *destination)
 // Button navigation
 void click()
 {
+  Serial.println("click");
   to_right(&destination_state);
 } // click
 void doubleClick()
 {
+  Serial.println("Double click");
   to_left(&destination_state);
 } // doubleClick
 void longPress()
@@ -180,16 +202,135 @@ void initOled()
 
 void drawHomePage()
 {
+  // Icon configs for the current page
+  const uint8_t *icon_Font = u8g2_font_open_iconic_all_2x_t;
+  int iconH = 16;
+  int iconW = 16;
+
+  // Text configs for the current page
+  const uint8_t *text_Font = u8g2_font_unifont_tr;
+  int textH = 10;
+
+  char buf[256];
+  int row = 0;
+  int column = 0;
+  int columnW = (u8g2->getDisplayWidth() / 2) - 1;
+  int x = 0;
+  int y = 0;
+
+  row = 1;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(icon_Font);
+  u8g2->drawGlyph(x, y + iconH, 184); // TODO: find timer / hourglass Icon
+  // Text
+  u8g2->setFont(text_Font);
+  snprintf(buf, sizeof(buf), "%u", last_Millis); // TODO: maybe last time? no day
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  row = 1;
+  column = 2;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(icon_Font);
+  u8g2->drawGlyph(x, y + iconH, 96); // VOLTAGE Font Image
+  // Text
+  u8g2->setFont(text_Font);
+  snprintf(buf, sizeof(buf), "%.2f", last_Voltage);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  row = 2;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(icon_Font);
+  u8g2->drawGlyph(x, y + iconH, 152); // TODO: find temperature Icon (no sun .. maybe other 16x16 font? ...or use the images )
+  // Text
+  u8g2->setFont(text_Font);
+  snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  row = 2;
+  column = 2;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(icon_Font);
+  u8g2->drawGlyph(x, y + iconH, 152); // HUMIDITY Font Image
+  // Text
+  u8g2->setFont(text_Font);
+  snprintf(buf, sizeof(buf), "%.2f rh", last_Humidity);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  // TODO: maybe drop this for window status?
+  row = 3;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(icon_Font);
+  u8g2->drawGlyph(x, y + iconH, 247); // LORA Signal Font Image
+  // Text
+  u8g2->setFont(text_Font);
+  snprintf(buf, sizeof(buf), "%.2f,%.2f", last_RSSI, last_SNR);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
+
+void drawTemperaturePage()
+{
+  char buf[256];
+  int iconH = 48;
+  int iconW = 48;
+  int textH = 46;
+  int row = 1;
+  int column = 1;
+  int columnW = (128 / 2) - 1;
+  int x = 0;
+  int y = 0;
+
+  row = 1;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(u8g2_font_open_iconic_all_6x_t);
+  u8g2->drawGlyph(x, y + iconH, 256 + 3); // SUN Font Image
+  // Text
+  u8g2->setFont(u8g2_font_inb46_mf);
+  snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+}
+
+u_long lastDraw = 0;
 
 void drawPage()
 {
-  u8g2->clearBuffer();
+  // keep watching the push button
+  button->tick();
 
-  //TODO: Other menus and specific pages
-  if (menu_entry_list[current_state.position].name == "HOME")
+  if ((u_long)(millis() - lastDraw) >= 50)
   {
-    drawHomePage();
+    // Move to the correct menu
+    do
+    {
+    } while (towards(&current_state, &destination_state)); // loop till destination is reached
+
+    // Clear the screen
+    u8g2->clearBuffer();
+
+    // Call the page draw function
+    (*menu_entry_list[destination_state.position].drawFunc)();
+
+    // Draw bottom menu
+    drawMenu(&destination_state);
+
+    //Send pixel to screen
+    u8g2->sendBuffer();
+
+    lastDraw = millis();
   }
-  drawMenu(&current_state); // Draw bottom menu
 };

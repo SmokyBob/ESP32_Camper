@@ -18,7 +18,6 @@ enum dataType{
    COMMAND
 };
 
-// TODO: array of values with same index as enums.data ?
 extern u_long last_Millis;
 extern float last_Temperature;
 extern float last_Humidity;

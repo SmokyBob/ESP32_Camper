@@ -12,5 +12,5 @@
 
 #include <LittleFS.h>
 
-void initSite(AsyncWebSocket webSocket);
+void initSite(AsyncWebSocket *webSocket);
 

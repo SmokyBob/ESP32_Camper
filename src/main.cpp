@@ -12,39 +12,23 @@
 
 // WebSocket managed in main code for simpler management
 // the main code can send lora message, trigger relays, control servos, etc...
-AsyncWebSocket webSocket("/ws");
+AsyncWebSocket *webSocket;
 
 void sendWebSocketMessage()
 {
   String jsonString = "{";
-#ifdef SENSORS
-  jsonString += "\"millis\":" + String(millis()) + ",";
-#else
   jsonString += "\"millis\":" + String(last_Millis) + ",";
-#endif
   jsonString += "\"temperature\":" + String(last_Temperature) + ",";
   jsonString += "\"humidity\":" + String(last_Humidity) + ",";
   jsonString += "\"voltage\":" + String(last_Voltage) + ",";
-  // TODO: send other data (datetime, window, relays)
+  jsonString += "\"datetime\":" + String(last_DateTime) + ",";
+  jsonString += "\"window\":" + String(last_WINDOW) + ",";
+  jsonString += "\"relay1\":" + String(last_Relay1) + ",";
+  jsonString += "\"relay2\":" + String(last_Relay2) + ",";
 
   jsonString += "\"dummy\":null}";
-  // Serial.println("before webSocket.textAll");
 
-  // webSocket.textAll(jsonString); // send the JSON object through the websocket
-
-  // TODO: Fix issue when webSocket.textAll is called
-  /*
-  21:12:48.601 >
-  21:12:48.601 > assert failed: xQueueSemaphoreTake queue.c:1549 (pxQueue->uxItemSize == 0)
-  21:12:48.614 >
-  21:12:48.614 >
-  21:12:48.614 > Backtrace: 0x40083b99:0x3ffb1fd0 0x4008bed1:0x3ffb1ff0 0x40091d79:0x3ffb2010 0x4008cee1:0x3ffb2140 0x400d66fe:0x3ffb2180 0x400d6cd6:0x3ffb21a0 0x400d760c:0x3ffb21d0 0x400d7631:0x3ffb21f0 0x400d3aea:0x3ffb2210 0x400d3bf8:0x3ffb2270 0x400e5ca5:0x3ffb2290
-  21:12:48.630 >
-  21:12:48.630 >
-  21:12:48.630 >
-  21:12:48.630 >
-  21:12:48.630 > ELF file SHA256: 09d9805c4891ba04
-  */
+  webSocket->textAll(jsonString); // send the JSON object through the websocket
 }
 
 void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
@@ -113,7 +97,6 @@ void sendLoRaSensors()
     LoRaMessage += String(WINDOW) + "=" + String(last_WINDOW) + "&";
     LoRaMessage += String(RELAY1) + "=" + String(last_Relay1) + "&";
     LoRaMessage += String(RELAY2) + "=" + String(last_Relay2) + "&";
-    // TODO: relays if configured
 #endif
     LoRaMessage += String(DATETIME) + "=" + String(last_DateTime) + "&";
     LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
@@ -155,7 +138,8 @@ void setup()
   Serial.println(WiFi.softAPIP());
 
   // Init Site
-  webSocket.onEvent(onWebSocketEvent); // Register WS event handler
+  webSocket = new AsyncWebSocket("/ws");
+  webSocket->onEvent(onWebSocketEvent); // Register WS event handler
   initSite(webSocket);
 }
 
@@ -186,5 +170,5 @@ void loop()
   loraReceive(); // Always stay in receive mode to check if data/commands have been received
   // Serial.println("after receive");
 
-  webSocket.cleanupClients();
+  webSocket->cleanupClients();
 }

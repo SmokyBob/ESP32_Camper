@@ -4,7 +4,7 @@
 
 AsyncWebServer server(80);
 
-void initSite(AsyncWebSocket webSocket)
+void initSite(AsyncWebSocket *webSocket)
 {
   if (!LittleFS.begin(true))
   {
@@ -22,6 +22,8 @@ void initSite(AsyncWebSocket webSocket)
                     { request->send(200, "text/plain", "File not found"); });
 
   //Commands managed via websocket
-  server.addHandler(&webSocket);
+  server.addHandler(webSocket);
+  //TODO: add
+  // AsyncElegantOTA.begin(&server); // Start AsyncElegantOTA
   server.begin();
 }

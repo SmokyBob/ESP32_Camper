@@ -8,10 +8,5 @@
 void initSensors();
 void readSensors();
 
-extern float temperature;
-extern float humidity;
-
-extern float voltage;
-
 #endif
 #endif

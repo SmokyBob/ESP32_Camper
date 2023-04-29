@@ -122,6 +122,8 @@ void loraReceive()
     String str;
     int state = radio.readData(str); // TODO: struct instead of a human readable string? should be a smaller payload
 
+    Serial.print("receivedStr:");
+    Serial.println(str);
     // you can also read received data as byte array
     /*
       byte byteArr[8];
@@ -132,60 +134,81 @@ void loraReceive()
       // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
       int posCommand = str.indexOf('?');
 
-      int type = str.substring(0, posCommand).toInt();
-      // Remove type from string
-      str = str.substring(posCommand + 1);
-      do
+      // Serial.printf("posCommand: %u\n", posCommand);
+
+      if (posCommand > 0)
       {
-        int dataEnum = str.substring(0, str.indexOf('=')).toInt();
-        int idxValEnd = str.indexOf('&');
-        String dataVal;
-        if (idxValEnd > 0)
-        {
-          dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
-        }
-        else
-        {
-          dataVal = str.substring(str.indexOf('=') + 1);
-        }
 
-        switch (dataEnum)
+        int type = str.substring(0, posCommand).toInt();
+        // Remove type from string
+        str = str.substring(posCommand + 1);
+        // Serial.println(str);
+        do
         {
+          int dataEnum = str.substring(0, str.indexOf('=')).toInt();
+          int idxValEnd = str.indexOf('&');
+          String dataVal;
+          if (idxValEnd > 0)
+          {
+            dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
+          }
+          else
+          {
+            dataVal = str.substring(str.indexOf('=') + 1);
+          }
+
+          switch (dataEnum)
+          {
 #ifndef SENSORS
-        case TEMPERATURE:
-          last_Temperature = dataVal.toFloat();
-          break;
-          // TODO: altri Case dei sensori
+          case TEMPERATURE:
+            last_Temperature = dataVal.toFloat();
+            break;
+            case HUMIDITY:
+            last_Humidity = dataVal.toFloat();
+            break;
+            case VOLTS:
+            last_Voltage = dataVal.toFloat();
+            break;
+            case WINDOW:
+            last_WINDOW = (dataVal.toInt()==0);
+            break;
+            case RELAY1:
+            last_Relay1 = (dataVal.toInt()==0);
+            break;
+            case RELAY2:
+            last_Relay2 = (dataVal.toInt()==0);
+            break;
 #endif
-        case MILLIS:
-          last_Millis = dataVal.toInt();
-          break;
-        case DATETIME:
-          last_DateTime = dataVal;
-          break;
-          // TODO: altri Case
+          case MILLIS:
+            last_Millis = dataVal.toInt();
+            break;
+          case DATETIME:
+            last_DateTime = dataVal;
+            break;
+            // TODO: altri Case
 
-        default:
-          break;
-        }
+          default:
+            break;
+          }
 
-        if (type == COMMAND)
-        {
-          // TODO: eseguire il comando e poi accodare "subito" l'invio di un messaggio
-        }
+          if (type == COMMAND)
+          {
+            // TODO: eseguire il comando e poi accodare "subito" l'invio di un messaggio
+          }
 
-        // Remove the read data from the message
-        if (idxValEnd > 0)
-        {
-          dataVal = str.substring(idxValEnd + 1);
-        }
-        else
-        {
-          dataVal = "";
-        }
+          // Remove the read data from the message
+          if (idxValEnd > 0)
+          {
+            str = str.substring(idxValEnd + 1);
+          }
+          else
+          {
+            str = "";
+          }
+          // Serial.println(str);
 
-      } while (str.indexOf('&') > 0);
-
+        } while (str.indexOf('&') > 0);
+      }
       last_SNR = radio.getSNR();
       last_RSSI = radio.getRSSI();
     }
@@ -236,6 +259,8 @@ void loraSend(String message)
     // we're ready to send more packets,
     // enable interrupt service routine
     interruptEnabled = true;
+    last_SNR = radio.getSNR();
+    last_RSSI = radio.getRSSI();
   }
 #endif
 };

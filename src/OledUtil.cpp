@@ -22,15 +22,15 @@ void drawTemperaturePage();
 //- Humidity= Big Icon and Text Value
 //- Voltage= Big Icon and Text Value
 //- LORA Status= Last Mex ID, RSSI, SNC
-//- LORA configs= Freq, Bandwidth, RX
+//- Servo and Relays= window Open/Closed, Fan on/off, Heater on/off
 struct menu_entry_type menu_entry_list[] =
     {
-        {CONFIG_ICONS_FONT, 57840, "Home", drawHomePage},
-        {CONFIG_ICONS_FONT, 57373, "Temperature", drawTemperaturePage},
-        {CONFIG_ICONS_FONT, 57828, "Humidity", drawNothing},
-        {CONFIG_ICONS_FONT, 57857, "Voltage", drawNothing},
-        {CONFIG_ICONS_FONT, 58037, "LORA Status", drawNothing},
-        {CONFIG_ICONS_FONT, 58065, "LORA Configs", drawNothing},
+        {CONFIG_ICONS_FONT, 57840 + 0, "Home", drawHomePage},
+        {CONFIG_ICONS_FONT, 57376 - 3, "Temperature", drawTemperaturePage},
+        {CONFIG_ICONS_FONT, 57824 + 4, "Humidity", drawNothing},
+        {CONFIG_ICONS_FONT, 57408 + 0, "Voltage", drawNothing},
+        {CONFIG_ICONS_FONT, 58032 + 5, "LORA Status", drawNothing},
+        {CONFIG_ICONS_FONT, 57504 - 1, "Servo and Relays", drawNothing},
         {NULL, 0, NULL, drawNothing}};
 
 struct menu_state current_state = {ICON_BGAP, ICON_BGAP, 0};
@@ -224,7 +224,7 @@ void drawHomePage()
   y = (row - 1) * iconH;
   // Icon
   u8g2->setFont(icon_Font);
-  u8g2->drawGlyph(x, y + iconH, 184); // TODO: find timer / hourglass Icon
+  u8g2->drawGlyph(x, y + iconH, 112 + 11); // CLOCK Font
   // Text
   u8g2->setFont(text_Font);
   snprintf(buf, sizeof(buf), "%u", last_Millis); // TODO: maybe last time? no day
@@ -247,8 +247,8 @@ void drawHomePage()
   x = (column - 1) * columnW;
   y = (row - 1) * iconH;
   // Icon
-  u8g2->setFont(icon_Font);
-  u8g2->drawGlyph(x, y + iconH, 152); // TODO: find temperature Icon (no sun .. maybe other 16x16 font? ...or use the images )
+  u8g2->setFont(u8g2_font_unifont_t_weather);
+  u8g2->drawGlyph(x, y + iconH, 48 + 1); // TEMPERATURE Font Image
   // Text
   u8g2->setFont(text_Font);
   snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
@@ -259,11 +259,11 @@ void drawHomePage()
   x = (column - 1) * columnW;
   y = (row - 1) * iconH;
   // Icon
-  u8g2->setFont(icon_Font);
-  u8g2->drawGlyph(x, y + iconH, 152); // HUMIDITY Font Image
+  u8g2->setFont(u8g2_font_unifont_t_weather);
+  u8g2->drawGlyph(x, y + iconH, 48 + 2); // HUMIDITY Font Image
   // Text
   u8g2->setFont(text_Font);
-  snprintf(buf, sizeof(buf), "%.2f rh", last_Humidity);
+  snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
   // TODO: maybe drop this for window status?
@@ -328,7 +328,7 @@ void drawPage()
     // Draw bottom menu
     drawMenu(&destination_state);
 
-    //Send pixel to screen
+    // Send pixel to screen
     u8g2->sendBuffer();
 
     lastDraw = millis();

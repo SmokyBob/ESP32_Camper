@@ -5,7 +5,7 @@
 
 SimpleDHT11 *dht11;
 
-int _vref;
+float _vref = 1100;
 
 void initSensors()
 {
@@ -27,30 +27,11 @@ unsigned long maxSensorsPool = 1500;
 float getVoltage()
 {
   float result;
-  int readValue;       // value read from the sensor
-  int maxValue = 0;    // store max value here
-  int minValue = 4096; // store min value here ESP32 ADC resolution
+  float readValue;       // value read from the sensor
+  readValue = analogRead(Voltage_pin);
 
-  uint32_t start_time = millis();
-  while ((millis() - start_time) < 1000) // sample for 1 Sec
-  {
-    readValue = analogRead(Voltage_pin);
-    // see if you have a new maxValue
-    if (readValue > maxValue)
-    {
-      /*record the maximum sensor value*/
-      maxValue = readValue;
-    }
-    if (readValue < minValue)
-    {
-      /*record the minimum sensor value*/
-      minValue = readValue;
-    }
-  }
-
-  // Subtract min from max
   // N.B. this formula assumes a 100k ohm based Voltage divider on the input voltage
-  result = ((maxValue - minValue) / 4095) // ADC Resolution (4096 = 0-4095)
+  result = (readValue / 4095) // ADC Resolution (4096 = 0-4095)
            * VDiv_MaxVolt                 // Max Input Voltage use during voltage divider calculation (Ex. 15)
            * (1100 / _vref)               // Device Calibration offset
            * (VDiv_Res_Calc               // Theorethical resistance calculated
@@ -75,18 +56,19 @@ void readSensors()
   if (millis() > lastCheck + maxSensorsPool)
   {
 #ifdef DHT11_pin
-
     int err = SimpleDHTErrSuccess;
-    if ((err = dht11->read2(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess)
+    if ((err = dht11->read2(&last_Temperature, &last_Humidity, NULL)) != SimpleDHTErrSuccess)
     {
       Serial.print("Read DHT11 failed, err=");
       Serial.println(err);
     }
 #endif
 #ifdef Voltage_pin
-    voltage = getVoltage();
+    last_Voltage = getVoltage();
 #endif
+
     lastCheck = millis();
+    last_Millis = lastCheck;
   }
 }
 

@@ -19,20 +19,32 @@ void sendWebSocketMessage()
   String jsonString = "{";
 #ifdef SENSORS
   jsonString += "\"millis\":" + String(millis()) + ",";
-  jsonString += "\"temperature\":" + String(temperature) + ",";
-  jsonString += "\"humidity\":" + String(humidity) + ",";
-  jsonString += "\"voltage\":" + String(voltage) + ",";
-  // TODO: send other data (datetime, window, relays)
 #else
   jsonString += "\"millis\":" + String(last_Millis) + ",";
+#endif
   jsonString += "\"temperature\":" + String(last_Temperature) + ",";
   jsonString += "\"humidity\":" + String(last_Humidity) + ",";
   jsonString += "\"voltage\":" + String(last_Voltage) + ",";
   // TODO: send other data (datetime, window, relays)
-#endif
 
   jsonString += "\"dummy\":null}";
-  webSocket.textAll(jsonString); // send the JSON object through the websocket
+  // Serial.println("before webSocket.textAll");
+
+  // webSocket.textAll(jsonString); // send the JSON object through the websocket
+
+  // TODO: Fix issue when webSocket.textAll is called
+  /*
+  21:12:48.601 >
+  21:12:48.601 > assert failed: xQueueSemaphoreTake queue.c:1549 (pxQueue->uxItemSize == 0)
+  21:12:48.614 >
+  21:12:48.614 >
+  21:12:48.614 > Backtrace: 0x40083b99:0x3ffb1fd0 0x4008bed1:0x3ffb1ff0 0x40091d79:0x3ffb2010 0x4008cee1:0x3ffb2140 0x400d66fe:0x3ffb2180 0x400d6cd6:0x3ffb21a0 0x400d760c:0x3ffb21d0 0x400d7631:0x3ffb21f0 0x400d3aea:0x3ffb2210 0x400d3bf8:0x3ffb2270 0x400e5ca5:0x3ffb2290
+  21:12:48.630 >
+  21:12:48.630 >
+  21:12:48.630 >
+  21:12:48.630 >
+  21:12:48.630 > ELF file SHA256: 09d9805c4891ba04
+  */
 }
 
 void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
@@ -80,10 +92,10 @@ unsigned long lastLORASend = 0;
 // LoRaData format:
 // String examples (0 = Sensor Data):
 //  0?enum.data.TEMP=36
-//  0?enum.data.TEMP=36&enum.data.humidity=90&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
+//  0?enum.data.TEMP=36.00&enum.data.humidity=90.00&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
 //  0?enum.data.relay1=0
 // RealString
-//  0?0=20&1=35&2=13.23&3=12065&4=20230416113532
+//  0?3=12065&0=20.00&1=35.00&2=13.23&4=20230416113532
 // String examples (1 = Commands):
 //  1?enum.data.relay1=1
 //  1?enum.data.relay1=0
@@ -92,15 +104,22 @@ void sendLoRaSensors()
   // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
   if (millis() > (lastLORASend + (LORA_DC * 1000)))
   {
-    String LoRaMessage = String(DATA) + "?" + String(MILLIS) + "=" + String(millis()) + "&";
+    String LoRaMessage = String(DATA) + "?";
+    LoRaMessage += String(MILLIS) + "=" + String(millis()) + "&";
 #ifdef SENSORS
-    LoRaMessage += String(DATA) + "?" + String(TEMPERATURE) + "=" + String(temperature) + "|";
-    LoRaMessage += String(DATA) + "?" + String(HUMIDITY) + "=" + String(humidity) + "|";
-    LoRaMessage += String(DATA) + "?" + String(VOLTS) + "=" + String(voltage) + "|";
-#endif
+    LoRaMessage += String(TEMPERATURE) + "=" + String(last_Temperature) + "&";
+    LoRaMessage += String(HUMIDITY) + "=" + String(last_Humidity) + "&";
+    LoRaMessage += String(VOLTS) + "=" + String(last_Voltage) + "&";
+    LoRaMessage += String(WINDOW) + "=" + String(last_WINDOW) + "&";
+    LoRaMessage += String(RELAY1) + "=" + String(last_Relay1) + "&";
+    LoRaMessage += String(RELAY2) + "=" + String(last_Relay2) + "&";
     // TODO: relays if configured
+#endif
+    LoRaMessage += String(DATETIME) + "=" + String(last_DateTime) + "&";
     LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+    // Serial.println(LoRaMessage);
     loraSend(LoRaMessage);
+    lastLORASend = millis();
   }
 }
 
@@ -150,6 +169,7 @@ void loop()
     sendWebSocketMessage(); // Update the root page with the latest data
     webSockeUpdate = millis();
   }
+  // Serial.println("after ws");
 #ifdef SENSORS
   readSensors();
 #endif
@@ -158,11 +178,13 @@ void loop()
   // update display with data of the current page
   drawPage();
 #endif
+  // Serial.println("after OLED");
 
 #ifdef CAMPER
   sendLoRaSensors();
 #endif
   loraReceive(); // Always stay in receive mode to check if data/commands have been received
+  // Serial.println("after receive");
 
   webSocket.cleanupClients();
 }

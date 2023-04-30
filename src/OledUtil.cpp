@@ -15,22 +15,29 @@ OneButton *button;
 void drawNothing(){};
 void drawHomePage();
 void drawTemperaturePage();
+void drawHumidityPage();
+void drawVoltagePage();
+void drawLoraPage();
+void drawControlsPage();
+
+// Display Before DeepSleep
+void drawDeepSleep();
 
 // Menus
 //- Home= display all base infos (temp, hum, volts, RSSI, date, time)
 //- Temperature= Big Icon and Text Value
 //- Humidity= Big Icon and Text Value
 //- Voltage= Big Icon and Text Value
-//- LORA Status= Last Mex ID, RSSI, SNC
+//- LORA Status= Last Mex Millis, RSSI, SNR
 //- Servo and Relays= window Open/Closed, Fan on/off, Heater on/off
 struct menu_entry_type menu_entry_list[] =
     {
         {CONFIG_ICONS_FONT, 57840 + 0, "Home", drawHomePage},
         {CONFIG_ICONS_FONT, 57376 - 3, "Temperature", drawTemperaturePage},
-        {CONFIG_ICONS_FONT, 57824 + 4, "Humidity", drawNothing},
-        {CONFIG_ICONS_FONT, 57408 + 0, "Voltage", drawNothing},
-        {CONFIG_ICONS_FONT, 58032 + 5, "LORA Status", drawNothing},
-        {CONFIG_ICONS_FONT, 57504 - 1, "Servo and Relays", drawNothing},
+        {CONFIG_ICONS_FONT, 57824 + 4, "Humidity", drawHumidityPage},
+        {CONFIG_ICONS_FONT, 57408 + 0, "Voltage", drawVoltagePage},
+        {CONFIG_ICONS_FONT, 58032 + 5, "LORA Status", drawLoraPage},
+        {CONFIG_ICONS_FONT, 57504 - 1, "Servo and Relays", drawControlsPage},
         {NULL, 0, NULL, drawNothing}};
 
 struct menu_state current_state = {ICON_BGAP, ICON_BGAP, 0};
@@ -150,7 +157,15 @@ void doubleClick()
 } // doubleClick
 void longPress()
 {
-  // TODO: turn off the display / go to sleep
+  // Clear the screen
+  u8g2->clearBuffer();
+  // Draw
+  drawDeepSleep();
+  // Send pixel to screen
+  u8g2->sendBuffer();
+  delay(1500); // wait half
+  // go to sleep
+  esp_deep_sleep_start();
 } // longPress
 
 void initOled()
@@ -286,9 +301,9 @@ void drawTemperaturePage()
   int iconH = 48;
   int iconW = 48;
   int textH = 46;
-  int row = 1;
-  int column = 1;
-  int columnW = (128 / 2) - 1;
+  int row = 0;
+  int column = 0;
+  int columnW = (u8g2->getDisplayWidth() / 2) - 1;
   int x = 0;
   int y = 0;
 
@@ -303,6 +318,205 @@ void drawTemperaturePage()
   u8g2->setFont(u8g2_font_inb46_mf);
   snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+}
+
+void drawHumidityPage()
+{
+  char buf[256];
+  int iconH = 48;
+  int iconW = 48;
+  int textH = 46;
+  int row = 0;
+  int column = 0;
+  int columnW = (u8g2->getDisplayWidth() / 2) - 1;
+  int x = 0;
+  int y = 0;
+
+  row = 1;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(u8g2_font_open_iconic_all_6x_t);
+  u8g2->drawGlyph(x, y + iconH, 160 - 8); // Water Drop Font Image
+  // Text
+  u8g2->setFont(u8g2_font_inb46_mf);
+  snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+}
+
+void drawVoltagePage()
+{
+  char buf[256];
+  int iconH = 48;
+  int iconW = 48;
+  int textH = 19;
+  int row = 0;
+  int column = 0;
+  int columnW = (u8g2->getDisplayWidth() / 2) - 1;
+  int x = 0;
+  int y = 0;
+
+  row = 1;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(u8g2_font_open_iconic_all_6x_t);
+  u8g2->drawGlyph(x, y + iconH, 96 + 0); // BOLT Font Image
+  // Text
+  u8g2->setFont(u8g2_font_inb19_mf);
+  snprintf(buf, sizeof(buf), "%.2f C", last_Voltage);
+  u8g2->drawStr(x + iconW, y + (textH + ((iconH - textH) / 2)), buf);
+}
+
+void drawLoraPage()
+{
+  // Icon configs for the current page
+  const uint8_t *icon_Font = u8g2_font_streamline_all_t;
+  int iconH = 22;
+  int iconW = 22;
+
+  // Text configs for the current page
+  const uint8_t *text_Font = u8g2_font_lubB14_tr;
+  int textH = 14;
+
+  char buf[256];
+  int row = 0;
+  int column = 0;
+  int columnW = (u8g2->getDisplayWidth() / 2) - 1;
+  int x = 0;
+  int y = 0;
+
+  row = 1;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(icon_Font);
+  u8g2->drawGlyph(x, y + iconH, 336 + 8); // CLOCK Font
+  // Text
+  u8g2->setFont(text_Font);
+  snprintf(buf, sizeof(buf), "%u", last_Millis);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  row = 2;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(icon_Font);
+  u8g2->drawGlyph(x, y + iconH, 464 - 4); // SATELLITE Font Image
+  // Text
+  u8g2->setFont(text_Font);
+  snprintf(buf, sizeof(buf), "%.2f", last_RSSI);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+}
+
+void drawControlsPage()
+{
+  // Icon configs for the current page
+  const uint8_t *icon_Font = u8g2_font_streamline_all_t;
+  int iconH = 22;
+  int iconW = 22;
+
+  // Text configs for the current page
+  const uint8_t *text_Font = u8g2_font_lubB12_tr;
+  int textH = 12;
+
+  char buf[256];
+  int row = 0;
+  int column = 0;
+  int columnW = (u8g2->getDisplayWidth() / 2) - 1;
+  int x = 0;
+  int y = 0;
+
+  row = 1;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(u8g2_font_streamline_interface_essential_action_t);
+  u8g2->drawGlyph(x, y + iconH, 48 + 6); // Arrow Circle Font Image
+  // Text
+  u8g2->setFont(text_Font);
+  if (last_WINDOW)
+  {
+    snprintf(buf, sizeof(buf), "OPEN");
+  }
+  else
+  {
+    snprintf(buf, sizeof(buf), "Closed");
+  }
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  row = 2;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(u8g2_font_streamline_ecology_t);
+  u8g2->drawGlyph(x, y + iconH, 64 -1); // WIND Font Image
+  // Text
+  u8g2->setFont(text_Font);
+  if (last_Relay1)
+  {
+    snprintf(buf, sizeof(buf), "ON");
+  }
+  else
+  {
+    snprintf(buf, sizeof(buf), "OFF");
+  }
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  row = 2;
+  column = 2;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(u8g2_font_streamline_weather_t);
+  u8g2->drawGlyph(x, y + iconH, 48 + 6); // TEMPERATURE Font Image
+  // Text
+  u8g2->setFont(text_Font);
+  if (last_Relay2)
+  {
+    snprintf(buf, sizeof(buf), "ON");
+  }
+  else
+  {
+    snprintf(buf, sizeof(buf), "OFF");
+  }
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+}
+
+void drawDeepSleep()
+{
+  int iconH = 21;
+  int iconW = 21;
+  int textH = 19;
+  int row = 0;
+  int column = 0;
+  int columnW = (u8g2->getDisplayWidth() / 2) - 1;
+  int x = 0;
+  int y = 0;
+
+  row = 1;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(u8g2_font_streamline_interface_essential_loading_t);
+  u8g2->drawGlyph(x, y + iconH, 48 + 13); // HourGlass Font Image
+  // Text
+  u8g2->setFont(u8g2_font_inb16_mf);
+  u8g2->drawStr(x + iconW, y + (textH + ((iconH - textH) / 2)), "Deep");
+
+  row = 2;
+  column = 1;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  u8g2->setFont(u8g2_font_inb16_mf);
+  u8g2->drawStr(x + iconW, y + (textH + ((iconH - textH) / 2)), "Sleep...");
 }
 
 u_long lastDraw = 0;

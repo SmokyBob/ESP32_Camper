@@ -170,13 +170,13 @@ void loraReceive()
             last_Voltage = dataVal.toFloat();
             break;
             case WINDOW:
-            last_WINDOW = (dataVal.toInt()==0);
+            last_WINDOW = (dataVal.toInt()==1);
             break;
             case RELAY1:
-            last_Relay1 = (dataVal.toInt()==0);
+            last_Relay1 = (dataVal.toInt()==1);
             break;
             case RELAY2:
-            last_Relay2 = (dataVal.toInt()==0);
+            last_Relay2 = (dataVal.toInt()==1);
             break;
 #endif
           case MILLIS:

@@ -4,6 +4,10 @@
 #include "esp_adc_cal.h"
 
 SimpleDHT11 *dht11;
+Servo windowServo;
+
+int closePos = 40;
+int openPos = 180;
 
 float _vref = 1100;
 
@@ -18,24 +22,30 @@ void initSensors()
   esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
   _vref = adc_chars.vref; // Obtain the device ADC reference voltage
 #endif
+
+#ifdef Servo_pin
+  windowServo.attach(Servo_pin);
+  // Init the window closed
+  setWindow(false);
+#endif
 };
 
 unsigned long lastCheck = 0;
-unsigned long maxSensorsPool = 1500;
+unsigned long maxSensorsPool = 2500;
 
 #ifdef Voltage_pin
 float getVoltage()
 {
   float result;
-  float readValue;       // value read from the sensor
+  float readValue; // value read from the sensor
   readValue = analogRead(Voltage_pin);
 
   // N.B. this formula assumes a 100k ohm based Voltage divider on the input voltage
   result = (readValue / 4095) // ADC Resolution (4096 = 0-4095)
-           * VDiv_MaxVolt                 // Max Input Voltage use during voltage divider calculation (Ex. 15)
-           * (1100 / _vref)               // Device Calibration offset
-           * (VDiv_Res_Calc               // Theorethical resistance calculated
-              / VDiv_Res_Real             // Real Installed resistance (Ex. 27k, or if you have not a 27k ... 20k + 5.1k + 2k in series )
+           * VDiv_MaxVolt     // Max Input Voltage use during voltage divider calculation (Ex. 15)
+           * (1100 / _vref)   // Device Calibration offset
+           * (VDiv_Res_Calc   // Theorethical resistance calculated
+              / VDiv_Res_Real // Real Installed resistance (Ex. 27k, or if you have not a 27k ... 20k + 5.1k + 2k in series )
               ) *
            VDiv_Calibration;
 
@@ -72,4 +82,33 @@ void readSensors()
   }
 }
 
+#ifdef Servo_pin
+void setWindow(bool isOpen)
+{
+  int pos = 0;
+
+  Serial.println(windowServo.read());
+
+  if (isOpen)
+  {
+    // Move to the Open Position
+    for (pos = windowServo.read(); pos < openPos; pos++)
+    {
+      windowServo.write(pos);
+      delay(10);
+    }
+    last_WINDOW = isOpen;
+  }
+  else
+  {
+    // Move to Close Position
+    for (pos = windowServo.read(); pos > closePos; pos--)
+    {
+      windowServo.write(pos);
+      delay(10);
+    }
+    last_WINDOW = isOpen;
+  }
+}
+#endif
 #endif

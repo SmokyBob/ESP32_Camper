@@ -156,6 +156,29 @@ void loop()
   // Serial.println("after ws");
 #ifdef SENSORS
   readSensors();
+
+  // TODO: use Automation Code: here just a test
+  if (last_Temperature > 25)
+  { // TODO: real = 30
+#ifdef Servo_pin
+    if (last_WINDOW == false)
+    {
+      // Open the window
+      setWindow(true);
+    }
+#endif
+  }
+
+  if (last_Temperature < 22)
+  { // TODO: real = 20
+#ifdef Servo_pin
+    if (last_WINDOW == true)
+    {
+      // Close the window
+      setWindow(false);
+    }
+#endif
+  }
 #endif
 
 #if OLED

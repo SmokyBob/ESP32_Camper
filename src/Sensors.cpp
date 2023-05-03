@@ -83,6 +83,7 @@ void readSensors()
 }
 
 #ifdef Servo_pin
+const int servoDegreeDelay = 5;
 void setWindow(bool isOpen)
 {
   int pos = 0;
@@ -92,20 +93,20 @@ void setWindow(bool isOpen)
   if (isOpen)
   {
     // Move to the Open Position
-    for (pos = windowServo.read(); pos < openPos; pos++)
+    for (pos = windowServo.read(); pos <= openPos; pos++)
     {
       windowServo.write(pos);
-      delay(10);
+      delay(servoDegreeDelay);
     }
     last_WINDOW = isOpen;
   }
   else
   {
     // Move to Close Position
-    for (pos = windowServo.read(); pos > closePos; pos--)
+    for (pos = windowServo.read(); pos >= closePos; pos--)
     {
       windowServo.write(pos);
-      delay(10);
+      delay(servoDegreeDelay);
     }
     last_WINDOW = isOpen;
   }

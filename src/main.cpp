@@ -22,14 +22,14 @@ AsyncWebSocket *webSocket;
 void sendWebSocketMessage()
 {
   String jsonString = "{";
-  jsonString += "\"millis\":" + String(last_Millis) + ",";
-  jsonString += "\"temperature\":" + String(last_Temperature) + ",";
-  jsonString += "\"humidity\":" + String(last_Humidity) + ",";
-  jsonString += "\"voltage\":" + String(last_Voltage) + ",";
-  jsonString += "\"datetime\":" + String(last_DateTime) + ",";
-  jsonString += "\"window\":" + String(last_WINDOW) + ",";
-  jsonString += "\"relay1\":" + String(last_Relay1) + ",";
-  jsonString += "\"relay2\":" + String(last_Relay2) + ",";
+  jsonString += "\"millis\":\"" + String(last_Millis) + "\",";
+  jsonString += "\"temperature\":\"" + String(last_Temperature) + "\",";
+  jsonString += "\"humidity\":\"" + String(last_Humidity) + "\",";
+  jsonString += "\"voltage\":\"" + String(last_Voltage) + "\",";
+  jsonString += "\"datetime\":\"" + String(last_DateTime) + "\",";
+  jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
+  jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
+  jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
 
   jsonString += "\"dummy\":null}";
 
@@ -145,15 +145,12 @@ void setup()
   // Init Site
   webSocket = new AsyncWebSocket("/ws");
   webSocket->onEvent(onWebSocketEvent); // Register WS event handler
-  
+
   /* Setup the DNS server redirecting all the domains to the apIP */
   dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
 
   initSite(webSocket);
-
-  
-  
 }
 
 u_long webSockeUpdate = 0;
@@ -162,6 +159,9 @@ u_long testServo = 0;
 
 void loop()
 {
+  // DNS
+  dnsServer.processNextRequest(); //Captive Portal
+
   // Update via websocket
   if ((u_long)(millis() - webSockeUpdate) >= 1000)
   {
@@ -169,6 +169,9 @@ void loop()
     webSockeUpdate = millis();
   }
   // Serial.println("after ws");
+
+  webSocket->cleanupClients();
+
 #ifdef SENSORS
   readSensors();
 #ifdef Servo_pin
@@ -205,6 +208,4 @@ void loop()
 #endif
   loraReceive(); // Always stay in receive mode to check if data/commands have been received
   // Serial.println("after receive");
-
-  webSocket->cleanupClients();
 }

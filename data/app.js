@@ -43,7 +43,7 @@ function init() {
 function processCommand(event) {
   var obj = JSON.parse(event.data);
 
-  prependToLog("millis: " + obj.millis + ", temperature: " + obj.temperature + " ,humidity: " + obj.humidity + " ");
+  prependToLog(event.data);
 }
 
 function prependToLog(message) {

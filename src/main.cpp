@@ -10,7 +10,12 @@
 #include "Sensors.h"
 #endif
 
-// WebSocket managed in main code for simpler management
+#include <DNSServer.h>
+
+DNSServer dnsServer;
+const byte DNS_PORT = 53;
+
+// WebSocket managed in main code for simpler data sharing / code reuse
 // the main code can send lora message, trigger relays, control servos, etc...
 AsyncWebSocket *webSocket;
 
@@ -140,7 +145,15 @@ void setup()
   // Init Site
   webSocket = new AsyncWebSocket("/ws");
   webSocket->onEvent(onWebSocketEvent); // Register WS event handler
+  
+  /* Setup the DNS server redirecting all the domains to the apIP */
+  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+  dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+
   initSite(webSocket);
+
+  
+  
 }
 
 u_long webSockeUpdate = 0;

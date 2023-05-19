@@ -6,9 +6,6 @@
 SimpleDHT11 *dht11;
 Servo windowServo;
 
-int closePos = 40;
-int openPos = 180;
-
 float _vref = 1100;
 
 void initSensors()
@@ -83,7 +80,11 @@ void readSensors()
 }
 
 #ifdef Servo_pin
+
+const int closePos = 40;
+const int openPos = 180;
 const int servoDegreeDelay = 5;
+
 void setWindow(bool isOpen)
 {
   int pos = 0;
@@ -93,7 +94,7 @@ void setWindow(bool isOpen)
   if (isOpen)
   {
     // Move to the Open Position
-    for (pos = windowServo.read(); pos <= openPos; pos++)
+    for (pos = windowServo.read(); pos<= openPos; pos++)
     {
       windowServo.write(pos);
       delay(servoDegreeDelay);

@@ -171,8 +171,6 @@ void longPress()
 void initOled()
 {
 #ifdef OLED
-  Wire.begin(OLED_SDA, OLED_SCL);
-
   // reset OLED display via software
   pinMode(OLED_RST, OUTPUT);
   digitalWrite(OLED_RST, HIGH);
@@ -182,28 +180,24 @@ void initOled()
   digitalWrite(OLED_RST, HIGH);
   delay(20);
 
-  Wire.beginTransmission(0x3C);
-  if (Wire.endTransmission() == 0)
-  {
-    Serial.println("Started OLED");
-    // Init display object
-    u8g2 = new U8G2_SSD1306_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE);
+  Serial.println("Started OLED");
+  // Init display object
+  u8g2 = new U8G2_SSD1306_128X64_NONAME_F_HW_I2C(U8G2_R0, OLED_RST, OLED_SCL, OLED_SDA);
 
-    u8g2->begin();
-    u8g2->clearBuffer();
-    u8g2->setFlipMode(1); // 180 Degree flip... because i like the buttons on the right side
-    u8g2->setFontMode(1); // Transparent
-    u8g2->setDrawColor(1);
-    u8g2->setFontDirection(0);
+  u8g2->begin();
+  u8g2->clearBuffer();
+  u8g2->setFlipMode(1); // 180 Degree flip... because i like the buttons on the right side
+  u8g2->setFontMode(1); // Transparent
+  u8g2->setDrawColor(1);
+  u8g2->setFontDirection(0);
 
-    u8g2->setFont(u8g2_font_unifont_tr);
-    u8g2->drawStr(0, (1 * 10) + (2 * (1 - 1)), DEVICE_NAME);
-    u8g2->drawStr(0, (2 * 10) + (2 * (2 - 1)), "Starting ...");
+  u8g2->setFont(u8g2_font_unifont_tr);
+  u8g2->drawStr(0, (1 * 10) + (2 * (1 - 1)), DEVICE_NAME);
+  u8g2->drawStr(0, (2 * 10) + (2 * (2 - 1)), "Starting ...");
 
-    u8g2->sendBuffer();
+  u8g2->sendBuffer();
 
-    delay(3000);
-  }
+  delay(3000);
 
   // Init button
   button = new OneButton(0, true);
@@ -456,7 +450,7 @@ void drawControlsPage()
   y = (row - 1) * iconH;
   // Icon
   u8g2->setFont(u8g2_font_streamline_ecology_t);
-  u8g2->drawGlyph(x, y + iconH, 64 -1); // WIND Font Image
+  u8g2->drawGlyph(x, y + iconH, 64 - 1); // WIND Font Image
   // Text
   u8g2->setFont(text_Font);
   if (last_Relay1)

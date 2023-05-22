@@ -144,6 +144,8 @@ uint8_t towards(struct menu_state *current, struct menu_state *destination)
   return r;
 }
 
+uint8_t _flipMode = 1; // Default 180 Degree flip... because i like the buttons on the right side
+
 // Button navigation
 void click()
 {
@@ -155,17 +157,27 @@ void doubleClick()
   Serial.println("Double click");
   to_left(&destination_state);
 } // doubleClick
+u_long _millisLongPress = 0;
 void longPress()
 {
-  // Clear the screen
-  u8g2->clearBuffer();
-  // Draw
-  drawDeepSleep();
-  // Send pixel to screen
-  u8g2->sendBuffer();
-  delay(1500); // wait half
-  // go to sleep
-  esp_deep_sleep_start();
+  if ((millis() - _millisLongPress) > 2000)
+  {
+    // Check Current Page
+    // HOME
+    if (destination_state.position == 0)
+    {
+      if (_flipMode == 1)
+      {
+        _flipMode = 0;
+      }
+      else
+      {
+        _flipMode = 1;
+      }
+      u8g2->setFlipMode(_flipMode);
+      _millisLongPress = millis();
+    }
+  }
 } // longPress
 
 void initOled()
@@ -186,7 +198,7 @@ void initOled()
 
   u8g2->begin();
   u8g2->clearBuffer();
-  u8g2->setFlipMode(1); // 180 Degree flip... because i like the buttons on the right side
+  u8g2->setFlipMode(_flipMode);
   u8g2->setFontMode(1); // Transparent
   u8g2->setDrawColor(1);
   u8g2->setFontDirection(0);

@@ -163,20 +163,26 @@ void loraReceive()
           case TEMPERATURE:
             last_Temperature = dataVal.toFloat();
             break;
-            case HUMIDITY:
+          case HUMIDITY:
             last_Humidity = dataVal.toFloat();
             break;
-            case VOLTS:
+          case VOLTS:
             last_Voltage = dataVal.toFloat();
             break;
-            case WINDOW:
-            last_WINDOW = (dataVal.toInt()==1);
+          case WINDOW:
+            last_WINDOW = (dataVal.toInt() == 1);
             break;
-            case RELAY1:
-            last_Relay1 = (dataVal.toInt()==1);
+          case RELAY1:
+            last_Relay1 = (dataVal.toInt() == 1);
             break;
-            case RELAY2:
-            last_Relay2 = (dataVal.toInt()==1);
+          case RELAY2:
+            last_Relay2 = (dataVal.toInt() == 1);
+            break;
+          case EXT_TEMPERATURE:
+            last_Ext_Temperature = dataVal.toFloat();
+            break;
+          case EXT_HUMIDITY:
+            last_Ext_Humidity = dataVal.toFloat();
             break;
 #endif
           case MILLIS:

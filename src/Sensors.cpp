@@ -3,8 +3,17 @@
 #include "Sensors.h"
 #include "esp_adc_cal.h"
 
+#ifdef DHT11_pin
 SimpleDHT11 *dht11;
+#endif
+#ifdef Servo_pin
 Servo windowServo;
+#endif
+
+#ifdef EXT_DHT22_pin
+SimpleDHT22 *dht22;
+
+#endif
 
 float _vref = 1100;
 
@@ -24,6 +33,18 @@ void initSensors()
   windowServo.attach(Servo_pin);
   // Init the window closed
   setWindow(false);
+#endif
+
+#ifdef Relay1_pin
+// TODO: PWM relay control
+#endif
+
+#ifdef Relay2_pin
+// TODO: PWM relay control
+#endif
+
+#ifdef EXT_DHT22_pin
+  dht22 = new SimpleDHT22(EXT_DHT22_pin);
 #endif
 };
 
@@ -73,6 +94,17 @@ void readSensors()
 #ifdef Voltage_pin
     last_Voltage = getVoltage();
 #endif
+#ifdef EXT_DHT22_pin
+
+    if ((err = dht22->read2(&last_Ext_Temperature, &last_Ext_Humidity, NULL)) != SimpleDHTErrSuccess)
+    {
+      Serial.print("Read EXT DHT22 failed, err=");
+      Serial.println(err);
+      last_Ext_Temperature = NAN;
+      last_Ext_Humidity = NAN;
+    }
+
+#endif
 
     lastCheck = millis();
     last_Millis = lastCheck;
@@ -94,7 +126,7 @@ void setWindow(bool isOpen)
   if (isOpen)
   {
     // Move to the Open Position
-    for (pos = windowServo.read(); pos<= openPos; pos++)
+    for (pos = windowServo.read(); pos <= openPos; pos++)
     {
       windowServo.write(pos);
       delay(servoDegreeDelay);

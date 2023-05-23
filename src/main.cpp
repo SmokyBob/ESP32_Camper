@@ -30,6 +30,8 @@ void sendWebSocketMessage()
   jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
   jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
   jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
+  jsonString += "\"ext_temperature\":\"" + String(last_Ext_Temperature) + "\",";
+  jsonString += "\"ext_humidity\":\"" + String(last_Ext_Humidity) + "\",";
 
   jsonString += "\"dummy\":null}";
 
@@ -102,6 +104,14 @@ void sendLoRaSensors()
     LoRaMessage += String(WINDOW) + "=" + String(last_WINDOW) + "&";
     LoRaMessage += String(RELAY1) + "=" + String(last_Relay1) + "&";
     LoRaMessage += String(RELAY2) + "=" + String(last_Relay2) + "&";
+    if (isnan(last_Ext_Temperature) != true)
+    {
+      LoRaMessage += String(EXT_TEMPERATURE) + "=" + String(last_Ext_Temperature) + "&";
+    }
+    if (isnan(last_Ext_Humidity) != true)
+    {
+      LoRaMessage += String(EXT_HUMIDITY) + "=" + String(last_Ext_Humidity) + "&";
+    }
 #endif
     LoRaMessage += String(DATETIME) + "=" + String(last_DateTime) + "&";
     LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
@@ -160,7 +170,7 @@ u_long testServo = 0;
 void loop()
 {
   // DNS
-  dnsServer.processNextRequest(); //Captive Portal
+  dnsServer.processNextRequest(); // Captive Portal
 
   // Update via websocket
   if ((u_long)(millis() - webSockeUpdate) >= 1000)
@@ -175,8 +185,12 @@ void loop()
 #ifdef SENSORS
   readSensors();
 #ifdef Servo_pin
-  // TODO: use Automation Code: here just a test
+// TODO: use Automation Code; here is just a test
+#ifdef EXT_DHT22_pin
+  if (last_Ext_Temperature > 25)
+#else
   if (last_Temperature > 25)
+#endif
   { // TODO: real = 30
 
     if (last_WINDOW == false)
@@ -186,7 +200,11 @@ void loop()
     }
   }
 
+#ifdef EXT_DHT22_pin
+  if (last_Ext_Temperature < 22)
+#else
   if (last_Temperature < 22)
+#endif
   { // TODO: real = 20
     if (last_WINDOW == true)
     {

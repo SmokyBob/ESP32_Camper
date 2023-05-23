@@ -7,6 +7,8 @@ float last_Voltage = 0;
 bool last_WINDOW;
 bool last_Relay1;
 bool last_Relay2;
+float last_Ext_Temperature = NAN;
+float last_Ext_Humidity = NAN;
 
 String last_DateTime;
 float last_SNR;

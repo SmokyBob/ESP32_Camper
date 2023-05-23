@@ -273,6 +273,12 @@ void drawHomePage()
   // Text
   u8g2->setFont(text_Font);
   snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
+#ifdef EXT_DHT22_pin
+  if (isnan(last_Ext_Temperature) != true)
+  {
+    snprintf(buf, sizeof(buf), "%.2f C", last_Ext_Temperature);
+  }
+#endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
   row = 2;
@@ -285,6 +291,12 @@ void drawHomePage()
   // Text
   u8g2->setFont(text_Font);
   snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+#ifdef EXT_DHT22_pin
+  if (isnan(last_Ext_Humidity) != true)
+  {
+    snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+  }
+#endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
   // TODO: maybe drop this for window status?
@@ -323,6 +335,12 @@ void drawTemperaturePage()
   // Text
   u8g2->setFont(u8g2_font_inb46_mf);
   snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
+#ifdef EXT_DHT22_pin
+  if (isnan(last_Ext_Humidity) != true)
+  {
+    snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+  }
+#endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
 
@@ -347,7 +365,12 @@ void drawHumidityPage()
   u8g2->drawGlyph(x, y + iconH, 160 - 8); // Water Drop Font Image
   // Text
   u8g2->setFont(u8g2_font_inb46_mf);
+#ifdef EXT_DHT22_pin
+  snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+#else
   snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+#endif
+
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
 

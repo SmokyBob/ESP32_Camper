@@ -184,13 +184,17 @@ void loop()
 
 #ifdef SENSORS
   readSensors();
-#ifdef Servo_pin
-// TODO: use Automation Code; here is just a test
+  float currTemp;
+  currTemp = last_Temperature;
 #ifdef EXT_DHT22_pin
-  if (last_Ext_Temperature > 25)
-#else
-  if (last_Temperature > 25)
+  if (isnan(last_Ext_Temperature) != true)
+  {
+    currTemp = last_Ext_Temperature;
+  }
 #endif
+#ifdef Servo_pin
+  // TODO: use Automation Code; here is just a test
+  if (currTemp > 25)
   { // TODO: real = 30
 
     if (last_WINDOW == false)
@@ -200,11 +204,7 @@ void loop()
     }
   }
 
-#ifdef EXT_DHT22_pin
-  if (last_Ext_Temperature < 22)
-#else
-  if (last_Temperature < 22)
-#endif
+  if (currTemp < 22)
   { // TODO: real = 20
     if (last_WINDOW == true)
     {

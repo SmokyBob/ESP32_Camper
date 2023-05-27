@@ -125,6 +125,7 @@ void setWindow(bool isOpen)
 
   if (isOpen)
   {
+    //TODO: run in a different task
     // Move to the Open Position
     for (pos = windowServo.read(); pos <= openPos; pos++)
     {
@@ -135,6 +136,7 @@ void setWindow(bool isOpen)
   }
   else
   {
+    //TODO: run in a different task
     // Move to Close Position
     for (pos = windowServo.read(); pos >= closePos; pos--)
     {

@@ -1,4 +1,9 @@
 #include "OledUtil.h"
+#ifdef SENSORS
+#include "Sensors.h"
+#else
+#include "LoraUtils.h"
+#endif
 
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C *u8g2 = nullptr;
 OneButton *button;
@@ -144,18 +149,86 @@ uint8_t towards(struct menu_state *current, struct menu_state *destination)
   return r;
 }
 
-uint8_t _flipMode = 1; // Default 180 Degree flip... because i like the buttons on the right side
-
+uint8_t _flipMode = 1;     // Default 180 Degree flip... because i like the buttons on the right side
+bool _controlMenu = false; // true to navigate and edit the control menu instead of the global menu
+uint8_t _controlSelected = 0;
 // Button navigation
 void click()
 {
   Serial.println("click");
-  to_right(&destination_state);
+  if (!_controlMenu)
+  {
+    to_right(&destination_state);
+  }
+  else
+  {
+    // TODO: highlight next control
+    _controlSelected++;
+    if (_controlSelected > 2)
+    {
+      _controlSelected = 0;
+    }
+  }
+
 } // click
 void doubleClick()
 {
   Serial.println("Double click");
-  to_left(&destination_state);
+
+  if (!_controlMenu)
+  {
+    to_left(&destination_state);
+  }
+  else
+  {
+    // change state of current control
+    // if sensor, call the appropriate funcition directly
+    // if handheld, send command with lora, but change the value locally asap
+    String LoRaMessage;
+    switch (_controlSelected)
+    {
+    case 0:
+      last_WINDOW = !last_WINDOW;
+#ifdef SENSORS
+      setWindow(last_WINDOW);
+#else
+      // send lora command
+      LoRaMessage = String(COMMAND) + "?";
+      LoRaMessage += String(WINDOW) + "=" + String(last_WINDOW) + "&";
+      LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+      // Serial.println(LoRaMessage);
+      loraSend(LoRaMessage);
+#endif
+      break;
+    case 1:
+      last_Relay1 = !last_Relay1;
+#ifdef SENSORS
+      setFan(last_Relay1);
+#else
+
+      // send lora command
+      LoRaMessage = String(COMMAND) + "?";
+      LoRaMessage += String(RELAY1) + "=" + String(last_Relay1) + "&";
+      LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+      // Serial.println(LoRaMessage);
+      loraSend(LoRaMessage);
+#endif
+      break;
+    case 2:
+      last_Relay2 = !last_Relay2;
+#ifdef SENSORS
+      setHeater(last_Relay2);
+#else
+      // send lora command
+      LoRaMessage = String(COMMAND) + "?";
+      LoRaMessage += String(RELAY2) + "=" + String(last_WINDOW) + "&";
+      LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+      // Serial.println(LoRaMessage);
+      loraSend(LoRaMessage);
+#endif
+      break;
+    }
+  }
 } // doubleClick
 u_long _millisLongPress = 0;
 void longPress()
@@ -163,8 +236,7 @@ void longPress()
   if ((millis() - _millisLongPress) > 2000)
   {
     // Check Current Page
-    // HOME
-    if (destination_state.position == 0)
+    if (menu_entry_list[destination_state.position].name == "Home")
     {
       if (_flipMode == 1)
       {
@@ -175,6 +247,16 @@ void longPress()
         _flipMode = 1;
       }
       u8g2->setFlipMode(_flipMode);
+      _millisLongPress = millis();
+    }
+    if (menu_entry_list[destination_state.position].name == "Servo and Relays")
+    {
+      // Switch to internal menu selection / exit internal menu selection
+      //  in this mode:
+      //  single click to loop over the 3 internal commands
+      //  double click to change ON / OFF
+      _controlMenu = !_controlMenu; // change mode
+      _controlSelected = 0;         // reset to the first control
       _millisLongPress = millis();
     }
   }
@@ -216,7 +298,7 @@ void initOled()
 
   button->attachClick(click);               // right
   button->attachDoubleClick(doubleClick);   // left
-  button->attachDuringLongPress(longPress); // turnScreenOFF / Sleep
+  button->attachDuringLongPress(longPress); // current menu Commands
 
 #endif
 }
@@ -467,6 +549,10 @@ void drawControlsPage()
   // Icon
   u8g2->setFont(u8g2_font_streamline_interface_essential_action_t);
   u8g2->drawGlyph(x, y + iconH, 48 + 6); // Arrow Circle Font Image
+  if (_controlMenu && _controlSelected == 0)
+  {
+    u8g2->drawFrame(x, y, iconW + 1, iconH + 1);
+  }
   // Text
   u8g2->setFont(text_Font);
   if (last_WINDOW)
@@ -486,6 +572,10 @@ void drawControlsPage()
   // Icon
   u8g2->setFont(u8g2_font_streamline_ecology_t);
   u8g2->drawGlyph(x, y + iconH, 64 - 1); // WIND Font Image
+  if (_controlMenu && _controlSelected == 1)
+  {
+    u8g2->drawFrame(x, y, iconW + 1, iconH + 1);
+  }
   // Text
   u8g2->setFont(text_Font);
   if (last_Relay1)
@@ -505,6 +595,10 @@ void drawControlsPage()
   // Icon
   u8g2->setFont(u8g2_font_streamline_weather_t);
   u8g2->drawGlyph(x, y + iconH, 48 + 6); // TEMPERATURE Font Image
+  if (_controlMenu && _controlSelected == 2)
+  {
+    u8g2->drawFrame(x, y, iconW + 1, iconH + 1);
+  }
   // Text
   u8g2->setFont(text_Font);
   if (last_Relay2)

@@ -36,11 +36,13 @@ void initSensors()
 #endif
 
 #ifdef Relay1_pin
-// TODO: PWM relay control
+  // Set pin to output
+  pinMode(Relay1_pin, OUTPUT);
 #endif
 
 #ifdef Relay2_pin
-// TODO: PWM relay control
+  // Set pin to output
+  pinMode(Relay2_pin, OUTPUT);
 #endif
 
 #ifdef EXT_DHT22_pin
@@ -125,8 +127,8 @@ void setWindow(bool isOpen)
 
   if (isOpen)
   {
-    //TODO: run in a different task
-    // Move to the Open Position
+    // TODO: run in a different task
+    //  Move to the Open Position
     for (pos = windowServo.read(); pos <= openPos; pos++)
     {
       windowServo.write(pos);
@@ -136,8 +138,8 @@ void setWindow(bool isOpen)
   }
   else
   {
-    //TODO: run in a different task
-    // Move to Close Position
+    // TODO: run in a different task
+    //  Move to Close Position
     for (pos = windowServo.read(); pos >= closePos; pos--)
     {
       windowServo.write(pos);
@@ -146,5 +148,34 @@ void setWindow(bool isOpen)
     last_WINDOW = isOpen;
   }
 }
+#endif
+
+#ifdef Relay1_pin
+void setFan(bool isOn)
+{
+  if (isOn)
+  {
+    digitalWrite(Relay1_pin, HIGH);
+  }
+  else
+  {
+    digitalWrite(Relay1_pin, LOW);
+  }
+  last_Relay1 = isOn;
+};
+#endif
+#ifdef Relay2_pin
+void setHeater(bool isOn)
+{
+  if (isOn)
+  {
+    digitalWrite(Relay2_pin, HIGH);
+  }
+  else
+  {
+    digitalWrite(Relay2_pin, LOW);
+  }
+  last_Relay2 = isOn;
+};
 #endif
 #endif

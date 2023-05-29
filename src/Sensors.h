@@ -19,6 +19,12 @@ void readSensors();
 #ifdef Servo_pin
 void setWindow(bool isOpen);
 #endif
+#ifdef Relay1_pin
+void setFan(bool isOn);
+#endif
+#ifdef Relay2_pin
+void setHeater(bool isOn);
+#endif
 
 #endif
 #endif

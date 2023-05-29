@@ -1,5 +1,8 @@
 #include "Arduino.h"
 #include "LoraUtils.h"
+#ifdef SENSORS
+#include "Sensors.h"
+#endif
 
 #ifdef E220
 // TODO: E220 defs
@@ -200,6 +203,24 @@ void loraReceive()
           if (type == COMMAND)
           {
             // TODO: eseguire il comando e poi accodare "subito" l'invio di un messaggio
+            switch (dataEnum)
+            {
+            case WINDOW:
+              last_WINDOW = (dataVal.toInt() == 1);
+              setWindow(last_WINDOW);
+              break;
+            case RELAY1:
+              last_Relay1 = (dataVal.toInt() == 1);
+              setFan(last_Relay1);
+              break;
+            case RELAY2:
+              last_Relay2 = (dataVal.toInt() == 1);
+              setHeater(last_Relay2);
+              break;
+            case DATETIME:
+              last_DateTime = dataVal;
+              // TODO: Aggiornare il time del device
+            }
           }
 
           // Remove the read data from the message

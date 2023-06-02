@@ -8,6 +8,8 @@
 #endif
 #ifdef SENSORS
 #include "Sensors.h"
+#else
+#include "RemoteXY.h"
 #endif
 
 #include <DNSServer.h>
@@ -193,20 +195,19 @@ void loop()
   }
 #endif
 #ifdef Servo_pin
-  // TODO: use Automation Code; here is just a test
-  if (currTemp > 25)
-  { // TODO: real = 30
-
-    if (last_WINDOW == false)
+  // TODO: use Automation Code; this is just a test
+  if (currTemp > 30)
+  {
+    if (!last_WINDOW)
     {
       // Open the window
       setWindow(true);
     }
   }
 
-  if (currTemp < 22)
-  { // TODO: real = 20
-    if (last_WINDOW == true)
+  if (currTemp < 20)
+  {
+    if (last_WINDOW)
     {
       // Close the window
       setWindow(false);

@@ -121,31 +121,35 @@ const int servoDegreeDelay = 5;
 
 void setWindow(bool isOpen)
 {
-  int pos = 0;
 
-  Serial.println(windowServo.read());
+  if (last_WINDOW != isOpen)
+  {
+    int pos = 0;
 
-  if (isOpen)
-  {
-    // TODO: run in a different task
-    //  Move to the Open Position
-    for (pos = windowServo.read(); pos <= openPos; pos++)
-    {
-      windowServo.write(pos);
-      delay(servoDegreeDelay);
-    }
+    Serial.println(windowServo.read());
+    // Save value first than move to avoid multiple same command
     last_WINDOW = isOpen;
-  }
-  else
-  {
-    // TODO: run in a different task
-    //  Move to Close Position
-    for (pos = windowServo.read(); pos >= closePos; pos--)
+
+    if (isOpen)
     {
-      windowServo.write(pos);
-      delay(servoDegreeDelay);
+      // TODO: run in a different task
+      //  Move to the Open Position
+      for (pos = windowServo.read(); pos <= openPos; pos++)
+      {
+        windowServo.write(pos);
+        delay(servoDegreeDelay);
+      }
     }
-    last_WINDOW = isOpen;
+    else
+    {
+      // TODO: run in a different task
+      //  Move to Close Position
+      for (pos = windowServo.read(); pos >= closePos; pos--)
+      {
+        windowServo.write(pos);
+        delay(servoDegreeDelay);
+      }
+    }
   }
 }
 #endif

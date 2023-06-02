@@ -202,20 +202,26 @@ void loraReceive()
 
           if (type == COMMAND)
           {
-            // TODO: eseguire il comando e poi accodare "subito" l'invio di un messaggio
+            // TODO: dopo aver eseguito il comando accodare "subito" l'invio di un messaggio
             switch (dataEnum)
             {
             case WINDOW:
               last_WINDOW = (dataVal.toInt() == 1);
+#ifdef Servo_pin
               setWindow(last_WINDOW);
+#endif
               break;
             case RELAY1:
               last_Relay1 = (dataVal.toInt() == 1);
+#ifdef Relay1_pin
               setFan(last_Relay1);
+#endif
               break;
             case RELAY2:
               last_Relay2 = (dataVal.toInt() == 1);
+#ifdef Relay2_pin
               setHeater(last_Relay2);
+#endif
               break;
             case DATETIME:
               last_DateTime = dataVal;

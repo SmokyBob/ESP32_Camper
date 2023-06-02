@@ -152,6 +152,7 @@ uint8_t towards(struct menu_state *current, struct menu_state *destination)
 uint8_t _flipMode = 1;     // Default 180 Degree flip... because i like the buttons on the right side
 bool _controlMenu = false; // true to navigate and edit the control menu instead of the global menu
 uint8_t _controlSelected = 0;
+float _int_ext = NAN; // if 1 show external, if 0 shows internal
 // Button navigation
 void click()
 {
@@ -249,6 +250,17 @@ void longPress()
       u8g2->setFlipMode(_flipMode);
       _millisLongPress = millis();
     }
+    if (menu_entry_list[destination_state.position].name == "Temperature" ||
+        (menu_entry_list[destination_state.position].name == "Humidity"))
+    {
+      if (_int_ext == 0)
+        _int_ext = 1;
+      else
+        _int_ext = 0;
+
+      _millisLongPress = millis();
+    }
+
     if (menu_entry_list[destination_state.position].name == "Servo and Relays")
     {
       // Switch to internal menu selection / exit internal menu selection
@@ -354,11 +366,19 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 48 + 1); // TEMPERATURE Font Image
   // Text
   u8g2->setFont(text_Font);
-  snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
 #ifdef EXT_DHT22_pin
   if (isnan(last_Ext_Temperature) != true)
   {
     snprintf(buf, sizeof(buf), "%.2f C", last_Ext_Temperature);
+  }
+#else
+  if (isnan(last_Ext_Temperature) != true)
+  {
+    snprintf(buf, sizeof(buf), "%.2fC", last_Ext_Temperature);
+  }
+  else
+  {
+    snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
   }
 #endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
@@ -377,6 +397,15 @@ void drawHomePage()
   if (isnan(last_Ext_Humidity) != true)
   {
     snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+  }
+#else
+  if (isnan(last_Ext_Humidity) != true)
+  {
+    snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+  }
+  else
+  {
+    snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
   }
 #endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
@@ -416,13 +445,27 @@ void drawTemperaturePage()
   u8g2->drawGlyph(x, y + iconH, 256 + 3); // SUN Font Image
   // Text
   u8g2->setFont(u8g2_font_inb46_mf);
-  snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
-#ifdef EXT_DHT22_pin
-  if (isnan(last_Ext_Humidity) != true)
+
+  if (isnan(_int_ext))
   {
-    snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+    _int_ext = 0;
   }
-#endif
+  if (_int_ext == 0)
+  {
+    if (isnan(last_Ext_Temperature) != true)
+    {
+      snprintf(buf, sizeof(buf), "%.2fC", last_Ext_Temperature);
+    }
+    else
+    {
+      snprintf(buf, sizeof(buf), "%.0fC", last_Temperature);
+    }
+  }
+  else
+  {
+    snprintf(buf, sizeof(buf), "%.0fC", last_Temperature);
+  }
+
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
 
@@ -447,12 +490,25 @@ void drawHumidityPage()
   u8g2->drawGlyph(x, y + iconH, 160 - 8); // Water Drop Font Image
   // Text
   u8g2->setFont(u8g2_font_inb46_mf);
-#ifdef EXT_DHT22_pin
-  snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
-#else
-  snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
-#endif
-
+  if (isnan(_int_ext))
+  {
+    _int_ext = 0;
+  }
+  if (_int_ext == 0)
+  {
+    if (isnan(last_Ext_Humidity) != true)
+    {
+      snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+    }
+    else
+    {
+      snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+    }
+  }
+  else
+  {
+    snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+  }
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
 

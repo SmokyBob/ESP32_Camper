@@ -214,6 +214,7 @@ void loop()
     }
   }
 #endif
+
 #endif
 
 #if OLED
@@ -226,5 +227,17 @@ void loop()
   sendLoRaSensors();
 #endif
   loraReceive(); // Always stay in receive mode to check if data/commands have been received
+
+#ifdef Voltage_pin
+  // TODO: configurable in parameters showing the percent table as reference
+  // Sleep for an hour if voltage below 12.5v (14% for lifepo4 batteries)
+  if (last_Voltage < 12.5)
+  {
+    uint64_t hrSleepUs = (1 * 60 * 60 * 1000); // in milliseconds
+    hrSleepUs = hrSleepUs * 1000;              // in microseconds
+    esp_sleep_enable_timer_wakeup(hrSleepUs);
+    esp_deep_sleep_start();
+  }
+#endif
   // Serial.println("after receive");
 }

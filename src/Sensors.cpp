@@ -124,7 +124,7 @@ void setWindow(bool isOpen)
 
   if (last_WINDOW != isOpen)
   {
-    int pos = 0;
+    int pos = windowServo.read();
 
     Serial.println(windowServo.read());
     // Save value first than move to avoid multiple same command
@@ -134,7 +134,7 @@ void setWindow(bool isOpen)
     {
       // TODO: run in a different task
       //  Move to the Open Position
-      for (pos = windowServo.read(); pos <= openPos; pos++)
+      for (pos = pos; pos <= openPos; pos++)
       {
         windowServo.write(pos);
         delay(servoDegreeDelay);
@@ -144,7 +144,7 @@ void setWindow(bool isOpen)
     {
       // TODO: run in a different task
       //  Move to Close Position
-      for (pos = windowServo.read(); pos >= closePos; pos--)
+      for (pos = pos; pos >= closePos; pos--)
       {
         windowServo.write(pos);
         delay(servoDegreeDelay);

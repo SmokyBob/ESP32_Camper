@@ -35,4 +35,13 @@ extern float last_Ext_Humidity;
 
 extern float last_SNR;
 extern float last_RSSI;
+
+struct batt_perc
+{
+   float voltage;
+   uint8_t percentage;
+};
+
+extern batt_perc batt_perc_list[14];
+
 #endif

@@ -392,20 +392,20 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 48 + 2); // HUMIDITY Font Image
   // Text
   u8g2->setFont(text_Font);
-  snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+  snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
 #ifdef EXT_DHT22_pin
   if (isnan(last_Ext_Humidity) != true)
   {
-    snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+    snprintf(buf, sizeof(buf), "%.2f%%", last_Ext_Humidity);
   }
 #else
   if (isnan(last_Ext_Humidity) != true)
   {
-    snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+    snprintf(buf, sizeof(buf), "%.2f%%", last_Ext_Humidity);
   }
   else
   {
-    snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+    snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
   }
 #endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
@@ -498,19 +498,20 @@ void drawHumidityPage()
   {
     if (isnan(last_Ext_Humidity) != true)
     {
-      snprintf(buf, sizeof(buf), "%.0f rh", last_Ext_Humidity);
+      snprintf(buf, sizeof(buf), "%.2f%%", last_Ext_Humidity);
     }
     else
     {
-      snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+      snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
     }
   }
   else
   {
-    snprintf(buf, sizeof(buf), "%.0f rh", last_Humidity);
+    snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
   }
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
+
 
 void drawVoltagePage()
 {
@@ -533,8 +534,25 @@ void drawVoltagePage()
   u8g2->drawGlyph(x, y + iconH, 96 + 0); // BOLT Font Image
   // Text
   u8g2->setFont(u8g2_font_inb19_mf);
-  snprintf(buf, sizeof(buf), "%.2f C", last_Voltage);
-  u8g2->drawStr(x + iconW, y + (textH + ((iconH - textH) / 2)), buf);
+  snprintf(buf, sizeof(buf), "%.2f", last_Voltage);
+  u8g2->drawStr(x + iconW, y + (textH + 2), buf);
+
+  //Calculate battPercentage
+  uint8_t bp =0;
+
+  for (size_t i = 0; i < (sizeof(batt_perc_list) / sizeof(batt_perc)); i++)
+  {
+    /* table lookup */
+    if (last_Voltage>=batt_perc_list[i].voltage){
+      bp = batt_perc_list[i].percentage;
+      break;
+    }
+  }
+  // Serial.printf("battery perc: %u%%\n", bp);
+
+  snprintf(buf, sizeof(buf), "%u%%", bp);
+  u8g2->drawStr(x + iconW, y + ((textH + 2)*2), buf);
+
 }
 
 void drawLoraPage()

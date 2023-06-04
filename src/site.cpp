@@ -9,7 +9,6 @@ void setWebHandles()
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(LittleFS, "/index.html", String(), false, nullptr); });
 
-  // TODO: Config page
   server.onNotFound([](AsyncWebServerRequest *request)
                     { request->send(200, "text/plain", "File not found"); });
 }
@@ -54,9 +53,12 @@ void initSite(AsyncWebSocket *webSocket)
 
   // Commands managed via websocket
   server.addHandler(webSocket);
-  // TODO: add
-  AsyncElegantOTA.begin(&server); // Start AsyncElegantOTA
+  // Start AsyncElegantOTA
+  AsyncElegantOTA.begin(&server);
+  // Start webserver
   server.begin();
 
   server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
 }
+
+//TODO: Config page funcitions

@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "globals.h"
 
-#include "site.h"
 #include "LoraUtils.h"
 #ifdef OLED
 #include "OledUtil.h"
@@ -12,6 +11,8 @@
 #include "RemoteXY.h"
 #endif
 
+#ifdef WIFI_PWD
+#include "site.h"
 #include <DNSServer.h>
 
 DNSServer dnsServer;
@@ -80,7 +81,7 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     break;
   }
 }
-
+#endif
 unsigned long lastLORASend = 0;
 // LoRaData format:
 // String examples (0 = Sensor Data):
@@ -135,11 +136,11 @@ void setup()
 #endif
   initLora();
 
+#ifdef WIFI_PWD
   // Init Wifi
-  // TODO: prop / build flag to indicate if use wifi? or always active?
   String SSID = "ESP32 " + String(DEVICE_NAME);
   //  Start AP MODE
-  WiFi.softAP(SSID.c_str(), "B0bW4lker"); // TODO: change for prod
+  WiFi.softAP(SSID.c_str(), String(WIFI_PWD));
   String tmpDN = "esp32-" + String(DEVICE_NAME);
   if (!MDNS.begin(tmpDN.c_str()))
   {
@@ -154,23 +155,24 @@ void setup()
   Serial.println(F("IP address: "));
   Serial.println(WiFi.softAPIP());
 
-  // Init Site
-  webSocket = new AsyncWebSocket("/ws");
-  webSocket->onEvent(onWebSocketEvent); // Register WS event handler
-
   /* Setup the DNS server redirecting all the domains to the apIP */
   dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
 
+  // Init Websocket
+  webSocket = new AsyncWebSocket("/ws");
+  webSocket->onEvent(onWebSocketEvent); // Register WS event handler
+
+  // init the rest of the site
   initSite(webSocket);
+#endif
 }
 
 u_long webSockeUpdate = 0;
 
-u_long testServo = 0;
-
 void loop()
 {
+#ifdef WIFI_PWD
   // DNS
   dnsServer.processNextRequest(); // Captive Portal
 
@@ -183,7 +185,7 @@ void loop()
   // Serial.println("after ws");
 
   webSocket->cleanupClients();
-
+#endif
 #ifdef SENSORS
   readSensors();
   float currTemp;
@@ -230,8 +232,9 @@ void loop()
 
 #ifdef Voltage_pin
   // TODO: configurable in parameters showing the percent table as reference
-  // Sleep for an hour if voltage below 12.5v (14% for lifepo4 batteries)
-  if (last_Voltage < 12.5)
+  float voltageLimit = 12.5;
+  // Sleep for 30 mins if voltage below 12.5v (14% for lifepo4 batteries)
+  if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug
   {
     uint64_t hrSleepUs = (1 * 60 * 60 * 1000); // in milliseconds
     hrSleepUs = hrSleepUs * 1000;              // in microseconds

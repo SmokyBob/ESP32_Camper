@@ -119,14 +119,21 @@ const int closePos = 40;
 const int openPos = 180;
 const int servoDegreeDelay = 5;
 
+int lastPos = -1;
+
 void setWindow(bool isOpen)
 {
+  Serial.printf("isOpen: %d lastPos: %d LastWindow %u\n", isOpen, lastPos, last_WINDOW);
+  if (lastPos == -1)
+  {
+    // Init reading the current position
+    lastPos = windowServo.read();
+  }
 
   if (last_WINDOW != isOpen)
   {
-    int pos = windowServo.read();
+    int pos = lastPos;
 
-    Serial.println(windowServo.read());
     // Save value first than move to avoid multiple same command
     last_WINDOW = isOpen;
 
@@ -137,6 +144,7 @@ void setWindow(bool isOpen)
       for (pos = pos; pos <= openPos; pos++)
       {
         windowServo.write(pos);
+        lastPos = pos;
         delay(servoDegreeDelay);
       }
     }
@@ -147,6 +155,7 @@ void setWindow(bool isOpen)
       for (pos = pos; pos >= closePos; pos--)
       {
         windowServo.write(pos);
+        lastPos = pos;
         delay(servoDegreeDelay);
       }
     }

@@ -366,12 +366,6 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 48 + 1); // TEMPERATURE Font Image
   // Text
   u8g2->setFont(text_Font);
-#ifdef EXT_DHT22_pin
-  if (isnan(last_Ext_Temperature) != true)
-  {
-    snprintf(buf, sizeof(buf), "%.2f C", last_Ext_Temperature);
-  }
-#else
   if (isnan(last_Ext_Temperature) != true)
   {
     snprintf(buf, sizeof(buf), "%.2fC", last_Ext_Temperature);
@@ -380,7 +374,6 @@ void drawHomePage()
   {
     snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
   }
-#endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
   row = 2;
@@ -393,12 +386,6 @@ void drawHomePage()
   // Text
   u8g2->setFont(text_Font);
   snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
-#ifdef EXT_DHT22_pin
-  if (isnan(last_Ext_Humidity) != true)
-  {
-    snprintf(buf, sizeof(buf), "%.2f%%", last_Ext_Humidity);
-  }
-#else
   if (isnan(last_Ext_Humidity) != true)
   {
     snprintf(buf, sizeof(buf), "%.2f%%", last_Ext_Humidity);
@@ -407,7 +394,6 @@ void drawHomePage()
   {
     snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
   }
-#endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
   // TODO: maybe drop this for window status?
@@ -512,7 +498,6 @@ void drawHumidityPage()
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
 
-
 void drawVoltagePage()
 {
   char buf[256];
@@ -537,13 +522,14 @@ void drawVoltagePage()
   snprintf(buf, sizeof(buf), "%.2f", last_Voltage);
   u8g2->drawStr(x + iconW, y + (textH + 2), buf);
 
-  //Calculate battPercentage
-  uint8_t bp =0;
+  // Calculate battPercentage
+  uint8_t bp = 0;
 
   for (size_t i = 0; i < (sizeof(batt_perc_list) / sizeof(batt_perc)); i++)
   {
     /* table lookup */
-    if (last_Voltage>=batt_perc_list[i].voltage){
+    if (last_Voltage >= batt_perc_list[i].voltage)
+    {
       bp = batt_perc_list[i].percentage;
       break;
     }
@@ -551,8 +537,7 @@ void drawVoltagePage()
   // Serial.printf("battery perc: %u%%\n", bp);
 
   snprintf(buf, sizeof(buf), "%u%%", bp);
-  u8g2->drawStr(x + iconW, y + ((textH + 2)*2), buf);
-
+  u8g2->drawStr(x + iconW, y + ((textH + 2) * 2), buf);
 }
 
 void drawLoraPage()

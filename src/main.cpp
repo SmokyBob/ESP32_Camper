@@ -118,7 +118,7 @@ void sendLoRaSensors()
 #endif
     LoRaMessage += String(DATETIME) + "=" + String(last_DateTime) + "&";
     LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
-    // Serial.println(LoRaMessage);
+    Serial.println(LoRaMessage);
     loraSend(LoRaMessage);
     lastLORASend = millis();
   }

@@ -4,9 +4,6 @@
 #include "Sensors.h"
 #endif
 
-#ifdef E220
-// TODO: E220 defs
-#else
 SX1276 radio = nullptr;
 int loraState = RADIOLIB_ERR_NONE;
 volatile bool loraOperationDone = false;
@@ -42,16 +39,10 @@ void setLoraFlags(void)
     interruptEnabled = true;
   }
 }
-#endif
 
 void initLora()
 {
 
-// LORA INIT
-#ifdef E220
-  // TODO: E220
-
-#else
   radio = new Module(RADIO_CS_PIN, RADIO_DIO0_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 
   // SPI LoRa pins
@@ -93,7 +84,6 @@ void initLora()
     transmitFlag = false;
 #endif
   }
-#endif
 }
 
 // LoRaData format:
@@ -108,9 +98,6 @@ void initLora()
 //  1?enum.data.relay1=0
 void loraReceive()
 {
-#ifdef E220
-// TODO:.... Radio lib SHOULD support lcXXXX chip... maybe it's just a matter on init?
-#else
   // check if the flag is set
   if (loraOperationDone)
   {
@@ -264,14 +251,10 @@ void loraReceive()
     // enable interrupt service routine
     interruptEnabled = true;
   }
-#endif
 };
 
 void loraSend(String message)
 {
-#ifdef E220
-// TODO:.... Radio lib SHOULD support lcXXXX chip... maybe it's just a matter on init?
-#else
   // check if the last operation is done OR we are in receive mode
   if (loraOperationDone || transmitFlag == false)
   {
@@ -295,5 +278,4 @@ void loraSend(String message)
     last_SNR = radio.getSNR();
     last_RSSI = radio.getRSSI();
   }
-#endif
 };

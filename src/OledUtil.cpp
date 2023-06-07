@@ -189,9 +189,8 @@ void doubleClick()
     switch (_controlSelected)
     {
     case 0:
-      last_WINDOW = !last_WINDOW;
 #ifdef SENSORS
-      setWindow(last_WINDOW);
+      setWindow(!last_WINDOW);
 #else
       // send lora command
       LoRaMessage = String(COMMAND) + "?";

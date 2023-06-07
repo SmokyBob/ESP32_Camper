@@ -85,8 +85,9 @@ void readSensors()
 
   if (millis() > lastCheck + maxSensorsPool)
   {
-#ifdef DHT11_pin
     int err = SimpleDHTErrSuccess;
+#ifdef DHT11_pin
+
     if ((err = dht11->read2(&last_Temperature, &last_Humidity, NULL)) != SimpleDHTErrSuccess)
     {
       Serial.print("Read DHT11 failed, err=");
@@ -115,8 +116,8 @@ void readSensors()
 
 #ifdef Servo_pin
 
-const int closePos = 40;
-const int openPos = 180;
+const int closePos = Servo_closed_pos;
+const int openPos = Servo_OPEN_pos;
 const int servoDegreeDelay = 5;
 
 int lastPos = -1;
@@ -124,10 +125,15 @@ int lastPos = -1;
 void setWindow(bool isOpen)
 {
   Serial.printf("isOpen: %d lastPos: %d LastWindow %u\n", isOpen, lastPos, last_WINDOW);
-  if (lastPos == -1)
+  if (lastPos < 0)
   {
     // Init reading the current position
     lastPos = windowServo.read();
+  }
+  if (lastPos < 0)
+  {
+    // if still 0 set to 0
+    lastPos = 0;
   }
 
   if (last_WINDOW != isOpen)
@@ -159,6 +165,8 @@ void setWindow(bool isOpen)
         delay(servoDegreeDelay);
       }
     }
+
+    Serial.printf("windowServo.read: %d\n", windowServo.read());
   }
 }
 #endif

@@ -32,9 +32,6 @@
 
 #endif
 
-#ifdef E220
-// TODO:.... Radio lib SHOULD support lcXXXX chip... maybe it's just a matter on init?
-#else
 extern SX1276 radio;
 
 // save transmission state between loops
@@ -46,8 +43,6 @@ extern volatile bool loraOperationDone;
 extern volatile bool interruptEnabled;
 // flag to indicate transmission or reception state
 extern bool transmitFlag;
-
-#endif
 
 void initLora();
 

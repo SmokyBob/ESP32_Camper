@@ -1,4 +1,5 @@
 #include "site.h"
+#include "globals.h"
 #include <AsyncElegantOTA.h>
 
 AsyncWebServer server(80);
@@ -8,6 +9,44 @@ void setWebHandles()
   server.serveStatic("/", LittleFS, "/"); // Try the FS first for static files
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(LittleFS, "/index.html", String(), false, nullptr); });
+
+  server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              String html = "";
+              File file = LittleFS.open("/config.html");
+              if (!file)
+              {
+                html = "";
+              }
+              else
+              {
+                html = file.readString();
+              }
+              file.close();
+              html += "<script>";
+
+              for (size_t i = 0; i < (sizeof(settings) / sizeof(setting)); i++)
+              {
+                String js = "addParam('{0}',{1},{2});";
+                js.replace("{0}", settings[i].name);
+                js.replace("{1}", String(i + CONFIG_SERVO_CLOSED_POS));
+                if (settings[i].name == "VDiv_Calib")
+                {
+                  js.replace("{2}", String(last_Voltage));
+                }
+                else
+                {
+                  js.replace("{2}", String(settings[i].value));
+                }
+                Serial.print("js: ");
+                Serial.println(js);
+                html += "\n" + js;
+              }
+
+              html += "</script>";
+
+              request->send(200, "text/html", html);
+            });
 
   server.onNotFound([](AsyncWebServerRequest *request)
                     { request->send(200, "text/plain", "File not found"); });
@@ -61,4 +100,4 @@ void initSite(AsyncWebSocket *webSocket)
   server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
 }
 
-//TODO: Config page funcitions
+// TODO: Config page funcitions

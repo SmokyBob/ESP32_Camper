@@ -41,6 +41,130 @@ void sendWebSocketMessage()
   webSocket->textAll(jsonString); // send the JSON object through the websocket
 }
 
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
+{
+  AwsFrameInfo *info = (AwsFrameInfo *)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
+  {
+    data[len] = 0;
+    String str = (char *)data;
+    Serial.print("ws command received: ");
+    Serial.println(str);
+
+    if (str == "resetParams")
+    {
+      resetPreferences();
+      return;
+    }
+
+    int posCommand = str.indexOf('?');
+    if (posCommand > 0)
+    {
+
+      int type = str.substring(0, posCommand).toInt();
+      // Remove type from string
+      str = str.substring(posCommand + 1);
+
+      do
+      {
+        int dataEnum = str.substring(0, str.indexOf('=')).toInt();
+        int idxValEnd = str.indexOf('&');
+        String dataVal;
+        if (idxValEnd > 0)
+        {
+          dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
+        }
+        else
+        {
+          dataVal = str.substring(str.indexOf('=') + 1);
+        }
+
+        if (type == COMMAND)
+        {
+          switch (dataEnum)
+          {
+          case WINDOW:
+            last_WINDOW = (dataVal.toInt() == 1);
+#ifdef Servo_pin
+            setWindow(last_WINDOW);
+#endif
+            break;
+          case RELAY1:
+            last_Relay1 = (dataVal.toInt() == 1);
+#ifdef Relay1_pin
+            setFan(last_Relay1);
+#endif
+            break;
+          case RELAY2:
+            last_Relay2 = (dataVal.toInt() == 1);
+#ifdef Relay2_pin
+            setHeater(last_Relay2);
+#endif
+            break;
+          case DATETIME:
+            last_DateTime = dataVal;
+            setTime(last_DateTime);
+            break;
+          }
+#ifdef SENSORS
+          // Force a lora send on next loop
+          lastLORASend = 0;
+#else
+          // TODO: send command to CAMPER using lora
+#endif
+        }
+#ifdef SENSORS
+        if (type == CONFIGS)
+        {
+          switch (dataEnum)
+          {
+          case CONFIG_SERVO_CLOSED_POS:
+            settings[0].value = dataVal.toFloat();
+            break;
+          case CONFIG_SERVO_OPEN_POS:
+            settings[1].value = dataVal.toFloat();
+            break;
+          case CONFIG_SERVO_CLOSED_TEMP:
+            settings[2].value = dataVal.toFloat();
+            break;
+          case CONFIG_SERVO_OPEN_TEMP:
+            settings[3].value = dataVal.toFloat();
+            break;
+          case CONFIG_VOLTAGE_ACTUAL:
+          {
+            // FOR debug
+            //  last_Voltage = 12;
+            float tmpVolt = last_Voltage * settings[4].value;
+
+            settings[4].value = dataVal.toFloat() / tmpVolt;
+            break;
+          }
+          case CONFIG_VOLTAGE_LIMIT:
+            settings[5].value = dataVal.toFloat();
+            break;
+          case CONFIG_VOLTAGE_SLEEP_MINUTES:
+            settings[6].value = dataVal.toFloat();
+            break;
+          }
+          savePreferences();
+        }
+#endif
+
+        // Remove the read data from the message
+        if (idxValEnd > 0)
+        {
+          str = str.substring(idxValEnd + 1);
+        }
+        else
+        {
+          str = "";
+        }
+        // Serial.println(str);
+      } while (str.indexOf('&') > 0);
+    }
+  }
+}
+
 void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
 {
   switch (type)
@@ -53,23 +177,8 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     Serial.printf("WebSocket client #%u disconnected\n", client->id());
     break;
   case WS_EVT_DATA:
-    // TODO: instead of post command, manage command received from UI
 #ifdef CAMPER
-    // TODO: parse and execute the command
-    // AwsFrameInfo *info = (AwsFrameInfo *)arg;
-    // if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
-    // {
-    //   data[len] = 0;
-    //   message = (char *)data;
-    //   steps = message.substring(0, message.indexOf("&"));
-    //   direction = message.substring(message.indexOf("&") + 1, message.length());
-    //   Serial.print("steps");
-    //   Serial.println(steps);
-    //   Serial.print("direction");
-    //   Serial.println(direction);
-    //   notifyClients(direction);
-    //   newRequest = true;
-    // }
+    handleWebSocketMessage(arg, data, len);
 #endif
 #ifdef HANDHELD
     // TODO: relay the command with LORA to the CAMPER
@@ -77,12 +186,13 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
 
     break;
   case WS_EVT_PONG:
+    break;
   case WS_EVT_ERROR:
     break;
   }
 }
 #endif
-unsigned long lastLORASend = 0;
+
 // LoRaData format:
 // String examples (0 = Sensor Data):
 //  0?enum.data.TEMP=36
@@ -130,6 +240,7 @@ void setup()
 
 #ifdef SENSORS
   initSensors();
+  loadPreferences();
 #endif
 #ifdef OLED
   initOled();
@@ -172,6 +283,7 @@ u_long webSockeUpdate = 0;
 
 void loop()
 {
+
 #ifdef WIFI_PWD
   // DNS
   dnsServer.processNextRequest(); // Captive Portal
@@ -179,6 +291,15 @@ void loop()
   // Update via websocket
   if ((u_long)(millis() - webSockeUpdate) >= 1000)
   {
+    if (last_DateTime.length() > 0)
+    {
+      struct tm timeinfo;
+      getLocalTime(&timeinfo);
+      char buf[100];
+      strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+      last_DateTime = String(buf);
+    }
     sendWebSocketMessage(); // Update the root page with the latest data
     webSockeUpdate = millis();
   }
@@ -196,9 +317,12 @@ void loop()
     currTemp = last_Ext_Temperature;
   }
 #endif
+
+  // TODO: automation with manual ovverride
 #ifdef Servo_pin
-  // TODO: use Automation Code; this is just a test
-  if (currTemp > 30)
+
+  // From settings
+  if (currTemp >= settings[3].value) // default 30
   {
     if (!last_WINDOW)
     {
@@ -207,7 +331,7 @@ void loop()
     }
   }
 
-  if (currTemp < 20)
+  if (currTemp <= settings[2].value) // default 20
   {
     if (last_WINDOW)
     {
@@ -216,6 +340,7 @@ void loop()
     }
   }
 #endif
+  // TODO: automation for FAN and HEATER
 
 #endif
 
@@ -226,18 +351,27 @@ void loop()
   // Serial.println("after OLED");
 
 #ifdef CAMPER
+  if (last_DateTime.length() > 0)
+  {
+    struct tm timeinfo;
+    getLocalTime(&timeinfo);
+    char buf[100];
+    strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+    last_DateTime = String(buf);
+  }
   sendLoRaSensors();
 #endif
   loraReceive(); // Always stay in receive mode to check if data/commands have been received
 
 #ifdef Voltage_pin
   // TODO: configurable in parameters showing the percent table as reference
-  float voltageLimit = 12.5;
-  // Sleep for 30 mins if voltage below 12.5v (14% for lifepo4 batteries)
+  float voltageLimit = settings[5].value;
+  // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
   if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug
   {
-    uint64_t hrSleepUs = (1 * 60 * 60 * 1000); // in milliseconds
-    hrSleepUs = hrSleepUs * 1000;              // in microseconds
+    uint64_t hrSleepUs = (1 * (settings[6].value) * 60 * 1000); // in milliseconds
+    hrSleepUs = hrSleepUs * 1000;                               // in microseconds
     esp_sleep_enable_timer_wakeup(hrSleepUs);
     esp_deep_sleep_start();
   }

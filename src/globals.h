@@ -1,7 +1,9 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include "Arduino.h"
+#ifdef SENSORS
 #include "Preferences.h"
+#endif
 
 enum data
 {
@@ -14,12 +16,20 @@ enum data
    RELAY1,
    RELAY2,
    EXT_TEMPERATURE,
-   EXT_HUMIDITY
+   EXT_HUMIDITY,
+   CONFIG_SERVO_CLOSED_POS,
+   CONFIG_SERVO_OPEN_POS,
+   CONFIG_SERVO_CLOSED_TEMP,
+   CONFIG_SERVO_OPEN_TEMP,
+   CONFIG_VOLTAGE_ACTUAL,
+   CONFIG_VOLTAGE_LIMIT,
+   CONFIG_VOLTAGE_SLEEP_MINUTES,
 };
 enum dataType
 {
    DATA,
-   COMMAND
+   COMMAND,
+   CONFIGS
 };
 
 extern u_long last_Millis;
@@ -43,5 +53,21 @@ struct batt_perc
 };
 
 extern batt_perc batt_perc_list[14];
+extern unsigned long lastLORASend;
 
+#ifdef SENSORS
+struct setting
+{
+   String name;
+   float value;
+};
+
+extern setting settings[7];
+
+void loadPreferences();
+void savePreferences();
+void resetPreferences();
+
+void setTime(String utcString);
+#endif
 #endif

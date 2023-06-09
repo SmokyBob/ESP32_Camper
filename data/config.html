@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="./truck.png">
+  <title>ESP Camper - Config</title>
+  <style>
+    .line {
+      width: 100%;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body style="height: 100%;width: 100%;">
+  <button onclick="Socket.send('resetParams');location.href='./config';">Reset</button>
+  <div id="params">
+    <!-- <div class="line">
+      <span>config1:</span>
+      <input type="number" id="as" class="params" name="0" value="123.00">
+    </div> -->
+  </div>
+  <button onclick="updateConfigs();">Save</button>
+</body>
+<script src="./app.js"></script>
+<script src="./config.js"></script>
+
+</html>

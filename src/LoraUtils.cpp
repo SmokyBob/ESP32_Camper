@@ -147,49 +147,50 @@ void loraReceive()
             dataVal = str.substring(str.indexOf('=') + 1);
           }
 
-          switch (dataEnum)
+          if (type == DATA)
           {
+            switch (dataEnum)
+            {
 #ifndef SENSORS
-          case TEMPERATURE:
-            last_Temperature = dataVal.toFloat();
-            break;
-          case HUMIDITY:
-            last_Humidity = dataVal.toFloat();
-            break;
-          case VOLTS:
-            last_Voltage = dataVal.toFloat();
-            break;
-          case WINDOW:
-            last_WINDOW = (dataVal.toInt() == 1);
-            break;
-          case RELAY1:
-            last_Relay1 = (dataVal.toInt() == 1);
-            break;
-          case RELAY2:
-            last_Relay2 = (dataVal.toInt() == 1);
-            break;
-          case EXT_TEMPERATURE:
-            last_Ext_Temperature = dataVal.toFloat();
-            break;
-          case EXT_HUMIDITY:
-            last_Ext_Humidity = dataVal.toFloat();
-            break;
+            case TEMPERATURE:
+              last_Temperature = dataVal.toFloat();
+              break;
+            case HUMIDITY:
+              last_Humidity = dataVal.toFloat();
+              break;
+            case VOLTS:
+              last_Voltage = dataVal.toFloat();
+              break;
+            case WINDOW:
+              last_WINDOW = (dataVal.toInt() == 1);
+              break;
+            case RELAY1:
+              last_Relay1 = (dataVal.toInt() == 1);
+              break;
+            case RELAY2:
+              last_Relay2 = (dataVal.toInt() == 1);
+              break;
+            case EXT_TEMPERATURE:
+              last_Ext_Temperature = dataVal.toFloat();
+              break;
+            case EXT_HUMIDITY:
+              last_Ext_Humidity = dataVal.toFloat();
+              break;
 #endif
-          case MILLIS:
-            last_Millis = dataVal.toInt();
-            break;
-          case DATETIME:
-            last_DateTime = dataVal;
-            break;
-            // TODO: altri Case
+            case MILLIS:
+              last_Millis = dataVal.toInt();
+              break;
+            case DATETIME:
+              last_DateTime = dataVal;
+              break;
 
-          default:
-            break;
+            default:
+              break;
+            }
           }
 
           if (type == COMMAND)
           {
-            // TODO: dopo aver eseguito il comando accodare "subito" l'invio di un messaggio
             switch (dataEnum)
             {
             case WINDOW:
@@ -212,9 +213,16 @@ void loraReceive()
               break;
             case DATETIME:
               last_DateTime = dataVal;
-              // TODO: Aggiornare il time del device
+              setTime(last_DateTime);
+              break;
             }
+#ifdef SENSORS
+            // Force a lora send on next loop
+            lastLORASend = 0;
+#endif
           }
+
+          // type == CONFIGS not used in lora message but only in UI config
 
           // Remove the read data from the message
           if (idxValEnd > 0)
@@ -226,7 +234,6 @@ void loraReceive()
             str = "";
           }
           // Serial.println(str);
-
         } while (str.indexOf('&') > 0);
       }
       last_SNR = radio.getSNR();

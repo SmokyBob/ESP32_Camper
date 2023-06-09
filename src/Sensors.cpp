@@ -30,7 +30,6 @@ void initSensors()
 #endif
 
 #ifdef Servo_pin
-  windowServo.attach(Servo_pin);
   // Init the window closed
   setWindow(false);
 #endif
@@ -67,7 +66,9 @@ float getVoltage()
            * (VDiv_Res_Calc   // Theorethical resistance calculated
               / VDiv_Res_Real // Real Installed resistance (Ex. 27k, or if you have not a 27k ... 20k + 5.1k + 2k in series )
               ) *
-           VDiv_Calibration;
+           settings[4].value; // VDiv_Calibration;
+
+  Serial.printf("Voltage: %.2f VDiv_Calibration:%.4f\n",result,settings[4].value);
 
   // Notes on VDiv_Calibration
   // Calibration calculated by measurement with a multimiter
@@ -116,14 +117,16 @@ void readSensors()
 
 #ifdef Servo_pin
 
-const int closePos = Servo_closed_pos;
-const int openPos = Servo_OPEN_pos;
-const int servoDegreeDelay = 5;
+int closePos = (int)settings[0].value;
+int openPos = (int)settings[1].value;
+int servoDegreeDelay = 5;
 
 int lastPos = -1;
 
 void setWindow(bool isOpen)
 {
+  windowServo.attach(Servo_pin); // attach servo
+
   Serial.printf("isOpen: %d lastPos: %d LastWindow %u\n", isOpen, lastPos, last_WINDOW);
   if (lastPos < 0)
   {
@@ -168,6 +171,8 @@ void setWindow(bool isOpen)
 
     Serial.printf("windowServo.read: %d\n", windowServo.read());
   }
+
+  windowServo.detach(); // detach to avoid jitter
 }
 #endif
 

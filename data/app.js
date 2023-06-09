@@ -15,10 +15,19 @@ function init() {
     timedOut = false;
   }, 5000);
 
+  Socket.onopen = function (event) {
+    //Send updated date from the device
+    var myDate = new Date(new Date().getTime() + (-1 * (new Date().getTimezoneOffset()) * 60 * 1000));
+    var str = "1?4=" + myDate.toISOString();
+    console.log(str);
+    Socket.send(str); //Send WS message for processing
+  }
+
   Socket.onmessage = function (event) {
     clearTimeout(timeout);
     processCommand(event);
   };
+
   Socket.onclose = function (e) {
     clearTimeout(timeout);
     console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
@@ -52,9 +61,14 @@ function prependToLog(message) {
   el.innerText = message;
 
   var log = document.getElementById('log');
-  log.insertBefore(el, log.firstChild);
+  if (log != null) {
+    log.insertBefore(el, log.firstChild);
+  }
+
 }
 
 window.onload = function (event) {
   init();
+
+
 }

@@ -23,6 +23,7 @@ void setWebHandles()
                 html = file.readString();
               }
               file.close();
+#ifdef SENSORS
               html += "<script>";
 
               for (size_t i = 0; i < (sizeof(settings) / sizeof(setting)); i++)
@@ -44,9 +45,8 @@ void setWebHandles()
               }
 
               html += "</script>";
-
-              request->send(200, "text/html", html);
-            });
+#endif
+              request->send(200, "text/html", html); });
 
   server.onNotFound([](AsyncWebServerRequest *request)
                     { request->send(200, "text/plain", "File not found"); });
@@ -99,5 +99,3 @@ void initSite(AsyncWebSocket *webSocket)
 
   server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
 }
-
-// TODO: Config page funcitions

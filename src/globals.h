@@ -68,6 +68,6 @@ void loadPreferences();
 void savePreferences();
 void resetPreferences();
 
-void setTime(String utcString);
 #endif
+void setTime(String utcString);
 #endif

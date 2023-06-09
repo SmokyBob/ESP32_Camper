@@ -51,12 +51,13 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
     Serial.print("ws command received: ");
     Serial.println(str);
 
+#ifdef SENSORS
     if (str == "resetParams")
     {
       resetPreferences();
       return;
     }
-
+#endif
     int posCommand = str.indexOf('?');
     if (posCommand > 0)
     {

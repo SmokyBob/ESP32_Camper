@@ -86,6 +86,8 @@ void resetPreferences()
     savePreferences();
 };
 
+#endif
+
 void setTime(String utcString)
 {
     // Read in timezone of format 2023-03-14T00:00:00.000Z
@@ -99,4 +101,3 @@ void setTime(String utcString)
     struct timeval now = {.tv_sec = t};
     settimeofday(&now, NULL);
 };
-#endif

@@ -24,8 +24,8 @@
 // 866.0 for Europe
 // 915.0 for North America
 #define BAND 868.0
-// TODO: see meshtastic AirTime check... to be legally compliant
-#define LORA_DC 10    // Wait Seconds to be safe on duty cycle LORA Usage
+
+#define LORA_DC 20    // Wait Seconds to be safe on duty cycle LORA Usage
 #define LORA_POWER 20 // dbi
 #define LORA_BANDWIDTH 62.5
 #define LORA_SPREDING_FACTOR 10

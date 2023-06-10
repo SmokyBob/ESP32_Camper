@@ -111,14 +111,15 @@ void loraReceive()
     // you can read received data as an Arduino String
     String str;
     int state = radio.readData(str); // TODO: struct instead of a human readable string? should be a smaller payload
-
-    Serial.print("receivedStr:");
-    Serial.println(str);
     // you can also read received data as byte array
     /*
       byte byteArr[8];
       int state = radio.readData(byteArr, 8);
     */
+
+    Serial.print("receivedStr:");
+    Serial.println(str);
+
     if (state == RADIOLIB_ERR_NONE)
     {
       // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
@@ -278,6 +279,7 @@ void loraSend(String message)
     }
     // Send message
     radio.startTransmit(message);
+    
     transmitFlag = true;
     // we're ready to send more packets,
     // enable interrupt service routine

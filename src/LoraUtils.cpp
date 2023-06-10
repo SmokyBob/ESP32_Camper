@@ -234,7 +234,7 @@ void loraReceive()
             str = "";
           }
           // Serial.println(str);
-        } while (str.indexOf('&') > 0);
+        } while (str.length() > 0);
       }
       last_SNR = radio.getSNR();
       last_RSSI = radio.getRSSI();

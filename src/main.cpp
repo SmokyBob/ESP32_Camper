@@ -161,7 +161,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
           str = "";
         }
         // Serial.println(str);
-      } while (str.indexOf('&') > 0);
+      } while (str.length() > 0);
     }
   }
 }

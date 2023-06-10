@@ -352,7 +352,7 @@ void drawHomePage()
   else
   {
     //Otherwise millis
-    snprintf(buf, sizeof(buf), "%u", last_Millis); // TODO: maybe last time? no day
+    snprintf(buf, sizeof(buf), "%u", last_Millis);
   }
 
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);

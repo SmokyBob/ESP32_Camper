@@ -5,7 +5,11 @@ function updateConfigs() {
   for (let index = 0; index < elems.length; index++) {
     const element = elems[index];
     str += element.name + "=";
-    str += element.value + "&";
+    if (element.id == "VDiv_Calib") {
+      str += element.value + "|" + element.attributes["data-value"] + "&";
+    } else {
+      str += element.value + "&";
+    }
   }
   str = str.substring(0, str.length - 1 - 1);//remove the last character
 
@@ -25,9 +29,11 @@ function addParam(name, enumerator, value) {
   elInput.className = "params";
   elInput.name = enumerator;
   elInput.value = value;
+  elInput.attributes["data-value"] = value
+
+  el.appendChild(label);
+  el.appendChild(elInput);
 
   var paramDiv = document.getElementById('params');
   paramDiv.appendChild(el);
-  paramDiv.appendChild(label);
-  paramDiv.appendChild(elInput);
 }

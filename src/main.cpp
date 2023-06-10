@@ -133,11 +133,11 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
             break;
           case CONFIG_VOLTAGE_ACTUAL:
           {
-            // FOR debug
-            //  last_Voltage = 12;
-            float tmpVolt = last_Voltage * settings[4].value;
+            float currVal = dataVal.substring(0, dataVal.indexOf('|')).toFloat();
+            float tmpVolt = dataVal.substring(dataVal.indexOf('|') + 1).toFloat();
+            tmpVolt = tmpVolt / settings[4].value;
 
-            settings[4].value = dataVal.toFloat() / tmpVolt;
+            settings[4].value = currVal / tmpVolt;
             break;
           }
           case CONFIG_VOLTAGE_LIMIT:

@@ -341,7 +341,20 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 112 + 11); // CLOCK Font
   // Text
   u8g2->setFont(text_Font);
-  snprintf(buf, sizeof(buf), "%u", last_Millis); // TODO: maybe last time? no day
+  //Show time of last message if available
+  if (last_DateTime.length() > 0)
+  {
+    struct tm tm;
+    strptime(last_DateTime.c_str(), "%FT%T", &tm);
+
+    strftime(buf, sizeof(buf), "%R", &tm); //HH:MM with seconds in detail page
+  }
+  else
+  {
+    //Otherwise millis
+    snprintf(buf, sizeof(buf), "%u", last_Millis); // TODO: maybe last time? no day
+  }
+
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
   row = 1;
@@ -566,7 +579,19 @@ void drawLoraPage()
   u8g2->drawGlyph(x, y + iconH, 336 + 8); // CLOCK Font
   // Text
   u8g2->setFont(text_Font);
-  snprintf(buf, sizeof(buf), "%u", last_Millis);
+  //Show time of last message if available
+  if (last_DateTime.length() > 0)
+  {
+    struct tm tm;
+    strptime(last_DateTime.c_str(), "%FT%T", &tm);
+
+    strftime(buf, sizeof(buf), "%T", &tm);
+  }
+  else
+  {
+    //Otherwise millis
+    snprintf(buf, sizeof(buf), "%u", last_Millis); // TODO: maybe last time? no day
+  }
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
   row = 2;

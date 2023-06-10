@@ -209,6 +209,15 @@ void sendLoRaSensors()
   // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
   if (millis() > (lastLORASend + (LORA_DC * 1000)))
   {
+    if (last_DateTime.length() > 0)
+    {
+      struct tm timeinfo;
+      getLocalTime(&timeinfo);
+      char buf[100];
+      strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+      last_DateTime = String(buf);
+    }
     String LoRaMessage = String(DATA) + "?";
     LoRaMessage += String(MILLIS) + "=" + String(millis()) + "&";
 #ifdef SENSORS
@@ -292,16 +301,19 @@ void loop()
   // Update via websocket
   if ((u_long)(millis() - webSockeUpdate) >= 1000)
   {
-    if (last_DateTime.length() > 0)
+    if (webSocket->getClients().length() > 0)
     {
-      struct tm timeinfo;
-      getLocalTime(&timeinfo);
-      char buf[100];
-      strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+      if (last_DateTime.length() > 0)
+      {
+        struct tm timeinfo;
+        getLocalTime(&timeinfo);
+        char buf[100];
+        strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-      last_DateTime = String(buf);
+        last_DateTime = String(buf);
+      }
+      sendWebSocketMessage(); // Update the root page with the latest data
     }
-    sendWebSocketMessage(); // Update the root page with the latest data
     webSockeUpdate = millis();
   }
   // Serial.println("after ws");
@@ -352,15 +364,7 @@ void loop()
   // Serial.println("after OLED");
 
 #ifdef CAMPER
-  if (last_DateTime.length() > 0)
-  {
-    struct tm timeinfo;
-    getLocalTime(&timeinfo);
-    char buf[100];
-    strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-    last_DateTime = String(buf);
-  }
   sendLoRaSensors();
 #endif
   loraReceive(); // Always stay in receive mode to check if data/commands have been received

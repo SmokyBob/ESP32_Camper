@@ -163,7 +163,7 @@ void click()
   }
   else
   {
-    // TODO: highlight next control
+    // Move to next control
     _controlSelected++;
     if (_controlSelected > 2)
     {
@@ -590,7 +590,7 @@ void drawLoraPage()
   else
   {
     //Otherwise millis
-    snprintf(buf, sizeof(buf), "%u", last_Millis); // TODO: maybe last time? no day
+    snprintf(buf, sizeof(buf), "%u", last_Millis);
   }
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 

@@ -59,6 +59,7 @@ extern unsigned long lastLORASend;
 struct setting
 {
    String name;
+   String description;
    float value;
 };
 

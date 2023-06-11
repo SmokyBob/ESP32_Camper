@@ -18,15 +18,17 @@ function updateConfigs() {
   Socket.send(str); //Send WS message for processing
 }
 
-function addParam(name, enumerator, value) {
+function addParam(name,desc, enumerator, value) {
   var el = document.createElement("div");
   el.className = "line";
   var label = document.createElement("span");
-  label.innerText = name;
+  label.innerText = desc + ":";
+  label.style.display = "table-cell";
   var elInput = document.createElement("input");
   elInput.type = "number";
   elInput.id = name;
   elInput.className = "params";
+  elInput.style.display = "table-cell";
   elInput.name = enumerator;
   elInput.value = value;
   elInput.attributes["data-value"] = value

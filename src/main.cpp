@@ -135,9 +135,13 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
           {
             float currVal = dataVal.substring(0, dataVal.indexOf('|')).toFloat();
             float tmpVolt = dataVal.substring(dataVal.indexOf('|') + 1).toFloat();
-            tmpVolt = tmpVolt / settings[4].value;
 
-            settings[4].value = currVal / tmpVolt;
+            if (currVal != tmpVolt)
+            {
+              tmpVolt = tmpVolt / settings[4].value;
+
+              settings[4].value = currVal / tmpVolt;
+            }
             break;
           }
           case CONFIG_VOLTAGE_LIMIT:
@@ -249,8 +253,8 @@ void setup()
   Serial.begin(115200);
 
 #ifdef SENSORS
-  initSensors();
   loadPreferences();
+  initSensors();
 #endif
 #ifdef OLED
   initOled();
@@ -322,34 +326,40 @@ void loop()
 #endif
 #ifdef SENSORS
   readSensors();
-  float currTemp;
-  currTemp = last_Temperature;
+  float currTemp = -1000;
+
 #ifdef EXT_DHT22_pin
   if (isnan(last_Ext_Temperature) != true)
   {
     currTemp = last_Ext_Temperature;
   }
+#else
+  currTemp = last_Temperature;
 #endif
 
   // TODO: automation with manual ovverride
 #ifdef Servo_pin
-
-  // From settings
-  if (currTemp >= settings[3].value) // default 30
+  if (currTemp > -1000)
   {
-    if (!last_WINDOW)
+    // From settings
+    if (currTemp >= settings[3].value) // default 30
     {
-      // Open the window
-      setWindow(true);
+
+      if (!last_WINDOW)
+      {
+        // Open the window
+        setWindow(true);
+      }
     }
-  }
 
-  if (currTemp <= settings[2].value) // default 20
-  {
-    if (last_WINDOW)
+    if (currTemp <= settings[2].value) // default 20
     {
-      // Close the window
-      setWindow(false);
+
+      if (last_WINDOW)
+      {
+        // Close the window
+        setWindow(false);
+      }
     }
   }
 #endif

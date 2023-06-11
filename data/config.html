@@ -10,20 +10,85 @@
   <style>
     .line {
       width: 100%;
-      display: inline-block;
+      display: table-row;
     }
   </style>
 </head>
 
 <body style="height: 100%;width: 100%;">
   <button onclick="Socket.send('resetParams');location.href='./config';">Reset</button>
-  <div id="params">
-    <!-- <div class="line">
-      <span>config1:</span>
-      <input type="number" id="as" class="params" name="0" value="123.00">
-    </div> -->
+  <div style="width: 100%;display: inline-flex;">
+    <div id="params" style="width: 500px;display: table; float: left;">
+      <div class="line">
+        <span style="display: table-cell; font-weight: bold;">Param&nbsp;</span>
+        <span style="display: table-cell; font-weight: bold;">Value</span>
+      </div>
+    </div>
+    <div style="display: table; float: left;">
+      <div class="line">
+        <span style="display: table-cell; font-weight: bold;">VOLTAGE&nbsp;</span>
+        <span style="display: table-cell; font-weight: bold;">Percentage</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.60</span>
+        <span style="display: table-cell;">100%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.40</span>
+        <span style="display: table-cell;">99%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.32</span>
+        <span style="display: table-cell;">90%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.28</span>
+        <span style="display: table-cell;">80%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.20</span>
+        <span style="display: table-cell;">70%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.16</span>
+        <span style="display: table-cell;">60%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.13</span>
+        <span style="display: table-cell;">50%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.10</span>
+        <span style="display: table-cell;">40%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">13.00</span>
+        <span style="display: table-cell;">30%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">12.90</span>
+        <span style="display: table-cell;">20%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">12.80</span>
+        <span style="display: table-cell;">17%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">12.50</span>
+        <span style="display: table-cell;">14%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">12.00</span>
+        <span style="display: table-cell;">9%</span>
+      </div>
+      <div class="line">
+        <span style="display: table-cell;">10.00</span>
+        <span style="display: table-cell;">0%</span>
+      </div>
+    </div>
   </div>
-  <button onclick="updateConfigs();">Save</button>
+
+  <button onclick="updateConfigs();;location.href='./config';">Save</button>
 </body>
 <script src="./app.js"></script>
 <script src="./config.js"></script>

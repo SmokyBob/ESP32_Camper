@@ -34,13 +34,13 @@ unsigned long lastLORASend = 0;
 
 #ifdef SENSORS
 setting settings[7]{
-    {"ServoPosClosed", Servo_closed_pos},
-    {"ServoPosOpen", Servo_OPEN_pos},
-    {"ServoTempClosed", 20},
-    {"ServoTempOpen", 30},
-    {"VDiv_Calib", VDiv_Calibration},
-    {"voltageLimit", 12.00},
-    {"lowVoltSleepMin", 30.00},
+    {"ServoPosClosed","Window Closed (servo degs)", Servo_closed_pos},
+    {"ServoPosOpen","Window OPEN (servo degs)", Servo_OPEN_pos},
+    {"ServoTempClosed","Window Closed (temp)", 20},
+    {"ServoTempOpen","Window OPEN (temp)", 30},
+    {"VDiv_Calib","Current voltage for calibration", VDiv_Calibration},
+    {"voltageLimit","Low Voltage (init sleep)", 12.00},
+    {"lowVoltSleepMin","Sleep time on Low Voltage (minutes)", 30.00},
 };
 
 Preferences prf_config;

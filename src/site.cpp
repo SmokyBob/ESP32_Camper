@@ -28,8 +28,9 @@ void setWebHandles()
 
               for (size_t i = 0; i < (sizeof(settings) / sizeof(setting)); i++)
               {
-                String js = "addParam('{0}',{1},{2});";
+                String js = "addParam('{0}','{3}',{1},{2});";
                 js.replace("{0}", settings[i].name);
+                js.replace("{3}", settings[i].description);
                 js.replace("{1}", String(i + CONFIG_SERVO_CLOSED_POS));
                 if (settings[i].name == "VDiv_Calib")
                 {

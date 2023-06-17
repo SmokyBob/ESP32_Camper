@@ -24,6 +24,7 @@ enum data
    CONFIG_VOLTAGE_ACTUAL,
    CONFIG_VOLTAGE_LIMIT,
    CONFIG_VOLTAGE_SLEEP_MINUTES,
+   CONFIG_ENABLE_AUTOMATION,
 };
 enum dataType
 {
@@ -63,7 +64,7 @@ struct setting
    float value;
 };
 
-extern setting settings[7];
+extern setting settings[8];
 
 void loadPreferences();
 void savePreferences();

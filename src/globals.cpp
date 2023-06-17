@@ -33,14 +33,15 @@ batt_perc batt_perc_list[14] = {
 unsigned long lastLORASend = 0;
 
 #ifdef SENSORS
-setting settings[7]{
-    {"ServoPosClosed","Window Closed (servo degs)", Servo_closed_pos},
-    {"ServoPosOpen","Window OPEN (servo degs)", Servo_OPEN_pos},
-    {"ServoTempClosed","Window Closed (temp)", 20},
-    {"ServoTempOpen","Window OPEN (temp)", 30},
+setting settings[8]{
+    {"ServoPosClosed","AUTOMATION: Window Closed (servo degs)", Servo_closed_pos},
+    {"ServoPosOpen","AUTOMATION: Window OPEN (servo degs)", Servo_OPEN_pos},
+    {"ServoTempClosed","AUTOMATION: Window Closed (temp)", 20},
+    {"ServoTempOpen","AUTOMATION: Window OPEN (temp)", 30},
     {"VDiv_Calib","Current voltage for calibration", VDiv_Calibration},
     {"voltageLimit","Low Voltage (init sleep)", 12.00},
     {"lowVoltSleepMin","Sleep time on Low Voltage (minutes)", 30.00},
+    {"bAutomation","Enable automation",0.00}//default false
 };
 
 Preferences prf_config;
@@ -56,6 +57,7 @@ void loadPreferences()
     settings[4].value = prf_config.getFloat("VDiv_Calib", VDiv_Calibration);
     settings[5].value = prf_config.getFloat("voltageLimit", 12.00);
     settings[6].value = prf_config.getFloat("lowVoltSleepMin", 30.00);
+    settings[7].value = prf_config.getFloat("bAutomation", 0.00);
 
     prf_config.end();
 };
@@ -82,6 +84,7 @@ void resetPreferences()
     settings[4].value = VDiv_Calibration;
     settings[5].value = 12.00;
     settings[6].value = 30.00;
+    settings[7].value = 0.00;
 
     savePreferences();
 };

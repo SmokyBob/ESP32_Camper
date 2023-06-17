@@ -68,7 +68,7 @@ float getVoltage()
               ) *
            settings[4].value; // VDiv_Calibration;
 
-  Serial.printf("Voltage: %.2f VDiv_Calibration:%.4f\n",result,settings[4].value);
+  Serial.printf("Voltage: %.2f VDiv_Calibration:%.4f\n", result, settings[4].value);
 
   // Notes on VDiv_Calibration
   // Calibration calculated by measurement with a multimiter
@@ -135,7 +135,7 @@ void setWindow(bool isOpen)
   }
   if (lastPos < 0)
   {
-    // if still 0 set to 0
+    // if still < 0 set to 0
     lastPos = 0;
   }
 

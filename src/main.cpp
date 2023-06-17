@@ -7,6 +7,7 @@
 #endif
 #ifdef SENSORS
 #include "Sensors.h"
+#include "automation.h"
 #else
 #include "RemoteXY.h"
 #endif
@@ -28,13 +29,13 @@ void sendWebSocketMessage()
   jsonString += "\"millis\":\"" + String(last_Millis) + "\",";
   jsonString += "\"temperature\":\"" + String(last_Temperature) + "\",";
   jsonString += "\"humidity\":\"" + String(last_Humidity) + "\",";
+  jsonString += "\"ext_temperature\":\"" + String(last_Ext_Temperature) + "\",";
+  jsonString += "\"ext_humidity\":\"" + String(last_Ext_Humidity) + "\",";
   jsonString += "\"voltage\":\"" + String(last_Voltage) + "\",";
   jsonString += "\"datetime\":\"" + String(last_DateTime) + "\",";
   jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
   jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
   jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
-  jsonString += "\"ext_temperature\":\"" + String(last_Ext_Temperature) + "\",";
-  jsonString += "\"ext_humidity\":\"" + String(last_Ext_Humidity) + "\",";
 
   jsonString += "\"dummy\":null}";
 
@@ -150,6 +151,12 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
           case CONFIG_VOLTAGE_SLEEP_MINUTES:
             settings[6].value = dataVal.toFloat();
             break;
+          case CONFIG_ENABLE_AUTOMATION:
+            Serial.print("CONFIG_ENABLE_AUTOMATION:");
+            Serial.println(dataVal);
+            settings[7].value = dataVal.toFloat();
+            break;
+            ;
           }
           savePreferences();
         }
@@ -326,47 +333,13 @@ void loop()
 #endif
 #ifdef SENSORS
   readSensors();
-  float currTemp = -1000;
+#endif
 
-#ifdef EXT_DHT22_pin
-  if (isnan(last_Ext_Temperature) != true)
+  //Run automation if enabled in settings
+  if (settings[7].value > 0.00)
   {
-    currTemp = last_Ext_Temperature;
+    runAutomation();
   }
-#else
-  currTemp = last_Temperature;
-#endif
-
-  // TODO: automation with manual ovverride
-#ifdef Servo_pin
-  if (currTemp > -1000)
-  {
-    // From settings
-    if (currTemp >= settings[3].value) // default 30
-    {
-      if (!last_WINDOW)
-      {
-
-        webSocket->textAll("LastWindow: " + String(last_WINDOW) + " set to Open = 1");
-        // Open the window
-        setWindow(true);
-      }
-    }
-
-    if (currTemp <= settings[2].value) // default 20
-    {
-      if (last_WINDOW)
-      {
-        webSocket->textAll("LastWindow: " + String(last_WINDOW) + " set to Closed = 0");
-        // Close the window
-        setWindow(false);
-      }
-    }
-  }
-#endif
-  // TODO: automation for FAN and HEATER
-
-#endif
 
 #if OLED
   // update display with data of the current page
@@ -383,7 +356,7 @@ void loop()
 #ifdef Voltage_pin
   // TODO: configurable in parameters showing the percent table as reference
   float voltageLimit = settings[5].value;
-  if (settings[6].value > 0)//Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
+  if (settings[6].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
   {
     // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
     if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug

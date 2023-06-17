@@ -38,9 +38,9 @@ void drawDeepSleep();
 struct menu_entry_type menu_entry_list[] =
     {
         {CONFIG_ICONS_FONT, 57840 + 0, "Home", drawHomePage},
+        {CONFIG_ICONS_FONT, 57408 + 0, "Voltage", drawVoltagePage},
         {CONFIG_ICONS_FONT, 57376 - 3, "Temperature", drawTemperaturePage},
         {CONFIG_ICONS_FONT, 57824 + 4, "Humidity", drawHumidityPage},
-        {CONFIG_ICONS_FONT, 57408 + 0, "Voltage", drawVoltagePage},
         {CONFIG_ICONS_FONT, 58032 + 5, "LORA Status", drawLoraPage},
         {CONFIG_ICONS_FONT, 57504 - 1, "Servo and Relays", drawControlsPage},
         {NULL, 0, NULL, drawNothing}};

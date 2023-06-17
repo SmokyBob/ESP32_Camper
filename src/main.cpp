@@ -344,9 +344,10 @@ void loop()
     // From settings
     if (currTemp >= settings[3].value) // default 30
     {
-
       if (!last_WINDOW)
       {
+
+        webSocket->textAll("LastWindow: " + String(last_WINDOW) + " set to Open = 1");
         // Open the window
         setWindow(true);
       }
@@ -354,9 +355,9 @@ void loop()
 
     if (currTemp <= settings[2].value) // default 20
     {
-
       if (last_WINDOW)
       {
+        webSocket->textAll("LastWindow: " + String(last_WINDOW) + " set to Closed = 0");
         // Close the window
         setWindow(false);
       }
@@ -382,13 +383,16 @@ void loop()
 #ifdef Voltage_pin
   // TODO: configurable in parameters showing the percent table as reference
   float voltageLimit = settings[5].value;
-  // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
-  if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug
+  if (settings[6].value > 0)//Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
   {
-    uint64_t hrSleepUs = (1 * (settings[6].value) * 60 * 1000); // in milliseconds
-    hrSleepUs = hrSleepUs * 1000;                               // in microseconds
-    esp_sleep_enable_timer_wakeup(hrSleepUs);
-    esp_deep_sleep_start();
+    // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
+    if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug
+    {
+      uint64_t hrSleepUs = (1 * (settings[6].value) * 60 * 1000); // in milliseconds
+      hrSleepUs = hrSleepUs * 1000;                               // in microseconds
+      esp_sleep_enable_timer_wakeup(hrSleepUs);
+      esp_deep_sleep_start();
+    }
   }
 #endif
   // Serial.println("after receive");

@@ -15,6 +15,8 @@
 #ifdef WIFI_PWD
 #include "site.h"
 #include <DNSServer.h>
+#include "esp_wifi.h"
+#include "driver/adc.h"
 
 DNSServer dnsServer;
 const byte DNS_PORT = 53;
@@ -269,10 +271,12 @@ void setup()
   initLora();
 
 #ifdef WIFI_PWD
+  
   // Init Wifi
   String SSID = "ESP32 " + String(DEVICE_NAME);
   //  Start AP MODE
   WiFi.softAP(SSID.c_str(), String(WIFI_PWD));
+  // esp_wifi_start();
   String tmpDN = "esp32-" + String(DEVICE_NAME);
   if (!MDNS.begin(tmpDN.c_str()))
   {
@@ -335,7 +339,7 @@ void loop()
   readSensors();
 #endif
 
-  //Run automation if enabled in settings
+  // Run automation if enabled in settings
   if (settings[7].value > 0.00)
   {
     runAutomation();
@@ -363,6 +367,13 @@ void loop()
     {
       uint64_t hrSleepUs = (1 * (settings[6].value) * 60 * 1000); // in milliseconds
       hrSleepUs = hrSleepUs * 1000;                               // in microseconds
+#ifdef WIFI_PWD
+      // do many stuff
+      WiFi.mode(WIFI_MODE_NULL);
+      // comment one or both following lines and measure deep sleep current
+      esp_wifi_stop(); // you must do esp_wifi_start() the next time you'll need wifi or esp32 will crash
+      adc_power_release();
+#endif
       esp_sleep_enable_timer_wakeup(hrSleepUs);
       esp_deep_sleep_start();
     }

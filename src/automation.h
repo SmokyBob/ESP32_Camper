@@ -2,6 +2,7 @@
 #define AUTOMATION_H
 
 #include "globals.h"
+#include "Sensors.h"
 
 void runAutomation();
 

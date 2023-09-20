@@ -32,16 +32,26 @@ batt_perc batt_perc_list[14] = {
 
 unsigned long lastLORASend = 0;
 
-#ifdef SENSORS
+#if defined(CAMPER) || defined(EXT_SENSORS)
+//Redefine default value for MCU without these values, just to keep settings consistents on init
+#ifndef VDiv_Calibration
+#define VDiv_Calibration 1.0555
+#endif
+#ifndef Servo_closed_pos
+#define Servo_closed_pos 40
+#endif
+#ifndef Servo_OPEN_pos
+#define Servo_OPEN_pos 175
+#endif
 setting settings[8]{
-    {"ServoPosClosed","AUTOMATION: Window Closed (servo degs)", Servo_closed_pos},
-    {"ServoPosOpen","AUTOMATION: Window OPEN (servo degs)", Servo_OPEN_pos},
-    {"ServoTempClosed","AUTOMATION: Window Closed (temp)", 20},
-    {"ServoTempOpen","AUTOMATION: Window OPEN (temp)", 30},
-    {"VDiv_Calib","Current voltage for calibration", VDiv_Calibration},
-    {"voltageLimit","Low Voltage (init sleep)", 12.00},
-    {"lowVoltSleepMin","Sleep time on Low Voltage (minutes)", 30.00},
-    {"bAutomation","Enable automation",0.00}//default false
+    {"ServoPosClosed", "AUTOMATION: Window Closed (servo degs)", Servo_closed_pos},
+    {"ServoPosOpen", "AUTOMATION: Window OPEN (servo degs)", Servo_OPEN_pos},
+    {"ServoTempClosed", "AUTOMATION: Window Closed (temp)", 20},
+    {"ServoTempOpen", "AUTOMATION: Window OPEN (temp)", 30},
+    {"VDiv_Calib", "Current voltage for calibration", VDiv_Calibration},
+    {"voltageLimit", "Low Voltage (init sleep)", 12.00},
+    {"lowVoltSleepMin", "Sleep time on Low Voltage (minutes)", 30.00},
+    {"bAutomation", "Enable automation", 0.00} // default false
 };
 
 Preferences prf_config;

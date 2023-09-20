@@ -1,5 +1,6 @@
+#if defined(CAMPER) || defined(HANDHELD)
 #include "OledUtil.h"
-#ifdef SENSORS
+#if defined(CAMPER)
 #include "Sensors.h"
 #else
 #include "LoraUtils.h"
@@ -189,8 +190,9 @@ void doubleClick()
     switch (_controlSelected)
     {
     case 0:
-#ifdef SENSORS
-      setWindow(!last_WINDOW);
+#if defined(CAMPER) 
+      // setWindow(!last_WINDOW);
+      //TODO: call EXT_SENSORS API to send the command
 #else
       // send lora command
       LoRaMessage = String(COMMAND) + "?";
@@ -202,8 +204,9 @@ void doubleClick()
       break;
     case 1:
       last_Relay1 = !last_Relay1;
-#ifdef SENSORS
-      setFan(last_Relay1);
+#if defined(CAMPER)
+      // setFan(last_Relay1);
+      //TODO: call EXT_SENSORS API to send the command
 #else
 
       // send lora command
@@ -216,8 +219,9 @@ void doubleClick()
       break;
     case 2:
       last_Relay2 = !last_Relay2;
-#ifdef SENSORS
-      setHeater(last_Relay2);
+#if defined(CAMPER)
+      //setHeater(last_Relay2);
+      //TODO: call EXT_SENSORS API to send the command
 #else
       // send lora command
       LoRaMessage = String(COMMAND) + "?";
@@ -754,3 +758,4 @@ void drawPage()
     lastDraw = millis();
   }
 };
+#endif

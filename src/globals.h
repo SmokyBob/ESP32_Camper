@@ -1,7 +1,7 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include "Arduino.h"
-#ifdef SENSORS
+#if defined(CAMPER) || defined(EXT_SENSORS)
 #include "Preferences.h"
 #endif
 
@@ -25,6 +25,8 @@ enum data
    CONFIG_VOLTAGE_LIMIT,
    CONFIG_VOLTAGE_SLEEP_MINUTES,
    CONFIG_ENABLE_AUTOMATION,
+   //TODO: config fan on/off temps
+   //TODO: config heater on/off temps
 };
 enum dataType
 {
@@ -56,7 +58,7 @@ struct batt_perc
 extern batt_perc batt_perc_list[14];
 extern unsigned long lastLORASend;
 
-#ifdef SENSORS
+#if defined(CAMPER) || defined(EXT_SENSORS)
 struct setting
 {
    String name;

@@ -10,6 +10,8 @@
 #endif
 #include <ESPAsyncWebServer.h>
 
+#if defined(CAMPER) || defined(HANDHELD)
 #include <LittleFS.h>
+#endif
 
 void initSite(AsyncWebSocket *webSocket);

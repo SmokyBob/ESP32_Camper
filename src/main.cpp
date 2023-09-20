@@ -1,16 +1,19 @@
 #include <Arduino.h>
 #include "globals.h"
 
+#if defined(CAMPER) || defined(HANDHELD)
 #include "LoraUtils.h"
+#endif
 #ifdef OLED
 #include "OledUtil.h"
 #endif
-#ifdef SENSORS
+#if defined(CAMPER) || defined(EXT_SENSORS)
 #include "Sensors.h"
 #include "automation.h"
-#else
-#include "RemoteXY.h"
 #endif
+// #ifdef BLE_APP
+// #include "RemoteXYUtils.h" //TODO: build fails, try to understand why
+// #endif
 
 #ifdef WIFI_PWD
 #include "site.h"
@@ -54,7 +57,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
     Serial.print("ws command received: ");
     Serial.println(str);
 
-#ifdef SENSORS
+#if defined(CAMPER) || defined(EXT_SENSORS)
     if (str == "resetParams")
     {
       resetPreferences();
@@ -110,14 +113,15 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
             setTime(last_DateTime);
             break;
           }
-#ifdef SENSORS
+#if defined(CAMPER)
           // Force a lora send on next loop
           lastLORASend = 0;
-#else
+          // TODO: send command to EXT_SENSORS via API call
+#elif defined(HANDHELD)
           // TODO: send command to CAMPER using lora
 #endif
         }
-#ifdef SENSORS
+#if defined(CAMPER) || defined(EXT_SENSORS)
         if (type == CONFIGS)
         {
           switch (dataEnum)
@@ -207,6 +211,7 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
 }
 #endif
 
+#if defined(CAMPER) || defined(HANDHELD)
 // LoRaData format:
 // String examples (0 = Sensor Data):
 //  0?enum.data.TEMP=36
@@ -233,7 +238,7 @@ void sendLoRaSensors()
     }
     String LoRaMessage = String(DATA) + "?";
     LoRaMessage += String(MILLIS) + "=" + String(millis()) + "&";
-#ifdef SENSORS
+#if defined(CAMPER)
     LoRaMessage += String(TEMPERATURE) + "=" + String(last_Temperature) + "&";
     LoRaMessage += String(HUMIDITY) + "=" + String(last_Humidity) + "&";
     LoRaMessage += String(VOLTS) + "=" + String(last_Voltage) + "&";
@@ -256,22 +261,26 @@ void sendLoRaSensors()
     lastLORASend = millis();
   }
 }
+#endif
 
 void setup()
 {
   Serial.begin(115200);
 
-#ifdef SENSORS
+#if defined(CAMPER) || defined(EXT_SENSORS)
   loadPreferences();
   initSensors();
 #endif
 #ifdef OLED
   initOled();
 #endif
+#if defined(CAMPER) || defined(HANDHELD)
   initLora();
+#endif
 
 #ifdef WIFI_PWD
-  
+
+#if defined(CAMPER) || defined(HANDHELD)
   // Init Wifi
   String SSID = "ESP32 " + String(DEVICE_NAME);
   //  Start AP MODE
@@ -294,14 +303,44 @@ void setup()
   /* Setup the DNS server redirecting all the domains to the apIP */
   dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+#else
 
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(String("ESP32 CAMPER").c_str(), String(WIFI_PWD).c_str());
+
+  unsigned long connectTimeout = millis();
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(F("."));
+    if ((millis() - connectTimeout) > (5 * 60 * 1000))
+    {
+      Serial.println("Wifi Not connected with ssid: "
+                     "ESP32 CAMPER"
+                     " ! Force AP Mode");
+      break;
+    }
+  }
+  Serial.println(F(""));
+  Serial.println(F("IP address: "));
+  Serial.println(WiFi.localIP());
+
+#endif
+
+#if defined(CAMPER) || defined(HANDHELD)
   // Init Websocket
   webSocket = new AsyncWebSocket("/ws");
   webSocket->onEvent(onWebSocketEvent); // Register WS event handler
-
-  // init the rest of the site
-  initSite(webSocket);
 #endif
+
+  // init the rest of the site / API /OTA
+  initSite(webSocket);
+
+#endif
+  // #ifdef BLE_APP
+  //   BLE_APP_setup();//TODO: build fails, try to understand why
+  // #endif
 }
 
 u_long webSockeUpdate = 0;
@@ -310,6 +349,7 @@ void loop()
 {
 
 #ifdef WIFI_PWD
+#if defined(CAMPER) || defined(HANDHELD)
   // DNS
   dnsServer.processNextRequest(); // Captive Portal
 
@@ -335,15 +375,17 @@ void loop()
 
   webSocket->cleanupClients();
 #endif
-#ifdef SENSORS
+#endif
+#if defined(CAMPER) || defined(EXT_SENSORS)
   readSensors();
 #endif
-
+#ifdef CAMPER
   // Run automation if enabled in settings
   if (settings[7].value > 0.00)
   {
     runAutomation();
   }
+#endif
 
 #if OLED
   // update display with data of the current page
@@ -352,10 +394,12 @@ void loop()
   // Serial.println("after OLED");
 
 #ifdef CAMPER
-
   sendLoRaSensors();
 #endif
+
+#if defined(CAMPER) || defined(HANDHELD)
   loraReceive(); // Always stay in receive mode to check if data/commands have been received
+#endif
 
 #ifdef Voltage_pin
   // TODO: configurable in parameters showing the percent table as reference
@@ -380,4 +424,7 @@ void loop()
   }
 #endif
   // Serial.println("after receive");
+  // #ifdef BLE_APP
+  //   BLE_APP_loop(); //TODO: build fails, try to understand why
+  // #endif
 }

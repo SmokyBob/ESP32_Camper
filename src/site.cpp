@@ -6,6 +6,7 @@ AsyncWebServer server(80);
 
 void setWebHandles()
 {
+#if defined(CAMPER) || defined(HANDHELD)
   server.serveStatic("/", LittleFS, "/"); // Try the FS first for static files
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(LittleFS, "/index.html", String(), false, nullptr); });
@@ -23,7 +24,7 @@ void setWebHandles()
                 html = file.readString();
               }
               file.close();
-#ifdef SENSORS
+#if defined(CAMPER)
               html += "<script>";
 
               for (size_t i = 0; i < (sizeof(settings) / sizeof(setting)); i++)
@@ -48,11 +49,12 @@ void setWebHandles()
               html += "</script>";
 #endif
               request->send(200, "text/html", html); });
-
+#endif
+  // TODO: API Endpoints
   server.onNotFound([](AsyncWebServerRequest *request)
                     { request->send(200, "text/plain", "File not found"); });
 }
-
+#if defined(CAMPER) || defined(HANDHELD)
 class CaptiveRequestHandler : public AsyncWebHandler
 {
 public:
@@ -78,25 +80,31 @@ public:
     request->send(response);
   }
 };
-
+#endif
 void initSite(AsyncWebSocket *webSocket)
 {
+#if defined(CAMPER) || defined(HANDHELD)
   if (!LittleFS.begin(true))
   {
     Serial.println(F("An Error has occurred while mounting LittleFS"));
     return;
   }
-
+#endif
   Serial.println(F("Setting handlers"));
 
   setWebHandles();
 
+#if defined(CAMPER) || defined(HANDHELD)
   // Commands managed via websocket
   server.addHandler(webSocket);
+#endif
+  Serial.println(F("Start OTA"));
   // Start AsyncElegantOTA
   AsyncElegantOTA.begin(&server);
+
   // Start webserver
   server.begin();
-
+#if defined(CAMPER) || defined(HANDHELD)
   server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER); // only when requested from AP
+#endif
 }

@@ -1,17 +1,17 @@
+#if defined(CAMPER) || defined(EXT_SENSORS)
 #include "Arduino.h"
-#ifdef SENSORS
 #include "Sensors.h"
 #include "esp_adc_cal.h"
 
-#ifdef DHT11_pin
-SimpleDHT11 *dht11;
+#ifdef DHT22_pin
+SimpleDHT22 *int_dht22;
 #endif
 #ifdef Servo_pin
 Servo windowServo;
 #endif
 
 #ifdef EXT_DHT22_pin
-SimpleDHT22 *dht22;
+SimpleDHT22 *ext_dht22;
 
 #endif
 
@@ -19,8 +19,8 @@ float _vref = 1100;
 
 void initSensors()
 {
-#ifdef DHT11_pin
-  dht11 = new SimpleDHT11(DHT11_pin);
+#ifdef DHT22_pin
+  int_dht22 = new SimpleDHT22(DHT22_pin);
 #endif
 
 #ifdef Voltage_pin
@@ -45,7 +45,7 @@ void initSensors()
 #endif
 
 #ifdef EXT_DHT22_pin
-  dht22 = new SimpleDHT22(EXT_DHT22_pin);
+  ext_dht22 = new SimpleDHT22(EXT_DHT22_pin);
 #endif
 };
 
@@ -87,27 +87,32 @@ void readSensors()
   if (millis() > lastCheck + maxSensorsPool)
   {
     int err = SimpleDHTErrSuccess;
-#ifdef DHT11_pin
+#ifdef DHT22_pin
 
-    if ((err = dht11->read2(&last_Temperature, &last_Humidity, NULL)) != SimpleDHTErrSuccess)
+    if ((err = int_dht22->read2(&last_Temperature, &last_Humidity, NULL)) != SimpleDHTErrSuccess)
     {
-      Serial.print("Read DHT11 failed, err=");
+      Serial.print("Read Internal DHT22 failed, err=");
       Serial.println(err);
+      last_Temperature = NAN;
+      last_Humidity = NAN;
     }
+    Serial.printf("temp %.2f \n",last_Temperature);
+    Serial.printf("hum %.2f \n",last_Humidity);
 #endif
 #ifdef Voltage_pin
     last_Voltage = getVoltage();
 #endif
 #ifdef EXT_DHT22_pin
 
-    if ((err = dht22->read2(&last_Ext_Temperature, &last_Ext_Humidity, NULL)) != SimpleDHTErrSuccess)
+    if ((err = ext_dht22->read2(&last_Ext_Temperature, &last_Ext_Humidity, NULL)) != SimpleDHTErrSuccess)
     {
       Serial.print("Read EXT DHT22 failed, err=");
       Serial.println(err);
       last_Ext_Temperature = NAN;
       last_Ext_Humidity = NAN;
     }
-
+    Serial.printf("temp %.2f \n",last_Ext_Temperature);
+    Serial.printf("hum %.2f \n",last_Ext_Humidity);
 #endif
 
     lastCheck = millis();
@@ -115,7 +120,6 @@ void readSensors()
   }
 }
 
-#ifdef Servo_pin
 
 int closePos = (int)settings[0].value;
 int openPos = (int)settings[1].value;
@@ -125,6 +129,7 @@ int lastPos = -1;
 
 void setWindow(bool isOpen)
 {
+  #ifdef Servo_pin
   windowServo.attach(Servo_pin); // attach servo
 
   Serial.printf("isOpen: %d lastPos: %d LastWindow %u\n", isOpen, lastPos, last_WINDOW);
@@ -173,12 +178,16 @@ void setWindow(bool isOpen)
   }
 
   windowServo.detach(); // detach to avoid jitter
+  #else
+  //TODO: Call api of EXT_SENSORS
+  #endif
 }
-#endif
 
-#ifdef Relay1_pin
+
+
 void setFan(bool isOn)
 {
+  #ifdef Relay1_pin
   if (isOn)
   {
     digitalWrite(Relay1_pin, HIGH);
@@ -188,20 +197,29 @@ void setFan(bool isOn)
     digitalWrite(Relay1_pin, LOW);
   }
   last_Relay1 = isOn;
+  #else
+  //TODO: Call api of EXT_SENSORS
+  #endif
 };
-#endif
-#ifdef Relay2_pin
+
 void setHeater(bool isOn)
 {
+  #ifdef Relay2_pin
   if (isOn)
   {
+    //Force fan ON
+    setFan(true);
+    //Turn Heater Off
     digitalWrite(Relay2_pin, HIGH);
   }
   else
   {
+    //Turn Heater Off, leave fan on
     digitalWrite(Relay2_pin, LOW);
   }
   last_Relay2 = isOn;
+  #else
+  //TODO: Call api of EXT_SENSORS
+  #endif
 };
-#endif
 #endif

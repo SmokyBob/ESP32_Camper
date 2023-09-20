@@ -1,6 +1,8 @@
+
+#if defined(CAMPER) || defined(HANDHELD)
 #include "Arduino.h"
 #include "LoraUtils.h"
-#ifdef SENSORS
+#if defined(CAMPER)
 #include "Sensors.h"
 #endif
 
@@ -71,7 +73,7 @@ void initLora()
 
     // set the function that will be called
     // when new packet is received/transmitted
-    radio.setDio0Action(setLoraFlags);
+    radio.setDio0Action(setLoraFlags,RISING);
 
 // different initial state for CAMPER and HANDHELD
 #ifdef CAMPER
@@ -152,7 +154,7 @@ void loraReceive()
           {
             switch (dataEnum)
             {
-#ifndef SENSORS
+#if not(defined(CAMPER))
             case TEMPERATURE:
               last_Temperature = dataVal.toFloat();
               break;
@@ -217,7 +219,7 @@ void loraReceive()
               setTime(last_DateTime);
               break;
             }
-#ifdef SENSORS
+#if defined(CAMPER)
             // Force a lora send on next loop
             lastLORASend = 0;
 #endif
@@ -288,3 +290,4 @@ void loraSend(String message)
     last_RSSI = radio.getRSSI();
   }
 };
+#endif

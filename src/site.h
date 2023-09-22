@@ -14,4 +14,9 @@
 #include <LittleFS.h>
 #endif
 
+#if defined(CAMPER) || defined(EXT_SENSORS)
+#include "Sensors.h"
+#include "automation.h"
+#endif
+
 void initSite(AsyncWebSocket *webSocket);

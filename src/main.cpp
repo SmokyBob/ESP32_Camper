@@ -20,6 +20,9 @@
 #include <DNSServer.h>
 #include "esp_wifi.h"
 #include "driver/adc.h"
+#if defined(CAMPER) || defined(EXT_SENSORS)
+#include <HTTPClient.h>
+#endif
 
 DNSServer dnsServer;
 const byte DNS_PORT = 53;
@@ -305,6 +308,7 @@ void setup()
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
 #else
 
+  // Connect to the Camper Wifi
   WiFi.mode(WIFI_STA);
   WiFi.begin(String("ESP32 CAMPER").c_str(), String(WIFI_PWD).c_str());
 
@@ -344,6 +348,47 @@ void setup()
 }
 
 u_long webSockeUpdate = 0;
+#if defined(CAMPER)
+String EXT_SENSORS_URL = "";
+unsigned long lastAPICheck = 0;
+unsigned long maxAPIPool = 2500;
+#endif
+#if defined(EXT_SENSORS)
+String CAMPER_URL = "http://esp32-CAMPER.local";
+#endif
+
+#if defined(CAMPER)
+String getUrl(String ReqUrl)
+{
+  String toRet = "";
+  HTTPClient http;
+  // Your Domain name with URL path or IP address with path
+  http.begin(ReqUrl.c_str());
+
+  // Send HTTP GET request
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode > 0)
+  {
+    // Serial.print("HTTP Response code: ");
+    // Serial.println(httpResponseCode);
+    String payload = http.getString();
+    // Serial.println("result: ");
+    // Serial.println(payload);
+    // Serial.println("");
+    // Serial.println("------");
+    toRet = payload;
+  }
+  else
+  {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+  return toRet;
+}
+#endif
 
 void loop()
 {
@@ -375,11 +420,78 @@ void loop()
 
   webSocket->cleanupClients();
 #endif
+#if defined(CAMPER)
+  if (EXT_SENSORS_URL == "")
+  {
+    // Search connected devices
+    wifi_sta_list_t wifi_sta_list;
+    tcpip_adapter_sta_list_t adapter_sta_list;
+
+    memset(&wifi_sta_list, 0, sizeof(wifi_sta_list));
+    memset(&adapter_sta_list, 0, sizeof(adapter_sta_list));
+
+    esp_wifi_ap_get_sta_list(&wifi_sta_list);
+    tcpip_adapter_get_sta_list(&wifi_sta_list, &adapter_sta_list);
+
+    for (int i = 0; i < adapter_sta_list.num; i++)
+    {
+
+      tcpip_adapter_sta_info_t station = adapter_sta_list.sta[i];
+
+      // Serial.print("station nr ");
+      // Serial.println(i);
+
+      // Serial.print("MAC: ");
+
+      // for (int i = 0; i < 6; i++)
+      // {
+
+      //   Serial.printf("%02X", station.mac[i]);
+      //   if (i < 5)
+      //     Serial.print(":");
+      // }
+
+      Serial.print("\nIP: ");
+      char str_ip[16];
+      esp_ip4addr_ntoa(&station.ip, str_ip, IP4ADDR_STRLEN_MAX);
+      Serial.println(str_ip);
+
+      //Test the API Get
+      String testURL = "http://" + String(str_ip) + "/api/sensors";
+
+      // Serial.print("testURL: ");
+      // Serial.println(testURL);
+
+      String tmpRes = getUrl(testURL);
+      if (tmpRes.length() != 0)
+      {
+        //Got the result, save the base address for future calls
+        EXT_SENSORS_URL = "http://" + String(str_ip);
+      }
+    }
+  }
+#endif
 #endif
 #if defined(CAMPER) || defined(EXT_SENSORS)
   readSensors();
 #endif
-#ifdef CAMPER
+
+#if defined(CAMPER)
+  if (EXT_SENSORS_URL != "")
+  {
+    if (millis() > lastAPICheck + maxAPIPool)
+    {
+      // Read sensor data from EXT_SENSORS
+      String jsonResult = getUrl(EXT_SENSORS_URL + "/api/sensors");
+
+      // TODO: parse json result and save data into "last_" variables
+      lastAPICheck = millis();
+    }
+  }
+
+#endif
+
+#if defined(CAMPER) || defined(EXT_SENSORS)
   // Run automation if enabled in settings
   if (settings[7].value > 0.00)
   {

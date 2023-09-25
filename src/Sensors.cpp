@@ -30,6 +30,8 @@ void initSensors()
 #endif
 
 #ifdef Servo_pin
+  windowServo.setPeriodHertz(50);
+  windowServo.attach(Servo_pin); // attach servo
   // Init the window closed
   setWindow(false);
 #endif
@@ -96,8 +98,8 @@ void readSensors()
       last_Temperature = NAN;
       last_Humidity = NAN;
     }
-    Serial.printf("temp %.2f \n",last_Temperature);
-    Serial.printf("hum %.2f \n",last_Humidity);
+    Serial.printf("temp %.2f \n", last_Temperature);
+    Serial.printf("hum %.2f \n", last_Humidity);
 #endif
 #ifdef Voltage_pin
     last_Voltage = getVoltage();
@@ -111,8 +113,8 @@ void readSensors()
       last_Ext_Temperature = NAN;
       last_Ext_Humidity = NAN;
     }
-    Serial.printf("temp %.2f \n",last_Ext_Temperature);
-    Serial.printf("hum %.2f \n",last_Ext_Humidity);
+    Serial.printf("temp %.2f \n", last_Ext_Temperature);
+    Serial.printf("hum %.2f \n", last_Ext_Humidity);
 #endif
 
     lastCheck = millis();
@@ -120,28 +122,22 @@ void readSensors()
   }
 }
 
-
-int closePos = (int)settings[0].value;
-int openPos = (int)settings[1].value;
 int servoDegreeDelay = 5;
 
 int lastPos = -1;
 
 void setWindow(bool isOpen)
 {
-  #ifdef Servo_pin
-  windowServo.attach(Servo_pin); // attach servo
+#ifdef Servo_pin
+  int closePos = (int)settings[0].value;
+  int openPos = (int)settings[1].value;
 
   Serial.printf("isOpen: %d lastPos: %d LastWindow %u\n", isOpen, lastPos, last_WINDOW);
+  Serial.printf("closePos: %d openPos: %d\n", closePos, openPos);
   if (lastPos < 0)
   {
-    // Init reading the current position
-    lastPos = windowServo.read();
-  }
-  if (lastPos < 0)
-  {
-    // if still < 0 set to 0
-    lastPos = 0;
+    lastPos = closePos;
+    windowServo.write(closePos);
   }
 
   if (last_WINDOW != isOpen)
@@ -153,7 +149,9 @@ void setWindow(bool isOpen)
 
     if (isOpen)
     {
-      // TODO: run in a different task
+      // windowServo.write(openPos);
+      // lastPos = openPos;
+      // TODO: run in a different task for BLE APP
       //  Move to the Open Position
       for (pos = pos; pos <= openPos; pos++)
       {
@@ -164,7 +162,9 @@ void setWindow(bool isOpen)
     }
     else
     {
-      // TODO: run in a different task
+      // windowServo.write(closePos);
+      // lastPos = closePos;
+      // TODO: run in a different task for BLE APP
       //  Move to Close Position
       for (pos = pos; pos >= closePos; pos--)
       {
@@ -173,21 +173,17 @@ void setWindow(bool isOpen)
         delay(servoDegreeDelay);
       }
     }
-
-    Serial.printf("windowServo.read: %d\n", windowServo.read());
   }
 
-  windowServo.detach(); // detach to avoid jitter
-  #else
-  //TODO: Call api of EXT_SENSORS
-  #endif
+  Serial.printf("windowServo.read: %d\n", windowServo.read());
+
+  // windowServo.detach(); // detach to avoid jitter
+#endif
 }
-
-
 
 void setFan(bool isOn)
 {
-  #ifdef Relay1_pin
+#ifdef Relay1_pin
   if (isOn)
   {
     digitalWrite(Relay1_pin, HIGH);
@@ -197,29 +193,25 @@ void setFan(bool isOn)
     digitalWrite(Relay1_pin, LOW);
   }
   last_Relay1 = isOn;
-  #else
-  //TODO: Call api of EXT_SENSORS
-  #endif
+#endif
 };
 
 void setHeater(bool isOn)
 {
-  #ifdef Relay2_pin
+#ifdef Relay2_pin
   if (isOn)
   {
-    //Force fan ON
+    // Force fan ON
     setFan(true);
-    //Turn Heater Off
+    // Turn Heater Off
     digitalWrite(Relay2_pin, HIGH);
   }
   else
   {
-    //Turn Heater Off, leave fan on
+    // Turn Heater Off, leave fan on
     digitalWrite(Relay2_pin, LOW);
   }
   last_Relay2 = isOn;
-  #else
-  //TODO: Call api of EXT_SENSORS
-  #endif
+#endif
 };
 #endif

@@ -23,12 +23,46 @@ void api_get(AsyncWebServerRequest *request)
   request->send(200, "application/json", jsonString);
 }
 
+#if defined(CAMPER)
+void callEXT_SENSORSAPI(String rawUrl, String payload)
+{
+  rawUrl = EXT_SENSORS_URL + rawUrl;
+
+  Serial.print("new URL:");
+  Serial.println(rawUrl);
+
+  HTTPClient http;
+  // Your Domain name with URL path or IP address with path
+  http.begin(rawUrl.c_str());
+
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+  int httpResponseCode = http.POST(payload);
+
+  if (httpResponseCode == 0)
+  {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+}
+#endif
+
 void api_post(AsyncWebServerRequest *request)
 {
-  String jsonResponse = "";
+  String txtResponse = "";
+  String rawUrl = request->url();
 
-  int type = request->pathArg(0).toInt(); // Command = 1, Config = 2
+  Serial.println("Request URL:");
+  Serial.println(rawUrl);
 
+  int type = rawUrl.substring(rawUrl.length() - 1).toInt(); // Command = 1, Config = 2
+
+  Serial.print("type:");
+  Serial.println(type);
+
+  Serial.println("-----------------------");
   if (type == COMMAND)
   {
     for (size_t i = 0; i < request->params(); i++)
@@ -42,22 +76,30 @@ void api_post(AsyncWebServerRequest *request)
       switch (dataEnum)
       {
       case WINDOW:
-        last_WINDOW = (dataVal.toInt() == 1);
 #ifdef Servo_pin
-        setWindow(last_WINDOW);
+        setWindow((dataVal.toInt() == 1));
+#else
+        callEXT_SENSORSAPI(rawUrl, param->name() + "=" + dataVal);
 #endif
+        last_WINDOW = (dataVal.toInt() == 1);
         break;
       case RELAY1:
-        last_Relay1 = (dataVal.toInt() == 1);
+
 #ifdef Relay1_pin
-        setFan(last_Relay1);
+        setFan((dataVal.toInt() == 1));
+#else
+        callEXT_SENSORSAPI(rawUrl, param->name() + "=" + dataVal);
 #endif
+        last_Relay1 = (dataVal.toInt() == 1);
         break;
       case RELAY2:
-        last_Relay2 = (dataVal.toInt() == 1);
+
 #ifdef Relay2_pin
-        setHeater(last_Relay2);
+        setHeater((dataVal.toInt() == 1));
+#else
+        callEXT_SENSORSAPI(rawUrl, param->name() + "=" + dataVal);
 #endif
+        last_Relay2 = (dataVal.toInt() == 1);
         break;
       case DATETIME:
         last_DateTime = dataVal;
@@ -69,7 +111,7 @@ void api_post(AsyncWebServerRequest *request)
     // Force a lora send on next loop
     lastLORASend = 0;
 #endif
-    jsonResponse = "Command received";
+    txtResponse = "Command received";
   }
   if (type == CONFIGS)
   {
@@ -77,19 +119,24 @@ void api_post(AsyncWebServerRequest *request)
     for (size_t i = 0; i < request->params(); i++)
     {
       AsyncWebParameter *param = request->getParam(i);
-      int settingID = 10 - param->name().toInt();
+      int settingID = param->name().toInt()-10;
       String dataVal = param->value();
 
       Serial.printf("Config %s : %s \n", settings[settingID].name, dataVal);
 
       settings[settingID].value = dataVal.toFloat();
+
+#if defined(CAMPER)
+      // Send the config to the Ext Sesor via API
+      callEXT_SENSORSAPI(rawUrl, param->name() + "=" + dataVal);
+#endif
     }
     savePreferences();
 
-    jsonResponse = "Configs saved";
+    txtResponse = "Configs saved";
   }
 
-  request->send(200, "text/html", jsonResponse);
+  request->send(200, "text/html", txtResponse);
 }
 
 void setWebHandles()
@@ -141,7 +188,8 @@ void setWebHandles()
 #if defined(CAMPER) || defined(EXT_SENSORS)
   // API Endpoints
   server.on("/api/sensors", HTTP_GET, api_get);
-  server.on("^\\/api\\/([0-9]+)$", HTTP_POST, api_post);
+  server.on("/api/1", HTTP_POST, api_post);
+  server.on("/api/2", HTTP_POST, api_post);
 #endif
 
   server.onNotFound([](AsyncWebServerRequest *request)

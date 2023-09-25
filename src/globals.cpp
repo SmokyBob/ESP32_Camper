@@ -70,6 +70,7 @@ void loadPreferences()
     settings[7].value = prf_config.getFloat("bAutomation", 0.00);
 
     prf_config.end();
+    savePreferences();
 };
 
 void savePreferences()
@@ -114,3 +115,10 @@ void setTime(String utcString)
     struct timeval now = {.tv_sec = t};
     settimeofday(&now, NULL);
 };
+
+#if defined(CAMPER) 
+String EXT_SENSORS_URL = "";
+#endif
+#if defined(EXT_SENSORS)
+String CAMPER_URL = "http://esp32-CAMPER.local";
+#endif

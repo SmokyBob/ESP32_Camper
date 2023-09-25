@@ -326,6 +326,7 @@ void setup()
       break;
     }
   }
+  setWindow(false);//reset the window to closed
   Serial.println(F(""));
   Serial.println(F("IP address: "));
   Serial.println(WiFi.localIP());
@@ -349,12 +350,8 @@ void setup()
 
 u_long webSockeUpdate = 0;
 #if defined(CAMPER)
-String EXT_SENSORS_URL = "";
 unsigned long lastAPICheck = 0;
 unsigned long maxAPIPool = 2500;
-#endif
-#if defined(EXT_SENSORS)
-String CAMPER_URL = "http://esp32-CAMPER.local";
 #endif
 
 #if defined(CAMPER)
@@ -467,6 +464,8 @@ void loop()
       {
         //Got the result, save the base address for future calls
         EXT_SENSORS_URL = "http://" + String(str_ip);
+        Serial.print("EXT_SENSORS_URL :");
+        Serial.println(EXT_SENSORS_URL);
       }
     }
   }
@@ -514,7 +513,6 @@ void loop()
 #endif
 
 #ifdef Voltage_pin
-  // TODO: configurable in parameters showing the percent table as reference
   float voltageLimit = settings[5].value;
   if (settings[6].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
   {

@@ -74,4 +74,11 @@ void resetPreferences();
 
 #endif
 void setTime(String utcString);
+
+#if defined(CAMPER) 
+extern String EXT_SENSORS_URL;
+#endif
+#if defined(EXT_SENSORS)
+extern String CAMPER_URL;
+#endif
 #endif

@@ -17,6 +17,13 @@
 #if defined(CAMPER) || defined(EXT_SENSORS)
 #include "Sensors.h"
 #include "automation.h"
+#include <HTTPClient.h>
 #endif
 
 void initSite(AsyncWebSocket *webSocket);
+
+#if defined(CAMPER)
+
+void callEXT_SENSORSAPI(String rawUrl);
+
+#endif

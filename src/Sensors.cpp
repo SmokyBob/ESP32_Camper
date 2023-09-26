@@ -149,29 +149,29 @@ void setWindow(bool isOpen)
 
     if (isOpen)
     {
-      // windowServo.write(openPos);
-      // lastPos = openPos;
-      // TODO: run in a different task for BLE APP
-      //  Move to the Open Position
-      for (pos = pos; pos <= openPos; pos++)
-      {
-        windowServo.write(pos);
-        lastPos = pos;
-        delay(servoDegreeDelay);
-      }
+      windowServo.write(openPos);
+      lastPos = openPos;
+      // // TODO: run in a different task for BLE APP
+      // //  Move to the Open Position
+      // for (pos = pos; pos <= openPos; pos++)
+      // {
+      //   windowServo.write(pos);
+      //   lastPos = pos;
+      //   delay(servoDegreeDelay);
+      // }
     }
     else
     {
-      // windowServo.write(closePos);
-      // lastPos = closePos;
-      // TODO: run in a different task for BLE APP
-      //  Move to Close Position
-      for (pos = pos; pos >= closePos; pos--)
-      {
-        windowServo.write(pos);
-        lastPos = pos;
-        delay(servoDegreeDelay);
-      }
+      windowServo.write(closePos);
+      lastPos = closePos;
+      // // TODO: run in a different task for BLE APP
+      // //  Move to Close Position
+      // for (pos = pos; pos >= closePos; pos--)
+      // {
+      //   windowServo.write(pos);
+      //   lastPos = pos;
+      //   delay(servoDegreeDelay);
+      // }
     }
   }
 

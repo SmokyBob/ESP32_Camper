@@ -2,6 +2,7 @@
 #if defined(CAMPER) || defined(HANDHELD)
 #include "Arduino.h"
 #include "LoraUtils.h"
+#include "site.h"
 #if defined(CAMPER)
 #include "Sensors.h"
 #endif
@@ -73,7 +74,7 @@ void initLora()
 
     // set the function that will be called
     // when new packet is received/transmitted
-    radio.setDio0Action(setLoraFlags,RISING);
+    radio.setDio0Action(setLoraFlags, RISING);
 
 // different initial state for CAMPER and HANDHELD
 #ifdef CAMPER
@@ -201,17 +202,29 @@ void loraReceive()
 #ifdef Servo_pin
               setWindow(last_WINDOW);
 #endif
+#if defined(CAMPER)
+              // call EXT_SENSORS API to send the command
+              callEXT_SENSORSAPI("api/1", String(WINDOW) + "=" + String(last_WINDOW));
+#endif
               break;
             case RELAY1:
               last_Relay1 = (dataVal.toInt() == 1);
 #ifdef Relay1_pin
               setFan(last_Relay1);
 #endif
+#if defined(CAMPER)
+              // call EXT_SENSORS API to send the command
+              callEXT_SENSORSAPI("api/1", String(RELAY1) + "=" + String(last_Relay1));
+#endif
               break;
             case RELAY2:
               last_Relay2 = (dataVal.toInt() == 1);
 #ifdef Relay2_pin
               setHeater(last_Relay2);
+#endif
+#if defined(CAMPER)
+              // call EXT_SENSORS API to send the command
+              callEXT_SENSORSAPI("api/1", String(RELAY2) + "=" + String(last_Relay2));
 #endif
               break;
             case DATETIME:
@@ -281,7 +294,6 @@ void loraSend(String message)
     }
     // Send message
     radio.startTransmit(message);
-    
     transmitFlag = true;
     // we're ready to send more packets,
     // enable interrupt service routine

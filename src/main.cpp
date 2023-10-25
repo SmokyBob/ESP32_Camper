@@ -11,9 +11,6 @@
 #include "Sensors.h"
 #include "automation.h"
 #endif
-// #ifdef BLE_APP
-// #include "RemoteXYUtils.h" //TODO: build fails, try to understand why
-// #endif
 
 #ifdef WIFI_PWD
 #include "site.h"
@@ -22,6 +19,9 @@
 #include "driver/adc.h"
 #if defined(CAMPER) || defined(EXT_SENSORS)
 #include <HTTPClient.h>
+#endif
+#if defined(CAMPER)
+#include <ArduinoJson.h>
 #endif
 
 DNSServer dnsServer;
@@ -120,6 +120,8 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
           // Force a lora send on next loop
           lastLORASend = 0;
           // TODO: send command to EXT_SENSORS via API call
+          // call EXT_SENSORS API to send the command
+          // callEXT_SENSORSAPI("api/1", String(RELAY1) + "=" + String(last_Relay1));
 #elif defined(HANDHELD)
           // TODO: send command to CAMPER using lora
 #endif
@@ -326,7 +328,7 @@ void setup()
       break;
     }
   }
-  setWindow(false);//reset the window to closed
+  setWindow(false); // reset the window to closed
   Serial.println(F(""));
   Serial.println(F("IP address: "));
   Serial.println(WiFi.localIP());
@@ -343,9 +345,6 @@ void setup()
   initSite(webSocket);
 
 #endif
-  // #ifdef BLE_APP
-  //   BLE_APP_setup();//TODO: build fails, try to understand why
-  // #endif
 }
 
 u_long webSockeUpdate = 0;
@@ -453,7 +452,7 @@ void loop()
       esp_ip4addr_ntoa(&station.ip, str_ip, IP4ADDR_STRLEN_MAX);
       Serial.println(str_ip);
 
-      //Test the API Get
+      // Test the API Get
       String testURL = "http://" + String(str_ip) + "/api/sensors";
 
       // Serial.print("testURL: ");
@@ -462,7 +461,7 @@ void loop()
       String tmpRes = getUrl(testURL);
       if (tmpRes.length() != 0)
       {
-        //Got the result, save the base address for future calls
+        // Got the result, save the base address for future calls
         EXT_SENSORS_URL = "http://" + String(str_ip);
         Serial.print("EXT_SENSORS_URL :");
         Serial.println(EXT_SENSORS_URL);
@@ -483,7 +482,23 @@ void loop()
       // Read sensor data from EXT_SENSORS
       String jsonResult = getUrl(EXT_SENSORS_URL + "/api/sensors");
 
-      // TODO: parse json result and save data into "last_" variables
+      Serial.print("api/sensors: ");
+      Serial.println(jsonResult);
+
+      // Allocate a temporary JsonDocument
+      // Don't forget to change the capacity to match your requirements.
+      // Use https://arduinojson.org/v6/assistant to compute the capacity.
+      StaticJsonDocument<384> doc;
+      DeserializationError error = deserializeJson(doc, jsonResult);
+
+      // Copy values from the JsonDocument
+      //only the values from ext_sensors
+      last_Ext_Temperature = doc["ext_temperature"];
+      last_Ext_Humidity = doc["ext_humidity"];
+      last_WINDOW = doc["window"];
+      last_Relay1 = doc["relay1"];
+      last_Relay2 = doc["relay2"];
+      
       lastAPICheck = millis();
     }
   }
@@ -534,7 +549,4 @@ void loop()
   }
 #endif
   // Serial.println("after receive");
-  // #ifdef BLE_APP
-  //   BLE_APP_loop(); //TODO: build fails, try to understand why
-  // #endif
 }

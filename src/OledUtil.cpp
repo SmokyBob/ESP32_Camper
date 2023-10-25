@@ -2,6 +2,7 @@
 #include "OledUtil.h"
 #if defined(CAMPER)
 #include "Sensors.h"
+#include "site.h"
 #else
 #include "LoraUtils.h"
 #endif
@@ -190,9 +191,10 @@ void doubleClick()
     switch (_controlSelected)
     {
     case 0:
-#if defined(CAMPER) 
-      // setWindow(!last_WINDOW);
-      //TODO: call EXT_SENSORS API to send the command
+      last_WINDOW = !last_WINDOW;
+#if defined(CAMPER)
+      // call EXT_SENSORS API to send the command
+      callEXT_SENSORSAPI("api/1", String(WINDOW) + "=" + String(last_WINDOW));
 #else
       // send lora command
       LoRaMessage = String(COMMAND) + "?";
@@ -205,8 +207,8 @@ void doubleClick()
     case 1:
       last_Relay1 = !last_Relay1;
 #if defined(CAMPER)
-      // setFan(last_Relay1);
-      //TODO: call EXT_SENSORS API to send the command
+      // call EXT_SENSORS API to send the command
+      callEXT_SENSORSAPI("api/1", String(RELAY1) + "=" + String(last_Relay1));
 #else
 
       // send lora command
@@ -220,12 +222,12 @@ void doubleClick()
     case 2:
       last_Relay2 = !last_Relay2;
 #if defined(CAMPER)
-      //setHeater(last_Relay2);
-      //TODO: call EXT_SENSORS API to send the command
+      // call EXT_SENSORS API to send the command
+      callEXT_SENSORSAPI("api/1", String(RELAY2) + "=" + String(last_Relay2));
 #else
       // send lora command
       LoRaMessage = String(COMMAND) + "?";
-      LoRaMessage += String(RELAY2) + "=" + String(last_WINDOW) + "&";
+      LoRaMessage += String(RELAY2) + "=" + String(last_Relay2) + "&";
       LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
       // Serial.println(LoRaMessage);
       loraSend(LoRaMessage);
@@ -345,17 +347,17 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 112 + 11); // CLOCK Font
   // Text
   u8g2->setFont(text_Font);
-  //Show time of last message if available
+  // Show time of last message if available
   if (last_DateTime.length() > 0)
   {
     struct tm tm;
     strptime(last_DateTime.c_str(), "%FT%T", &tm);
 
-    strftime(buf, sizeof(buf), "%R", &tm); //HH:MM with seconds in detail page
+    strftime(buf, sizeof(buf), "%R", &tm); // HH:MM with seconds in detail page
   }
   else
   {
-    //Otherwise millis
+    // Otherwise millis
     snprintf(buf, sizeof(buf), "%u", last_Millis);
   }
 
@@ -583,7 +585,7 @@ void drawLoraPage()
   u8g2->drawGlyph(x, y + iconH, 336 + 8); // CLOCK Font
   // Text
   u8g2->setFont(text_Font);
-  //Show time of last message if available
+  // Show time of last message if available
   if (last_DateTime.length() > 0)
   {
     struct tm tm;
@@ -593,7 +595,7 @@ void drawLoraPage()
   }
   else
   {
-    //Otherwise millis
+    // Otherwise millis
     snprintf(buf, sizeof(buf), "%u", last_Millis);
   }
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);

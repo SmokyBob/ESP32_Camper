@@ -95,8 +95,6 @@ void readSensors()
     {
       Serial.print("Read Internal DHT22 failed, err=");
       Serial.println(err);
-      last_Temperature = NAN;
-      last_Humidity = NAN;
     }
     Serial.printf("temp %.2f \n", last_Temperature);
     Serial.printf("hum %.2f \n", last_Humidity);
@@ -110,8 +108,6 @@ void readSensors()
     {
       Serial.print("Read EXT DHT22 failed, err=");
       Serial.println(err);
-      last_Ext_Temperature = NAN;
-      last_Ext_Humidity = NAN;
     }
     Serial.printf("temp %.2f \n", last_Ext_Temperature);
     Serial.printf("hum %.2f \n", last_Ext_Humidity);

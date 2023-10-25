@@ -20,6 +20,9 @@ void api_get(AsyncWebServerRequest *request)
 
   jsonString += "\"dummy\":null}";
 
+  Serial.print("api get: ");
+  Serial.println(jsonString);
+
   request->send(200, "application/json", jsonString);
 }
 
@@ -48,7 +51,7 @@ void callEXT_SENSORSAPI(String rawUrl, String payload)
   http.end();
 }
 #endif
-
+#if defined(CAMPER) || defined(EXT_SENSORS)
 void api_post(AsyncWebServerRequest *request)
 {
   String txtResponse = "";
@@ -119,7 +122,7 @@ void api_post(AsyncWebServerRequest *request)
     for (size_t i = 0; i < request->params(); i++)
     {
       AsyncWebParameter *param = request->getParam(i);
-      int settingID = param->name().toInt()-10;
+      int settingID = param->name().toInt() - 10;
       String dataVal = param->value();
 
       Serial.printf("Config %s : %s \n", settings[settingID].name, dataVal);
@@ -138,13 +141,33 @@ void api_post(AsyncWebServerRequest *request)
 
   request->send(200, "text/html", txtResponse);
 }
+#endif
 
 void setWebHandles()
 {
 #if defined(CAMPER) || defined(HANDHELD)
   server.serveStatic("/", LittleFS, "/"); // Try the FS first for static files
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(LittleFS, "/index.html", String(), false, nullptr); });
+            {
+              String html = "";
+              File file = LittleFS.open("/index.html");
+              if (!file)
+              {
+                html = "";
+              }
+              else
+              {
+                html = file.readString();
+              }
+              file.close();
+#if defined(CAMPER)
+            String EXT_OTA = "<a href='{IP}/update'><span style='color: red;'>OTA Update EXT SENSORS</span> </a><br>'";
+            EXT_OTA.replace("{IP}",EXT_SENSORS_URL);
+            html.replace("{EXT_SENSOR_OTA}",EXT_OTA);
+#else
+            html.replace("{EXT_SENSOR_OTA}","");
+#endif
+            request->send(200, "text/html", html); });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request)
             {

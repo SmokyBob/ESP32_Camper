@@ -24,6 +24,6 @@ void initSite(AsyncWebSocket *webSocket);
 
 #if defined(CAMPER)
 
-void callEXT_SENSORSAPI(String rawUrl);
+void callEXT_SENSORSAPI(String rawUrl, String payload);
 
 #endif

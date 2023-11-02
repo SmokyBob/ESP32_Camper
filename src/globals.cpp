@@ -43,13 +43,14 @@ unsigned long lastLORASend = 0;
 #ifndef Servo_OPEN_pos
 #define Servo_OPEN_pos 175
 #endif
-setting settings[8]{
+setting settings[9]{
     {"ServoPosClosed", "AUTOMATION: Window Closed (servo degs)", Servo_closed_pos},
     {"ServoPosOpen", "AUTOMATION: Window OPEN (servo degs)", Servo_OPEN_pos},
     {"ServoTempClosed", "AUTOMATION: Window Closed (temp)", 20},
     {"ServoTempOpen", "AUTOMATION: Window OPEN (temp)", 30},
     {"VDiv_Calib", "Current voltage for calibration", VDiv_Calibration},
     {"voltageLimit", "Low Voltage (init sleep)", 12.00},
+    {"voltageLimit_underLoad", "Low Voltage UNDER LOAD (init sleep)", 11.40},
     {"lowVoltSleepMin", "Sleep time on Low Voltage (minutes)", 30.00},
     {"bAutomation", "Enable automation", 0.00} // default false
 };
@@ -66,8 +67,9 @@ void loadPreferences()
     settings[3].value = prf_config.getFloat("ServoTempOpen", 30);
     settings[4].value = prf_config.getFloat("VDiv_Calib", VDiv_Calibration);
     settings[5].value = prf_config.getFloat("voltageLimit", 12.00);
-    settings[6].value = prf_config.getFloat("lowVoltSleepMin", 30.00);
-    settings[7].value = prf_config.getFloat("bAutomation", 0.00);
+    settings[6].value = prf_config.getFloat("voltageLimit_underLoad", 11.40);
+    settings[7].value = prf_config.getFloat("lowVoltSleepMin", 30.00);
+    settings[8].value = prf_config.getFloat("bAutomation", 0.00);
 
     prf_config.end();
     savePreferences();
@@ -94,8 +96,9 @@ void resetPreferences()
     settings[3].value = 30;
     settings[4].value = VDiv_Calibration;
     settings[5].value = 12.00;
-    settings[6].value = 30.00;
-    settings[7].value = 0.00;
+    settings[5].value = 11.40;
+    settings[7].value = 30.00;
+    settings[8].value = 0.00;
 
     savePreferences();
 };

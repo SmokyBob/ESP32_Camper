@@ -23,6 +23,7 @@ enum data
    CONFIG_SERVO_OPEN_TEMP,
    CONFIG_VOLTAGE_ACTUAL,
    CONFIG_VOLTAGE_LIMIT,
+   CONFIG_VOLTAGE_LIMIT_UNDER_LOAD,
    CONFIG_VOLTAGE_SLEEP_MINUTES,
    CONFIG_ENABLE_AUTOMATION,
    //TODO: config fan on/off temps
@@ -66,7 +67,7 @@ struct setting
    float value;
 };
 
-extern setting settings[8];
+extern setting settings[9];
 
 void loadPreferences();
 void savePreferences();

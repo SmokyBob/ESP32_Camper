@@ -159,13 +159,16 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
           case CONFIG_VOLTAGE_LIMIT:
             settings[5].value = dataVal.toFloat();
             break;
-          case CONFIG_VOLTAGE_SLEEP_MINUTES:
+          case CONFIG_VOLTAGE_LIMIT_UNDER_LOAD:
             settings[6].value = dataVal.toFloat();
+            break;
+          case CONFIG_VOLTAGE_SLEEP_MINUTES:
+            settings[7].value = dataVal.toFloat();
             break;
           case CONFIG_ENABLE_AUTOMATION:
             Serial.print("CONFIG_ENABLE_AUTOMATION:");
             Serial.println(dataVal);
-            settings[7].value = dataVal.toFloat();
+            settings[8].value = dataVal.toFloat();
             break;
             ;
           }
@@ -507,7 +510,7 @@ void loop()
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
   // Run automation if enabled in settings
-  if (settings[7].value > 0.00)
+  if (settings[8].value > 0.00)
   {
     runAutomation();
   }
@@ -529,12 +532,16 @@ void loop()
 
 #ifdef Voltage_pin
   float voltageLimit = settings[5].value;
-  if (settings[6].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
+  if (last_Relay2) {
+    //Heater on, check the under load limit
+    voltageLimit = settings[6].value;
+  }
+  if (settings[7].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
   {
     // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
     if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug
     {
-      uint64_t hrSleepUs = (1 * (settings[6].value) * 60 * 1000); // in milliseconds
+      uint64_t hrSleepUs = (1 * (settings[7].value) * 60 * 1000); // in milliseconds
       hrSleepUs = hrSleepUs * 1000;                               // in microseconds
 #ifdef WIFI_PWD
       // do many stuff

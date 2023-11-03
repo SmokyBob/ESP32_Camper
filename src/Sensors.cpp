@@ -55,7 +55,11 @@ unsigned long lastCheck = 0;
 unsigned long maxSensorsPool = 2500;
 
 #ifdef Voltage_pin
-float getVoltage()
+float _voltArray[5];
+bool voltInitComplete = false;
+byte voltArrayindex = 0;
+
+void calculateVoltage()
 {
   float result;
   float readValue; // value read from the sensor
@@ -79,12 +83,49 @@ float getVoltage()
   //- 3: VDiv_Calibration = MULTIMETER_VOLTS/result
   //- 4: update platformio.ini and rebuild
 
-  return result;
+  _voltArray[voltArrayindex] = result;
+  voltArrayindex = voltArrayindex + 1;
+  Serial.printf("Voltage idx: %u\n", voltArrayindex);
+  if (voltArrayindex == 5)
+  {
+    voltArrayindex = 0;
+    if (voltInitComplete == false)
+    {
+      voltInitComplete = true;
+      Serial.printf("Voltage Init complete\n\n");
+    }
+  }
+}
+
+float getVoltage()
+{
+  if (voltInitComplete)
+  {
+
+    double sum = 0.00; // sum will be larger than an item, double for safety.
+    for (int i = 0; i < 5; i++)
+      sum += _voltArray[i];
+    return ((float)sum) / 5; // average will be fractional, so float may be appropriate.
+  }
+  else
+  {
+    return _voltArray[voltArrayindex];
+  }
 }
 #endif
 
+unsigned long voltTick = 0;
+
 void readSensors()
 {
+#ifdef Voltage_pin
+  // Calculate the voltage every second
+  if ((millis() - voltTick) > 1000)
+  {
+    calculateVoltage();
+    voltTick = millis();
+  }
+#endif
 
   if (millis() > lastCheck + maxSensorsPool)
   {

@@ -74,7 +74,7 @@ void calculateVoltage()
               ) *
            settings[4].value; // VDiv_Calibration;
 
-  Serial.printf("Voltage: %.2f VDiv_Calibration:%.4f\n", result, settings[4].value);
+  // Serial.printf("Voltage: %.2f VDiv_Calibration:%.4f\n", result, settings[4].value);
 
   // Notes on VDiv_Calibration
   // Calibration calculated by measurement with a multimiter
@@ -85,7 +85,7 @@ void calculateVoltage()
 
   _voltArray[voltArrayindex] = result;
   voltArrayindex = voltArrayindex + 1;
-  Serial.printf("Voltage idx: %u\n", voltArrayindex);
+  // Serial.printf("Voltage idx: %u\n", voltArrayindex);
   if (voltArrayindex == 5)
   {
     voltArrayindex = 0;
@@ -137,8 +137,8 @@ void readSensors()
       Serial.print("Read Internal DHT22 failed, err=");
       Serial.println(err);
     }
-    Serial.printf("temp %.2f \n", last_Temperature);
-    Serial.printf("hum %.2f \n", last_Humidity);
+    // Serial.printf("temp %.2f \n", last_Temperature);
+    // Serial.printf("hum %.2f \n", last_Humidity);
 #endif
 #ifdef Voltage_pin
     last_Voltage = getVoltage();
@@ -150,8 +150,8 @@ void readSensors()
       Serial.print("Read EXT DHT22 failed, err=");
       Serial.println(err);
     }
-    Serial.printf("temp %.2f \n", last_Ext_Temperature);
-    Serial.printf("hum %.2f \n", last_Ext_Humidity);
+    // Serial.printf("temp %.2f \n", last_Ext_Temperature);
+    // Serial.printf("hum %.2f \n", last_Ext_Humidity);
 #endif
 
     lastCheck = millis();

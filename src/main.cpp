@@ -23,6 +23,9 @@
 #if defined(CAMPER)
 #include <ArduinoJson.h>
 #endif
+#ifdef BLE_APP
+#include "BLEService.h"
+#endif
 
 DNSServer dnsServer;
 const byte DNS_PORT = 53;
@@ -348,6 +351,10 @@ void setup()
   initSite(webSocket);
 
 #endif
+
+#ifdef BLE_APP
+  initBLEService();
+#endif
 }
 
 u_long webSockeUpdate = 0;
@@ -369,14 +376,7 @@ String getUrl(String ReqUrl)
 
   if (httpResponseCode > 0)
   {
-    // Serial.print("HTTP Response code: ");
-    // Serial.println(httpResponseCode);
-    String payload = http.getString();
-    // Serial.println("result: ");
-    // Serial.println(payload);
-    // Serial.println("");
-    // Serial.println("------");
-    toRet = payload;
+    toRet = http.getString();
   }
   else
   {
@@ -495,13 +495,17 @@ void loop()
       DeserializationError error = deserializeJson(doc, jsonResult);
 
       // Copy values from the JsonDocument
-      //only the values from ext_sensors
+      // only the values from ext_sensors
       last_Ext_Temperature = doc["ext_temperature"];
       last_Ext_Humidity = doc["ext_humidity"];
-      last_WINDOW = doc["window"];
-      last_Relay1 = doc["relay1"];
-      last_Relay2 = doc["relay2"];
-      
+
+      String tmp = doc["window"];
+      last_WINDOW = (tmp == "1");
+      String tmp1 = doc["relay1"];
+      last_Relay1 = (tmp1 == "1");
+      String tmp2 = doc["relay2"];
+      last_Relay2 = (tmp2 == "1");
+
       lastAPICheck = millis();
     }
   }
@@ -532,8 +536,9 @@ void loop()
 
 #ifdef Voltage_pin
   float voltageLimit = settings[5].value;
-  if (last_Relay2) {
-    //Heater on, check the under load limit
+  if (last_Relay2)
+  {
+    // Heater on, check the under load limit
     voltageLimit = settings[6].value;
   }
   if (settings[7].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
@@ -556,4 +561,8 @@ void loop()
   }
 #endif
   // Serial.println("after receive");
+
+#ifdef BLE_APP
+  handleBLE();
+#endif
 }

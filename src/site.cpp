@@ -6,68 +6,36 @@ AsyncWebServer server(80);
 
 void api_get(AsyncWebServerRequest *request)
 {
-  String jsonString = "{";
-  jsonString += "\"millis\":\"" + String(last_Millis) + "\",";
-  jsonString += "\"temperature\":\"" + String(last_Temperature) + "\",";
-  jsonString += "\"humidity\":\"" + String(last_Humidity) + "\",";
-  jsonString += "\"ext_temperature\":\"" + String(last_Ext_Temperature) + "\",";
-  jsonString += "\"ext_humidity\":\"" + String(last_Ext_Humidity) + "\",";
-  jsonString += "\"voltage\":\"" + String(last_Voltage) + "\",";
-  jsonString += "\"datetime\":\"" + String(last_DateTime) + "\",";
-  jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
-  jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
-  jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
+  Serial.print("api URL:");
+  Serial.println(request->url());
+  Serial.println("");
 
-  jsonString += "\"dummy\":null}";
-
-  Serial.print("api get: ");
-  Serial.println(jsonString);
-
-  request->send(200, "application/json", jsonString);
-}
-
-#if defined(CAMPER)
-void callEXT_SENSORSAPI(String rawUrl, String payload)
-{
-  rawUrl = EXT_SENSORS_URL + rawUrl;
-
-  Serial.print("new URL:");
-  Serial.println(rawUrl);
-
-  HTTPClient http;
-  // Your Domain name with URL path or IP address with path
-  http.begin(rawUrl.c_str());
-
-  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-
-  int httpResponseCode = http.POST(payload);
-
-  if (httpResponseCode == 0)
-  {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
-  }
-  // Free resources
-  http.end();
-}
-#endif
-#if defined(CAMPER) || defined(EXT_SENSORS)
-void api_post(AsyncWebServerRequest *request)
-{
-  String txtResponse = "";
   String rawUrl = request->url();
 
-  Serial.println("Request URL:");
-  Serial.println(rawUrl);
-
-  int type = rawUrl.substring(rawUrl.length() - 1).toInt(); // Command = 1, Config = 2
-
-  Serial.print("type:");
-  Serial.println(type);
-
-  Serial.println("-----------------------");
-  if (type == COMMAND)
+  if (request->url().indexOf("api/sensors") > 0)
   {
+    String jsonString = "{";
+    jsonString += "\"millis\":\"" + String(last_Millis) + "\",";
+    jsonString += "\"temperature\":\"" + String(last_Temperature) + "\",";
+    jsonString += "\"humidity\":\"" + String(last_Humidity) + "\",";
+    jsonString += "\"ext_temperature\":\"" + String(last_Ext_Temperature) + "\",";
+    jsonString += "\"ext_humidity\":\"" + String(last_Ext_Humidity) + "\",";
+    jsonString += "\"voltage\":\"" + String(last_Voltage) + "\",";
+    jsonString += "\"datetime\":\"" + String(last_DateTime) + "\",";
+    jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
+    jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
+    jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
+
+    jsonString += "\"dummy\":null}";
+
+    Serial.print("api get: ");
+    Serial.println(jsonString);
+
+    request->send(200, "application/json", jsonString);
+  }
+  if (request->url().startsWith("/api/1"))
+  {
+    // Command
     for (size_t i = 0; i < request->params(); i++)
     {
       AsyncWebParameter *param = request->getParam(i);
@@ -114,11 +82,12 @@ void api_post(AsyncWebServerRequest *request)
     // Force a lora send on next loop
     lastLORASend = 0;
 #endif
-    txtResponse = "Command received";
+    request->send(200, "text/html", "Command received");
   }
-  if (type == CONFIGS)
+  if (request->url().startsWith("/api/2"))
   {
-    Serial.println("API post Config");
+    // CONFIG
+    Serial.println("API get Config");
     for (size_t i = 0; i < request->params(); i++)
     {
       AsyncWebParameter *param = request->getParam(i);
@@ -135,12 +104,43 @@ void api_post(AsyncWebServerRequest *request)
 #endif
     }
     savePreferences();
-
-    txtResponse = "Configs saved";
+    request->send(200, "text/html", "Command received");
   }
-
-  request->send(200, "text/html", txtResponse);
 }
+
+#if defined(CAMPER)
+void callEXT_SENSORSAPI(String rawUrl, String payload)
+{
+
+  String ReqUrl = EXT_SENSORS_URL + "/" + rawUrl + "?" + payload;
+
+  Serial.print("ReqUrl:");
+  Serial.println(ReqUrl);
+
+  String toRet = "";
+  HTTPClient http;
+  // Your Domain name with URL path or IP address with path
+  http.begin(ReqUrl.c_str());
+
+  // Send HTTP GET request
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode > 0)
+  {
+    String payload = http.getString();
+    
+    Serial.print("Response: ");
+    Serial.println(payload);
+  }
+  else
+  {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+}
+
 #endif
 
 void setWebHandles()
@@ -211,8 +211,8 @@ void setWebHandles()
 #if defined(CAMPER) || defined(EXT_SENSORS)
   // API Endpoints
   server.on("/api/sensors", HTTP_GET, api_get);
-  server.on("/api/1", HTTP_POST, api_post);
-  server.on("/api/2", HTTP_POST, api_post);
+  server.on("/api/1", HTTP_GET, api_get);
+  server.on("/api/2", HTTP_GET, api_get);
 #endif
 
   server.onNotFound([](AsyncWebServerRequest *request)

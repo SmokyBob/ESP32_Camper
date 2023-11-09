@@ -33,7 +33,7 @@ batt_perc batt_perc_list[14] = {
 unsigned long lastLORASend = 0;
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
-//Redefine default value for MCU without these values, just to keep settings consistents on init
+// Redefine default value for MCU without these values, just to keep settings consistents on init
 #ifndef VDiv_Calibration
 #define VDiv_Calibration 1.0555
 #endif
@@ -50,7 +50,7 @@ setting settings[9]{
     {"ServoTempOpen", "AUTOMATION: Window OPEN (temp)", 30},
     {"VDiv_Calib", "Current voltage for calibration", VDiv_Calibration},
     {"voltageLimit", "Low Voltage (init sleep)", 12.00},
-    {"voltageLimit_underLoad", "Low Voltage UNDER LOAD (init sleep)", 11.40},
+    {"voltageLim_Load", "Low Voltage UNDER LOAD (init sleep)", 11.40},
     {"lowVoltSleepMin", "Sleep time on Low Voltage (minutes)", 30.00},
     {"bAutomation", "Enable automation", 0.00} // default false
 };
@@ -67,11 +67,18 @@ void loadPreferences()
     settings[3].value = prf_config.getFloat("ServoTempOpen", 30);
     settings[4].value = prf_config.getFloat("VDiv_Calib", VDiv_Calibration);
     settings[5].value = prf_config.getFloat("voltageLimit", 12.00);
-    settings[6].value = prf_config.getFloat("voltageLimit_underLoad", 11.40);
+    settings[6].value = prf_config.getFloat("voltageLim_Load", 11.40);
     settings[7].value = prf_config.getFloat("lowVoltSleepMin", 30.00);
     settings[8].value = prf_config.getFloat("bAutomation", 0.00);
 
+    last_DateTime = prf_config.getString("lastTime", "");
+
     prf_config.end();
+    if (last_DateTime.compareTo("") != 0)
+    {
+        setTime(last_DateTime);
+    }
+
     savePreferences();
 };
 
@@ -84,6 +91,8 @@ void savePreferences()
     {
         prf_config.putFloat(settings[i].name.c_str(), settings[i].value);
     }
+
+    prf_config.putString("lastTime", last_DateTime);
 
     prf_config.end();
 };
@@ -117,9 +126,14 @@ void setTime(String utcString)
     Serial.printf("Setting time: %s", buf);
     struct timeval now = {.tv_sec = t};
     settimeofday(&now, NULL);
+
+    prf_config.begin("CAMPER", false);
+    prf_config.putString("lastTime", utcString);
+
+    prf_config.end();
 };
 
-#if defined(CAMPER) 
+#if defined(CAMPER)
 String EXT_SENSORS_URL = "";
 #endif
 #if defined(EXT_SENSORS)

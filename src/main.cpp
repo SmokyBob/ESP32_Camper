@@ -246,6 +246,7 @@ void sendLoRaSensors()
       strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
       last_DateTime = String(buf);
+      setTime(last_DateTime);//save the new time
     }
     String LoRaMessage = String(DATA) + "?";
     LoRaMessage += String(MILLIS) + "=" + String(millis()) + "&";

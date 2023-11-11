@@ -19,8 +19,6 @@
 #include "driver/adc.h"
 #if defined(CAMPER) || defined(EXT_SENSORS)
 #include <HTTPClient.h>
-#endif
-#if defined(CAMPER)
 #include <ArduinoJson.h>
 #endif
 #ifdef BLE_APP
@@ -246,7 +244,7 @@ void sendLoRaSensors()
       strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
       last_DateTime = String(buf);
-      setTime(last_DateTime);//save the new time
+      setTime(last_DateTime); // save the new time
     }
     String LoRaMessage = String(DATA) + "?";
     LoRaMessage += String(MILLIS) + "=" + String(millis()) + "&";
@@ -359,12 +357,12 @@ void setup()
 }
 
 u_long webSockeUpdate = 0;
-#if defined(CAMPER)
+#if defined(CAMPER) || defined(EXT_SENSORS)
 unsigned long lastAPICheck = 0;
 unsigned long maxAPIPool = 2500;
 #endif
 
-#if defined(CAMPER)
+#if defined(CAMPER) || defined(EXT_SENSORS)
 String getUrl(String ReqUrl)
 {
   String toRet = "";
@@ -513,6 +511,30 @@ void loop()
 
 #endif
 
+#if defined(EXT_SENSORS)
+
+  if (millis() > lastAPICheck + maxAPIPool)
+  {
+    // Read sensor data from CAMPER
+    String jsonResult = getUrl(CAMPER_URL + "/api/sensors");
+
+    Serial.print("api/sensors: ");
+    Serial.println(jsonResult);
+
+    // Allocate a temporary JsonDocument
+    // Don't forget to change the capacity to match your requirements.
+    // Use https://arduinojson.org/v6/assistant to compute the capacity.
+    StaticJsonDocument<384> doc;
+    DeserializationError error = deserializeJson(doc, jsonResult);
+
+    // Copy values from the JsonDocument
+    // only the values from ext_sensors
+    last_Voltage = doc["voltage"];
+
+    lastAPICheck = millis();
+  }
+#endif
+
 #if defined(CAMPER) || defined(EXT_SENSORS)
   // Run automation if enabled in settings
   if (settings[8].value > 0.00)
@@ -535,7 +557,7 @@ void loop()
   loraReceive(); // Always stay in receive mode to check if data/commands have been received
 #endif
 
-#ifdef Voltage_pin
+#if defined(CAMPER) || defined(EXT_SENSORS)
   float voltageLimit = settings[5].value;
   if (last_Relay2)
   {

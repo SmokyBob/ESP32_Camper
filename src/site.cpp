@@ -128,7 +128,7 @@ void callEXT_SENSORSAPI(String rawUrl, String payload)
   if (httpResponseCode > 0)
   {
     String payload = http.getString();
-    
+
     Serial.print("Response: ");
     Serial.println(payload);
   }
@@ -145,6 +145,12 @@ void callEXT_SENSORSAPI(String rawUrl, String payload)
 
 void setWebHandles()
 {
+#if defined(CAMPER) || defined(EXT_SENSORS)
+  // API Endpoints
+  server.on("/api/sensors", HTTP_GET, api_get);
+  server.on("/api/1", HTTP_GET, api_get);
+  server.on("/api/2", HTTP_GET, api_get);
+#endif
 #if defined(CAMPER) || defined(HANDHELD)
   server.serveStatic("/", LittleFS, "/"); // Try the FS first for static files
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -207,12 +213,6 @@ void setWebHandles()
               html += "</script>";
 #endif
               request->send(200, "text/html", html); });
-#endif
-#if defined(CAMPER) || defined(EXT_SENSORS)
-  // API Endpoints
-  server.on("/api/sensors", HTTP_GET, api_get);
-  server.on("/api/1", HTTP_GET, api_get);
-  server.on("/api/2", HTTP_GET, api_get);
 #endif
 
   server.onNotFound([](AsyncWebServerRequest *request)

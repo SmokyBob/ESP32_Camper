@@ -1,9 +1,8 @@
 #include "automation.h"
 
-
 void runAutomation()
 {
-  float currTemp = -1000;//Start with extreme negative value to manage nan value / no temp sensor working
+  float currTemp = -1000; // Start with extreme negative value to manage nan value / no temp sensor working
 
 #ifdef EXT_DHT22_pin
   if (isnan(last_Ext_Temperature) != true)
@@ -27,6 +26,10 @@ void runAutomation()
         // webSocket->textAll("LastWindow: " + String(last_WINDOW) + " set to Open = 1");
         // Open the window
         setWindow(true);
+#ifdef Relay1_pin
+        // Start the FAN
+        setFan(true);
+#endif
       }
     }
 
@@ -37,6 +40,10 @@ void runAutomation()
         // webSocket->textAll("LastWindow: " + String(last_WINDOW) + " set to Closed = 0");
         // Close the window
         setWindow(false);
+#ifdef Relay1_pin
+        // Stop the FAN
+        setFan(false);
+#endif
       }
     }
   }

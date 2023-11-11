@@ -43,7 +43,7 @@ unsigned long lastLORASend = 0;
 #ifndef Servo_OPEN_pos
 #define Servo_OPEN_pos 175
 #endif
-setting settings[9]{
+setting settings[11]{
     {"ServoPosClosed", "AUTOMATION: Window Closed (servo degs)", Servo_closed_pos},
     {"ServoPosOpen", "AUTOMATION: Window OPEN (servo degs)", Servo_OPEN_pos},
     {"ServoTempClosed", "AUTOMATION: Window Closed (temp)", 20},
@@ -52,8 +52,9 @@ setting settings[9]{
     {"voltageLimit", "Low Voltage (init sleep)", 12.00},
     {"voltageLim_Load", "Low Voltage UNDER LOAD (init sleep)", 11.40},
     {"lowVoltSleepMin", "Sleep time on Low Voltage (minutes)", 30.00},
-    {"bAutomation", "Enable automation", 0.00} // default false
-};
+    {"bAutomation", "Enable automation", 0.00}, // default false
+    {"heatTempOn", "AUTOMATION: Turn HEATER ON (temp)", 15.00},
+    {"heatTempOff", "AUTOMATION: Turn HEATER off (temp)", 18.00}};
 
 Preferences prf_config;
 
@@ -70,6 +71,8 @@ void loadPreferences()
     settings[6].value = prf_config.getFloat("voltageLim_Load", 11.40);
     settings[7].value = prf_config.getFloat("lowVoltSleepMin", 30.00);
     settings[8].value = prf_config.getFloat("bAutomation", 0.00);
+    settings[9].value = prf_config.getFloat("heatTempOn", 15.00);
+    settings[10].value = prf_config.getFloat("heatTempOff", 18.00);
 
     last_DateTime = prf_config.getString("lastTime", "");
 
@@ -108,6 +111,8 @@ void resetPreferences()
     settings[5].value = 11.40;
     settings[7].value = 30.00;
     settings[8].value = 0.00;
+    settings[9].value = 15.00;
+    settings[10].value = 18.00;
 
     savePreferences();
 };

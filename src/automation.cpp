@@ -48,5 +48,26 @@ void runAutomation()
     }
   }
 #endif
-  // TODO: automation for FAN and HEATER
+// TODO: automation with manual ovverride
+#ifdef Relay2_pin
+  if (currTemp > -1000)
+  {
+    // From settings
+    if (currTemp >= settings[10].value) // default 18
+    {
+      if (last_Relay2){
+        //Turn heater OFF
+        setHeater(false);
+        setFan(false);
+      }
+    }
+    if (currTemp <= settings[9].value) // default 15
+    {
+      if (!last_Relay2){
+        //Turn heater on
+        setHeater(true);
+      }
+    }
+  }
+#endif
 }

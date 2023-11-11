@@ -10,14 +10,14 @@ function updateConfigs() {
         str += element.value + "|" + element.attributes["data-value"] + "&";
         break;
       case "bAutomation":
-        str += (element.checked) ? "1" : "0";
+        str += ((element.checked) ? "1" : "0") + "&";
         break;
       default:
         str += element.value + "&";
         break;
     }
   }
-  str = str.substring(0, str.length - 1 - 1);//remove the last character
+  str = str.substring(0, str.length - 1);//remove the last character
 
   console.log(str);
 
@@ -33,7 +33,9 @@ function addParam(name, desc, enumerator, value) {
   var elInput = document.createElement("input");
   if (name == "bAutomation") {
     elInput.type = "checkbox";
-    elInput.checked = (value == 0) ? false : true;
+    elInput.checked = (value == 0.00) ? false : true;
+    console.log(value);
+    console.log(elInput.checked);
   } else {
     elInput.type = "number";
     elInput.value = value;

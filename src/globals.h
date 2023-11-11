@@ -26,8 +26,8 @@ enum data
    CONFIG_VOLTAGE_LIMIT_UNDER_LOAD,
    CONFIG_VOLTAGE_SLEEP_MINUTES,
    CONFIG_ENABLE_AUTOMATION,
-   //TODO: config fan on/off temps
-   //TODO: config heater on/off temps
+   CONFIG_HEAT_TEMP_ON,
+   CONFIG_HEAT_TEMP_OFF,
 };
 enum dataType
 {
@@ -67,7 +67,7 @@ struct setting
    float value;
 };
 
-extern setting settings[9];
+extern setting settings[11];
 
 void loadPreferences();
 void savePreferences();

@@ -76,6 +76,15 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
       // Remove type from string
       str = str.substring(posCommand + 1);
 
+#if defined(CAMPER)
+      if (type == CONFIGS)
+      {
+        // Send the config to the Ext Sesor via API
+        callEXT_SENSORSAPI("api/2", str);
+      }
+
+#endif
+
       do
       {
         int dataEnum = str.substring(0, str.indexOf('=')).toInt();
@@ -171,8 +180,14 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
             Serial.println(dataVal);
             settings[8].value = dataVal.toFloat();
             break;
-            ;
+          case CONFIG_HEAT_TEMP_ON:
+            settings[9].value = dataVal.toFloat();
+            break;
+          case CONFIG_HEAT_TEMP_OFF:
+            settings[10].value = dataVal.toFloat();
+            break;
           }
+
           savePreferences();
         }
 #endif

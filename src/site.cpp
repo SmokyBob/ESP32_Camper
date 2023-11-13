@@ -167,7 +167,7 @@ void setWebHandles()
               }
               file.close();
 #if defined(CAMPER)
-            String EXT_OTA = "<a href='{IP}/update'><span style='color: red;'>OTA Update EXT SENSORS</span> </a><br>'";
+            String EXT_OTA = "<a href='{IP}/update'><span style='color: red;'>OTA Update EXT SENSORS</span> </a><br>";
             EXT_OTA.replace("{IP}",EXT_SENSORS_URL);
             html.replace("{EXT_SENSOR_OTA}",EXT_OTA);
 #else

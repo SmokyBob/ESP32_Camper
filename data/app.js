@@ -18,9 +18,7 @@ function init() {
   Socket.onopen = function (event) {
     //Send updated date from the device
     var myDate = new Date(new Date().getTime() + (-1 * (new Date().getTimezoneOffset()) * 60 * 1000));
-    var str = "1?4=" + myDate.toISOString();
-    console.log(str);
-    Socket.send(str); //Send WS message for processing
+    sendWSCommand("datetime", myDate.toISOString());
   }
 
   Socket.onmessage = function (event) {
@@ -52,6 +50,33 @@ function init() {
 function processCommand(event) {
   var obj = JSON.parse(event.data);
 
+  //ccess properties and update UI elements
+  document.getElementById("datetime").innerHTML = obj["datetime"];
+  document.getElementById("voltage").innerHTML = obj["voltage"];
+  document.getElementById("ext_temperature").innerHTML = obj["ext_temperature"];
+  document.getElementById("ext_humidity").innerHTML = obj["ext_humidity"];
+
+  var checked = obj["window"];
+  if (checked == "1") {
+    document.getElementById("window").checked = true;
+  } else {
+    document.getElementById("window").checked = false;
+  }
+
+  checked = obj["relay1"];
+  if (checked == "1") {
+    document.getElementById("relay1").checked = true;
+  } else {
+    document.getElementById("relay1").checked = false;
+  }
+
+  checked = obj["relay2"];
+  if (checked == "1") {
+    document.getElementById("relay2").checked = true;
+  } else {
+    document.getElementById("relay2").checked = false;
+  }
+
   prependToLog(event.data);
 }
 
@@ -65,6 +90,28 @@ function prependToLog(message) {
     log.insertBefore(el, log.firstChild);
   }
 
+}
+
+var propMap = {};
+propMap["WINDOW"] = "5";
+propMap["RELAY1"] = "6";
+propMap["RELAY2"] = "7";
+propMap["DATETIME"] = "4";
+
+function sendWSCommand(propName, value) {
+
+  var propID = propMap[propName.toUpperCase()];
+  var str = "1?" + propID + "=" + value;
+  console.log(str);
+  Socket.send(str); //Send WS message for processing
+}
+
+function onCheckChanged(chkBox) {
+  var val = '0';
+  if (chkBox.checked) {
+    val = '1';
+  }
+  sendWSCommand(chkBox.id, val);
 }
 
 window.onload = function (event) {

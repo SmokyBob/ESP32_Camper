@@ -6,6 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="./truck.png">
+  <link rel="stylesheet" href="./styles.css">
   <title>ESP Camper</title>
   <style>
     .line {
@@ -18,8 +19,53 @@
 <body style="height: 100%;width: 100%;">
   <a href="/update"><span style="color: red;">OTA Update</span> </a><br>
   {EXT_SENSOR_OTA}
-  <a href="/config"><span style="color: rgb(18, 199, 94);">Config</span> </a><br>
-  <div id="log" style="width: 100%;height: 100%;">
+  <a href="/config"><span style="color: rgb(18, 199, 94);">Config</span></a><br>
+  <table style="width: 100%;">
+    <tr>
+      <td colspan="3">
+        <img src="schedule.svg" alt="Time" />
+        <div id="datetime"></div>
+      </td>
+    </tr>
+    <tr>
+    <td>
+      <img src="bolt.svg" alt="Voltage" />
+      <div id="voltage"></div>
+    </td>
+    <td>
+      <img src="thermometer.svg" alt="Temperature" />
+      <div id="ext_temperature"></div>
+    </td>
+    <td>
+      <img src="humidity_percentage.svg" alt="Humidity %" />
+      <div id="ext_humidity"></div>
+    </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="sync.svg" alt="Window" />
+        <label class="switch">
+          <input id="window" type="checkbox" onclick="onCheckChanged(this);">
+          <span class="slider green round"></span>
+        </label>
+      </td>
+      <td>
+        <img src="mode_fan.svg" alt="Fan" />
+        <label class="switch">
+          <input id="relay1" type="checkbox" onclick="onCheckChanged(this);">
+          <span class="slider blue round"></span>
+        </label>
+      </td>
+      <td>
+        <img src="heat.svg" alt="Heater" />
+        <label class="switch">
+          <input id="relay2" type="checkbox" onclick="onCheckChanged(this);">
+          <span class="slider red round"></span>
+        </label>
+      </td>
+    </tr>
+  </table>
+  <div id="log" style="width: 100%;height: 100%; display: none;">
   </div>
 </body>
 <script src="./app.js"></script>

@@ -79,8 +79,13 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 #if defined(CAMPER)
       if (type == CONFIGS)
       {
-        // Send the config to the Ext Sesor via API
+        // Send the config to the Ext Sensor via API
         callEXT_SENSORSAPI("api/2", str);
+      }
+      if (type == COMMAND)
+      {
+        // Send the commands to the Ext Sensor via API
+        callEXT_SENSORSAPI("api/1", str);
       }
 
 #endif
@@ -129,9 +134,6 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 #if defined(CAMPER)
           // Force a lora send on next loop
           lastLORASend = 0;
-          // TODO: send command to EXT_SENSORS via API call
-          // call EXT_SENSORS API to send the command
-          // callEXT_SENSORSAPI("api/1", String(RELAY1) + "=" + String(last_Relay1));
 #elif defined(HANDHELD)
           // TODO: send command to CAMPER using lora
 #endif

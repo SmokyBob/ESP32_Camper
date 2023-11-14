@@ -24,21 +24,21 @@
     <tr>
       <td colspan="3">
         <img src="schedule.svg" alt="Time" />
-        <div id="datetime"></div>
+        <div id="datetime" style="display: inline-block;"></div>
       </td>
     </tr>
     <tr>
     <td>
       <img src="bolt.svg" alt="Voltage" />
-      <div id="voltage"></div>
+      <div id="voltage" style="display: inline-block;"></div>
     </td>
     <td>
       <img src="thermometer.svg" alt="Temperature" />
-      <div id="ext_temperature"></div>
+      <div id="ext_temperature" style="display: inline-block;"></div>
     </td>
     <td>
       <img src="humidity_percentage.svg" alt="Humidity %" />
-      <div id="ext_humidity"></div>
+      <div id="ext_humidity" style="display: inline-block;"></div>
     </td>
     </tr>
     <tr>
@@ -61,6 +61,15 @@
         <label class="switch">
           <input id="relay2" type="checkbox" onclick="onCheckChanged(this);">
           <span class="slider red round"></span>
+        </label>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="autoplay.svg" alt="Heater" />
+        <label class="switch">
+          <input id="automation" type="checkbox" onclick="onCheckChanged(this);">
+          <span class="slider round"></span>
         </label>
       </td>
     </tr>

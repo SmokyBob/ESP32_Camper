@@ -45,6 +45,7 @@ void sendWebSocketMessage()
   jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
   jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
   jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
+  jsonString += "\"automation\":\"" + String((int)settings[8].value) + "\",";
 
   jsonString += "\"dummy\":null}";
 

@@ -77,6 +77,13 @@ function processCommand(event) {
     document.getElementById("relay2").checked = false;
   }
 
+  checked = obj["automation"];
+  if (checked == "1") {
+    document.getElementById("automation").checked = true;
+  } else {
+    document.getElementById("automation").checked = false;
+  }
+
   prependToLog(event.data);
 }
 
@@ -93,15 +100,16 @@ function prependToLog(message) {
 }
 
 var propMap = {};
-propMap["WINDOW"] = "5";
-propMap["RELAY1"] = "6";
-propMap["RELAY2"] = "7";
-propMap["DATETIME"] = "4";
+propMap["WINDOW"] = { id: "5", type: "1" };
+propMap["RELAY1"] = { id: "6", type: "1" };
+propMap["RELAY2"] = { id: "7", type: "1" };
+propMap["DATETIME"] = { id: "4", type: "1" };
+propMap["AUTOMATION"] = { id: "18", type: "2" };
 
 function sendWSCommand(propName, value) {
 
-  var propID = propMap[propName.toUpperCase()];
-  var str = "1?" + propID + "=" + value;
+  var prop = propMap[propName.toUpperCase()];
+  var str = prop.type + "?" + prop.id + "=" + value;
   console.log(str);
   Socket.send(str); //Send WS message for processing
 }

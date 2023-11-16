@@ -1,0 +1,17 @@
+{
+  "name": "Github Page PWA",
+  "short_name": "GPPWA",
+  "description": "Github Page as a Progressive Web App",
+  "scope": "/ESP32_Camper/",
+  "start_url": "/ESP32_Camper/",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "display": "standalone", 
+  "icons": [
+      {
+        "src": "/ESP32_Camper/img/icon.png",
+        "type": "image/png",
+        "sizes": "700x700"
+      }
+  ]
+}

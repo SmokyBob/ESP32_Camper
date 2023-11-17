@@ -1,6 +1,6 @@
 var GHPATH = '/ESP32_Camper';
 var APP_PREFIX = 'esp32_camper_';
-var VERSION = 'version_002';
+var VERSION = 'version_003';
 var URLS = [    
   `${GHPATH}/`,
   `${GHPATH}/index.html`,

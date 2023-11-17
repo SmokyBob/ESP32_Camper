@@ -131,11 +131,12 @@ void setTime(String utcString)
     Serial.printf("Setting time: %s", buf);
     struct timeval now = {.tv_sec = t};
     settimeofday(&now, NULL);
-
+#if defined(CAMPER) || defined(EXT_SENSORS)
     prf_config.begin("CAMPER", false);
     prf_config.putString("lastTime", utcString);
 
     prf_config.end();
+#endif
 };
 
 #if defined(CAMPER)

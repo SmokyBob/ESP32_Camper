@@ -1,12 +1,22 @@
 var GHPATH = '/ESP32_Camper';
-var APP_PREFIX = 'gppwa_';
-var VERSION = 'version_002';
+var APP_PREFIX = 'esp32_camper_';
+var VERSION = 'version_001';
 var URLS = [    
   `${GHPATH}/`,
   `${GHPATH}/index.html`,
   `${GHPATH}/css/styles.css`,
+  `${GHPATH}/js/app.js`,
   `${GHPATH}/img/truck.png`,
-  `${GHPATH}/js/app.js`
+  `${GHPATH}/img/autoplay.svg`,
+  `${GHPATH}/img/bolt.svg`,
+  `${GHPATH}/img/bolt.svg`,
+  `${GHPATH}/img/bolt.svg`,
+  `${GHPATH}/img/heat.svg`,
+  `${GHPATH}/img/humidity_percentage.svg`,
+  `${GHPATH}/img/mode_fan.svg`,
+  `${GHPATH}/img/schedule.svg`,
+  `${GHPATH}/img/sync.svg`,
+  `${GHPATH}/img/thermometer.svg`
 ]
 
 var CACHE_NAME = APP_PREFIX + VERSION

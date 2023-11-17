@@ -3,21 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitHub page as PWA template</title>
+  <title>ESP32 Camper Web BLE</title>
   <link rel="canonical" href="https://smokybob.github.io/ESP32_Camper/" />
   <link rel="manifest" href="/ESP32_Camper/manifest.webmanifest">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="img/truck.png">
 </head>
 <body>
  
-  <h1>GitHub page as PWA template</h1>
-  <p>
-    This is a PWA template for GitHub pages. 
-    Make sure to check the README at 
-    <a href="https://github.com/smokybob/ESP32_Camper/">https://github.com/smokybob/ESP32_Camper/</a> and 
-    to change the necessary settings to your needs.
-  </p>
-
+  <h1>ESP32 Web BLE Application</h1>
+  <button id="connectBleButton" >Connect to BLE Device</button>
+  <button id="disconnectBleButton">Disconnect BLE Device</button>
+  <p>BLE state: <strong><span id="bleState" style="color:#d13a30;">Disconnected</span></strong></p>
+  <hr>
+  <table id="data" style="width: 100%;display: none;">
+    <tr>
+      <td colspan="3">
+        <img src="img/schedule.svg" alt="Time" />
+        <div id="datetime" style="display: inline-block;"></div>
+      </td>
+    </tr>
+    <tr>
+    <td>
+      <img src="img/bolt.svg" alt="Voltage" />
+      <div id="voltage" style="display: inline-block;"></div>
+    </td>
+    <td>
+      <img src="img/thermometer.svg" alt="Temperature" />
+      <div id="ext_temperature" style="display: inline-block;"></div>
+    </td>
+    <td>
+      <img src="img/humidity_percentage.svg" alt="Humidity %" />
+      <div id="ext_humidity" style="display: inline-block;"></div>
+    </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="img/sync.svg" alt="Window" />
+        <label class="switch">
+          <input id="window" type="checkbox" onclick="onCheckChanged(this);">
+          <span class="slider green round"></span>
+        </label>
+      </td>
+      <td>
+        <img src="img/mode_fan.svg" alt="Fan" />
+        <label class="switch">
+          <input id="relay1" type="checkbox" onclick="onCheckChanged(this);">
+          <span class="slider blue round"></span>
+        </label>
+      </td>
+      <td>
+        <img src="img/heat.svg" alt="Heater" />
+        <label class="switch">
+          <input id="relay2" type="checkbox" onclick="onCheckChanged(this);">
+          <span class="slider red round"></span>
+        </label>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="img/autoplay.svg" alt="Heater" />
+        <label class="switch">
+          <input id="automation" type="checkbox" onclick="onCheckChanged(this);">
+          <span class="slider round"></span>
+        </label>
+      </td>
+    </tr>
+  </table>
+  <!-- TODO: config tab -->
   <script>
       if (navigator.serviceWorker) {
         navigator.serviceWorker.register (

@@ -1,22 +1,95 @@
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #333;
-    background-color: #fff;
-    margin: 0;
-    padding: 2em;
-    height: 90vh;
-    background: url(../img/truck.png) 95% 95% no-repeat;
-    background-size: 20vh;
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 21px;
 }
-h1 {
-    font-size: 1.5em;
-    font-weight: normal;
-    margin: 0;
-    padding: 0;
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
-p {
-    width: 80vw;
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
 }
-a {
-    color: #369;
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 15px;
+    width: 15px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked+.slider {
+    background-color: #5e5e5e;
+}
+
+input:focus+.slider {
+    box-shadow: 0 0 1px #5e5e5e;
+}
+
+input:checked+.slider.green {
+    background-color: #689f38;
+}
+
+input:focus+.slider.green {
+    box-shadow: 0 0 1px #689f38;
+}
+
+input:checked+.slider.blue {
+    background-color: #4e44e2;
+}
+
+input:focus+.slider.blue {
+    box-shadow: 0 0 1px #4e44e2;
+}
+
+input:checked+.slider.red {
+    background-color: #d3280a;
+}
+
+input:focus+.slider.red {
+    box-shadow: 0 0 1px #d3280a;
+}
+
+input:checked+.slider:before {
+    -webkit-transform: translateX(13px);
+    -ms-transform: translateX(13px);
+    transform: translateX(13px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+button#connectBleButton {
+    background: url('../img/bluetooth_connected.svg') no-repeat top left;
+    padding-left: 24px;
+    height: 36px;
+}
+
+button#disconnectBleButton {
+    background: url('../img/bluetooth_disabled.svg') no-repeat top left;
+    padding-left: 24px;
+    height: 36px;
 }

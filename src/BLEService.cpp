@@ -3,6 +3,29 @@
 
 BLEServer *pServer = NULL;
 
+// See the following for generating UUIDs:
+// https://www.uuidgenerator.net/
+#define SERVICE_UUID "a6a7aaee-07da-4005-a5dc-64ee2bb30826"
+
+struct myCharacteristics
+{
+  String name;
+  String uuid;
+  uint16_t properties;
+  BLECharacteristic *refChar;
+};
+
+myCharacteristics charArray[8]{
+    {"volts", "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
+    {"ext_temperature", "226115b6-f631-4f82-b58d-b84487b55a64", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
+    {"ext_humidity", "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
+    {"datetime", "2cdc00e8-907c-4f63-a284-2be098f8ea52", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"window", "4efa5b56-0426-42d7-857e-3ae3370b4a1d", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"relay1", "e8db3027-e095-435d-929c-f471669209c3", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"relay2", "4d15f090-6175-4e3c-b076-6ae0f69b7117", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"automation", "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+};
+
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
@@ -24,104 +47,95 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
 {
   void onWrite(NimBLECharacteristic *pCharacteristic)
   {
-    // TODO: from nRF seems like write is not triggered
     Serial.print(pCharacteristic->getUUID().toString().c_str());
     Serial.print(": onWrite(), value: ");
-    Serial.println(pCharacteristic->getValue().c_str());
-    // TODO: from the characteristic UUID call the correct action with the received value
+    std::string value = pCharacteristic->getValue();
+    Serial.println(value.c_str());
+    String dataVal = value.c_str();
+    for (size_t i = 0; i < (sizeof(charArray) / sizeof(myCharacteristics)); i++)
+    {
+      if (charArray[i].uuid.equals(pCharacteristic->getUUID().toString().c_str()))
+      {
+        if (charArray[i].name == "volts")
+        {
+          last_Voltage = dataVal.toFloat();
+        }
+
+        if (charArray[i].name == "ext_temperature")
+        {
+          last_Temperature = dataVal.toFloat();
+        }
+
+        if (charArray[i].name == "ext_humidity")
+        {
+          last_Humidity = dataVal.toFloat();
+        }
+
+        if (charArray[i].name == "datetime")
+        {
+          last_DateTime = dataVal;
+          setTime(last_DateTime);
+        }
+
+        if (charArray[i].name == "window")
+        {
+#if defined(CAMPER)
+          callEXT_SENSORSAPI("api/1", String(WINDOW) + "=" + dataVal);
+#else
+          // TODO: manage handheld, send lora
+#endif
+          last_WINDOW = (dataVal.toInt() == 1);
+        }
+
+        if (charArray[i].name == "relay1")
+        {
+
+#if defined(CAMPER)
+          callEXT_SENSORSAPI("api/1", String(RELAY1) + "=" + dataVal);
+#else
+          // TODO: manage handheld, send lora
+#endif
+          last_Relay1 = (dataVal.toInt() == 1);
+        }
+
+        if (charArray[i].name == "relay2")
+        {
+#if defined(CAMPER)
+          callEXT_SENSORSAPI("api/1", String(RELAY2) + "=" + dataVal);
+#else
+          // TODO: manage handheld, send lora
+#endif
+          last_Relay2 = (dataVal.toInt() == 1);
+        }
+
+        if (charArray[i].name == "automation")
+        {
+
+#if defined(CAMPER)
+          settings[8].value = dataVal.toFloat();
+          callEXT_SENSORSAPI("api/2", String(CONFIG_ENABLE_AUTOMATION) + "=" + dataVal);
+          savePreferences();
+#else
+          // TODO: manage handheld, send lora
+#endif
+        }
+        break;
+      }
+    }
   };
 };
 
 /** Define callback instances globally to use for multiple Charateristics \ Descriptors */
 static CharacteristicCallbacks chrCallbacks;
 
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/
-#define SERVICE_UUID "a6a7aaee-07da-4005-a5dc-64ee2bb30826"
-
-// Temperature
-#define TEMPERATURE_CHAR_UUID "94ff65cb-29f9-498c-85a7-5b52b0863155"
-#define TEMPERATURE_DESC_UUID "edd8bcc4-1b2d-4a1f-b748-989e582a4728"
-BLECharacteristic TEMPERATURE_Characteristic(TEMPERATURE_CHAR_UUID,
-                                             NIMBLE_PROPERTY::NOTIFY |
-                                                 NIMBLE_PROPERTY::READ);
-BLEDescriptor *TEMPERATURE_Descriptor;
-
-// Humidity
-#define HUMIDITY_CHAR_UUID "d72a475e-2a87-4a37-aba1-dc8d883ba7ee"
-#define HUMIDITY_DESC_UUID "0db248b6-dc38-4766-b99f-e7f38f97f32a"
-BLECharacteristic HUMIDITY_Characteristic(HUMIDITY_CHAR_UUID,
-                                          NIMBLE_PROPERTY::NOTIFY |
-                                              NIMBLE_PROPERTY::READ);
-
-BLEDescriptor *HUMIDITY_Descriptor;
-
-// TODO: change UIDS
-// VOLTS
-#define VOLTS_CHAR_UUID "d72a475e-2a87-4a37-aba1-dc8d883ba7ee"
-#define VOLTS_DESC_UUID "0db248b6-dc38-4766-b99f-e7f38f97f32a"
-BLECharacteristic VOLTS_Characteristic(VOLTS_CHAR_UUID,
-                                       NIMBLE_PROPERTY::NOTIFY |
-                                           NIMBLE_PROPERTY::READ);
-
-BLEDescriptor *VOLTS_Descriptor;
-
-// WINDOW
-#define WINDOW_CHAR_UUID "d72a475e-2a87-4a37-aba1-dc8d883ba7ee"
-#define WINDOW_DESC_UUID "0db248b6-dc38-4766-b99f-e7f38f97f32a"
-BLECharacteristic WINDOW_Characteristic(WINDOW_CHAR_UUID,
-                                        NIMBLE_PROPERTY::NOTIFY |
-                                            NIMBLE_PROPERTY::READ |
-                                            NIMBLE_PROPERTY::WRITE);
-
-BLEDescriptor *WINDOW_Descriptor;
-
-// FAN
-#define FAN_CHAR_UUID "d72a475e-2a87-4a37-aba1-dc8d883ba7ee"
-#define FAN_DESC_UUID "0db248b6-dc38-4766-b99f-e7f38f97f32a"
-BLECharacteristic FAN_Characteristic(FAN_CHAR_UUID,
-                                     NIMBLE_PROPERTY::NOTIFY |
-                                         NIMBLE_PROPERTY::READ |
-                                         NIMBLE_PROPERTY::WRITE);
-
-BLEDescriptor *FAN_Descriptor;
-
-// HEATER
-#define HEATER_CHAR_UUID "d72a475e-2a87-4a37-aba1-dc8d883ba7ee"
-#define HEATER_DESC_UUID "0db248b6-dc38-4766-b99f-e7f38f97f32a"
-BLECharacteristic HEATER_Characteristic(HEATER_CHAR_UUID,
-                                        NIMBLE_PROPERTY::NOTIFY |
-                                            NIMBLE_PROPERTY::READ |
-                                            NIMBLE_PROPERTY::WRITE);
-
-BLEDescriptor *HEATER_Descriptor;
-
-// EXT_TEMPERATURE
-#define EXT_TEMPERATURE_CHAR_UUID "d72a475e-2a87-4a37-aba1-dc8d883ba7ee"
-#define EXT_TEMPERATURE_DESC_UUID "0db248b6-dc38-4766-b99f-e7f38f97f32a"
-BLECharacteristic EXT_TEMPERATURE_Characteristic(EXT_TEMPERATURE_CHAR_UUID,
-                                                 NIMBLE_PROPERTY::NOTIFY |
-                                                     NIMBLE_PROPERTY::READ);
-
-BLEDescriptor *EXT_TEMPERATURE_Descriptor;
-
-// EXT_HUMIDITY
-#define EXT_HUMIDITY_CHAR_UUID "d72a475e-2a87-4a37-aba1-dc8d883ba7ee"
-#define EXT_HUMIDITY_DESC_UUID "0db248b6-dc38-4766-b99f-e7f38f97f32a"
-BLECharacteristic EXT_HUMIDITY_Characteristic(EXT_HUMIDITY_CHAR_UUID,
-                                              NIMBLE_PROPERTY::NOTIFY |
-                                                  NIMBLE_PROPERTY::READ);
-
-BLEDescriptor *EXT_HUMIDITY_Descriptor;
-
 void initBLEService()
 {
-  String BLESERVER = String(DEVICE_NAME) + " BLE";
+  String BLESERVER = "ESP BLE";
 
   // Create the BLE Device
   BLEDevice::init(BLESERVER.c_str());
 
-  // TODO: check a way to request pin to connect, otherwise client considered not connected
+  // TODO: check for a way to request pin to connect
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -130,30 +144,18 @@ void initBLEService()
   // Create the BLE Service
   BLEService *pService = pServer->createService(SERVICE_UUID);
 
-  // TODO: add Characteristics
-  //  temperature Characteristic
-  pService->addCharacteristic(&TEMPERATURE_Characteristic);
-  // // Create a BLE Descriptor
-  // TEMPERATURE_Descriptor = TEMPERATURE_Characteristic.createDescriptor(TEMPERATURE_DESC_UUID,
-  //                                                                      NIMBLE_PROPERTY::NOTIFY |
-  //                                                                          NIMBLE_PROPERTY::READ);
-  // TEMPERATURE_Descriptor->setValue("Temperature");
+  for (size_t i = 0; i < (sizeof(charArray) / sizeof(myCharacteristics)); i++)
+  {
+    charArray[i].refChar = pService->createCharacteristic(
+        NimBLEUUID(charArray[i].uuid.c_str()),
+        charArray[i].properties);
 
-  // TODO: other characteristics
-
-  //  temperature Characteristic
-  pService->addCharacteristic(&WINDOW_Characteristic);
-  // // Create a BLE Descriptor
-  // WINDOW_Descriptor = WINDOW_Characteristic.createDescriptor(WINDOW_DESC_UUID,
-  //                                                            NIMBLE_PROPERTY::NOTIFY |
-  //                                                                NIMBLE_PROPERTY::READ |
-  //                                                                NIMBLE_PROPERTY::WRITE |
-  //                                                                NIMBLE_PROPERTY::READ_ENC |
-  //                                                                NIMBLE_PROPERTY::WRITE_ENC |
-  //                                                                NIMBLE_PROPERTY::WRITE_ENC // only allow writing if paired / encrypted
-  // );
-
-  // WINDOW_Descriptor->setValue("Window");
+    if ((charArray[i].properties & BLE_GATT_CHR_PROP_WRITE) != 0)
+    {
+      Serial.println("   Char id:" + charArray[i].name);
+      charArray[i].refChar->setCallbacks(&chrCallbacks);
+    }
+  }
 
   pService->start();
 
@@ -178,12 +180,57 @@ void handleBLE()
   {
     if ((millis() - lastBLENotify) > 1000)
     {
-      TEMPERATURE_Characteristic.setValue(last_Temperature);
-      TEMPERATURE_Characteristic.notify();
+      for (size_t i = 0; i < (sizeof(charArray) / sizeof(myCharacteristics)); i++)
+      {
 
-      // TODO: notify other values
-      WINDOW_Characteristic.setValue(String(last_WINDOW));
-      WINDOW_Characteristic.notify();
+        if (charArray[i].name == "volts")
+        {
+          charArray[i].refChar->setValue(last_Voltage);
+        }
+
+        if (charArray[i].name == "ext_temperature")
+        {
+          if (!isnan(last_Ext_Temperature))
+            charArray[i].refChar->setValue(last_Ext_Temperature);
+        }
+
+        if (charArray[i].name == "ext_humidity")
+        {
+          if (!isnan(last_Ext_Humidity))
+            charArray[i].refChar->setValue(last_Ext_Humidity);
+        }
+
+        if (charArray[i].name == "datetime")
+        {
+          charArray[i].refChar->setValue(last_DateTime);
+        }
+
+        if (charArray[i].name == "window")
+        {
+          charArray[i].refChar->setValue(String(last_WINDOW));
+        }
+
+        if (charArray[i].name == "relay1")
+        {
+          charArray[i].refChar->setValue(String(last_Relay1));
+        }
+
+        if (charArray[i].name == "relay2")
+        {
+          charArray[i].refChar->setValue(String(last_Relay2));
+        }
+
+        if (charArray[i].name == "automation")
+        {
+#if defined(CAMPER)
+          charArray[i].refChar->setValue(String((int)settings[8].value));
+#else
+// TODO: send lora to camper
+#endif
+        }
+
+        charArray[i].refChar->notify();
+      }
 
       lastBLENotify = millis();
     }

@@ -1,7 +1,7 @@
 {
-  "name": "Github Page PWA",
-  "short_name": "GPPWA",
-  "description": "Github Page as a Progressive Web App",
+  "name": "ESP32 Camper Web BLE",
+  "short_name": "ESP32_Camper_BLE",
+  "description": "PWA Web BLE for ESP32 Camper",
   "scope": "/ESP32_Camper/",
   "start_url": "/ESP32_Camper/",
   "background_color": "#ffffff",
@@ -9,7 +9,7 @@
   "display": "standalone", 
   "icons": [
       {
-        "src": "/ESP32_Camper/img/icon.png",
+        "src": "/ESP32_Camper/img/truck.png",
         "type": "image/png",
         "sizes": "700x700"
       }

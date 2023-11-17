@@ -45,7 +45,11 @@ void sendWebSocketMessage()
   jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
   jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
   jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
+#if defined(CAMPER)
   jsonString += "\"automation\":\"" + String((int)settings[8].value) + "\",";
+#else
+// TODO: for ble, where do we store the automation flag?
+#endif
 
   jsonString += "\"dummy\":null}";
 

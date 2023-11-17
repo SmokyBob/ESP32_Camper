@@ -3,7 +3,7 @@
 #include <AsyncElegantOTA.h>
 
 AsyncWebServer server(80);
-
+#if defined(CAMPER) || defined(EXT_SENSORS)
 void api_get(AsyncWebServerRequest *request)
 {
   Serial.print("api URL:");
@@ -107,7 +107,7 @@ void api_get(AsyncWebServerRequest *request)
     request->send(200, "text/html", "Command received");
   }
 }
-
+#endif
 #if defined(CAMPER)
 void callEXT_SENSORSAPI(String rawUrl, String payload)
 {

@@ -159,7 +159,6 @@ function handleCharacteristicChange(event) {
     if (event.srcElement.uuid == cfg.uuid) {
       characteristicFound = true;
       if (event.target.value.byteLength > 0) {
-        newValueReceived = event.target.value.getFloat32();
         document.getElementById(cfg.id).innerHTML = newValueReceived;
       }
       break;

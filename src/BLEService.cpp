@@ -186,19 +186,19 @@ void handleBLE()
 
         if (charArray[i].name == "volts")
         {
-          charArray[i].refChar->setValue(last_Voltage);
+          charArray[i].refChar->setValue(String(last_Voltage));
         }
 
         if (charArray[i].name == "ext_temperature")
         {
           if (!isnan(last_Ext_Temperature))
-            charArray[i].refChar->setValue(last_Ext_Temperature);
+            charArray[i].refChar->setValue(String(last_Ext_Temperature));
         }
 
         if (charArray[i].name == "ext_humidity")
         {
           if (!isnan(last_Ext_Humidity))
-            charArray[i].refChar->setValue(last_Ext_Humidity);
+            charArray[i].refChar->setValue(String(last_Ext_Humidity));
         }
 
         if (charArray[i].name == "datetime")

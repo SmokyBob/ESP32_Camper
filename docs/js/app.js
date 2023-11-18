@@ -8,7 +8,7 @@ const timestampContainer = document.getElementById('timestamp');
 
 //Define BLE Device Specs
 var deviceName = 'ESP BLE';
-var bleService = 'a6a7aaee-07da-4005-a5dc-64ee2bb30826';
+var bleServiceUID = '41cc63d6-8918-4f8d-ab01-e95e4155ee41';
 
 //Read only characteristics
 var dataChars = {};
@@ -55,7 +55,7 @@ function connectToDevice() {
   console.log('Initializing Bluetooth...');
   navigator.bluetooth.requestDevice({
     filters: [{ name: deviceName }],
-    optionalServices: [bleService]
+    optionalServices: [bleServiceUID]
   })
     .then(device => {
       console.log('Device Selected:', device.name);
@@ -68,7 +68,7 @@ function connectToDevice() {
     .then(gattServer => {
       bleServer = gattServer;
       console.log("Connected to GATT Server");
-      return bleServer.getPrimaryService(bleService);
+      return bleServer.getPrimaryService(bleServiceUID);
     })
     .then(service => {
       bleService = service;

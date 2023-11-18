@@ -5,7 +5,7 @@ BLEServer *pServer = NULL;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
-#define SERVICE_UUID "a6a7aaee-07da-4005-a5dc-64ee2bb30826"
+#define SERVICE_UUID "41cc63d6-8918-4f8d-ab01-e95e4155ee41"
 
 struct myCharacteristics
 {
@@ -164,8 +164,9 @@ void initBLEService()
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
-  pAdvertising->start();
-
+  BLEDevice::startAdvertising();
+  Serial.print("Service UID: ");
+  Serial.println(SERVICE_UUID);
   Serial.println("Waiting a BLE client connection to notify...");
 }
 

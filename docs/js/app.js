@@ -49,6 +49,57 @@ function isWebBluetoothEnabled() {
   console.log('Web Bluetooth API supported in this browser.');
   return true
 }
+function startCharNot(element) {
+  // element = characteristics[index];
+  var characteristicFound = false;
+  //datachars
+  for (const [key, value] of Object.entries(dataChars)) {
+    // console.log(`${key}: ${value.uuid}`);
+    const cfg = value;
+    if (element.uuid == cfg.uuid) {
+      characteristicFound = true
+      cfg.char = element;
+      console.log("Data Characteristic discovered:", cfg.char.uuid);
+      cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+      cfg.char.startNotifications();
+      console.log("Notifications Started.");
+      break;
+    }
+  }
+  if (characteristicFound == false) {
+    //commandChar
+    for (const [key, value] of Object.entries(commandChar)) {
+      // console.log(`${key}: ${value.uuid}`);
+      const cfg = value;
+      if (element.uuid == cfg.uuid) {
+        characteristicFound = true
+        cfg.char = element;
+        cfg.char = element;
+        console.log("Data Characteristic discovered:", cfg.char.uuid);
+        cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+        cfg.char.startNotifications();
+        console.log("Notifications Started.");
+        break;
+      }
+    }
+  }
+  if (characteristicFound == false) {
+    console.log("UNKNOWN Characteristic discovered:", element.uuid);
+  }
+}
+function myPromise(element) {
+  return new Promise(res => {
+    window.setTimeout(() => {
+      res(startCharNot(element))
+    }, 100)
+  })
+}
+
+const forEachSeries = async (iterable, action) => {
+  for (const x of iterable) {
+    await action(x)
+  }
+}
 
 // Connect to BLE Device and Enable Notifications
 function connectToDevice() {
@@ -79,54 +130,14 @@ function connectToDevice() {
       return service.getCharacteristics();
     })
     .then(characteristics => {
-      for (let index = 0; index < characteristics.length; index++) {
-        const element = characteristics[index];
-        var characteristicFound = false;
-        //datachars
-        for (const [key, value] of Object.entries(dataChars)) {
-          // console.log(`${key}: ${value.uuid}`);
-          const cfg = value;
-          if (element.uuid == cfg.uuid) {
-            characteristicFound = true
-            cfg.char = element;
-            console.log("Data Characteristic discovered:", cfg.char.uuid);
-            setTimeout(function () {
-              cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-              cfg.char.startNotifications();
-              console.log("Notifications Started.");
-            }, (index) * 500);
-            break;
-          }
-        }
-        if (characteristicFound == false) {
-          //commandChar
-          for (const [key, value] of Object.entries(commandChar)) {
-            // console.log(`${key}: ${value.uuid}`);
-            const cfg = value;
-            if (element.uuid == cfg.uuid) {
-              characteristicFound = true
-              cfg.char = element;
-              cfg.char = element;
-              console.log("Data Characteristic discovered:", cfg.char.uuid);
-              setTimeout(function () {
-                cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-                cfg.char.startNotifications();
-                console.log("Notifications Started.");
-              }, (index) * 500);
-              break;
-            }
-          }
-        }
-        if (characteristicFound == false) {
-          console.log("UNKNOWN Characteristic discovered:", element.uuid);
-        }
-      }
+      forEachSeries(characteristics, myPromise)
+        .then(() => {
+          console.log('all done!')
+        })
     })
     .catch(error => {
       console.log('Error: ', error);
     })
-
-
 }
 
 function onDisconnected(event) {

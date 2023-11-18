@@ -94,7 +94,7 @@ function connectToDevice() {
               cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
               cfg.char.startNotifications();
               console.log("Notifications Started.");
-            }, (index) * 100);
+            }, (index) * 300);
             break;
           }
         }
@@ -112,7 +112,7 @@ function connectToDevice() {
                 cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
                 cfg.char.startNotifications();
                 console.log("Notifications Started.");
-              }, (index) * 100);
+              }, (index) * 300);
               break;
             }
           }

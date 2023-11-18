@@ -81,38 +81,38 @@ function connectToDevice() {
     .then(characteristics => {
       for (let index = 0; index < characteristics.length; index++) {
         const element = characteristics[index];
-        var characteristic = null;
+        var characteristicFound = false;
         //datachars
         for (const [key, value] of Object.entries(dataChars)) {
           // console.log(`${key}: ${value.uuid}`);
           const cfg = value;
           if (element.uuid == cfg.uuid) {
-            characteristic = element;
+            characteristicFound = true
             cfg.char = element;
-            console.log("Data Characteristic discovered:", characteristic.uuid);
-            characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-            characteristic.startNotifications();
+            console.log("Data Characteristic discovered:", cfg.char.uuid);
+            cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+            cfg.char.startNotifications();
             console.log("Notifications Started.");
             break;
           }
         }
-        if (characteristic == null) {
+        if (characteristicFound == false) {
           //commandChar
           for (const [key, value] of Object.entries(commandChar)) {
             // console.log(`${key}: ${value.uuid}`);
             const cfg = value;
             if (element.uuid == cfg.uuid) {
-              characteristic = element;
+              characteristicFound = true
               cfg.char = element;
-              console.log("Command Characteristic discovered:", characteristic.uuid);
-              characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-              characteristic.startNotifications();
+              console.log("Command Characteristic discovered:", cfg.char.uuid);
+              cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+              cfg.char.startNotifications();
               console.log("Notifications Started.");
               break;
             }
           }
         }
-        if (characteristic == null) {
+        if (characteristicFound == false) {
           console.log("UNKNOWN Characteristic discovered:", element.uuid);
         }
       }
@@ -135,13 +135,13 @@ function onDisconnected(event) {
 
 function handleCharacteristicChange(event) {
   var newValueReceived = new TextDecoder().decode(event.target.value);
-  var characteristic = null;
+  var characteristicFound = false;
   //datachars
   for (const [key, value] of Object.entries(dataChars)) {
     // console.log(`${key}: ${value.uuid}`);
     const cfg = value;
     if (event.srcElement.uuid == cfg.uuid) {
-      characteristic = cfg;
+      characteristicFound = true;
       if (event.target.value.byteLength > 0) {
         newValueReceived = event.target.value.getFloat32();
         document.getElementById(cfg.id).innerHTML = newValueReceived;
@@ -149,13 +149,13 @@ function handleCharacteristicChange(event) {
       break;
     }
   }
-  if (characteristic == null) {
+  if (characteristicFound == false) {
     //commandChar
     for (const [key, value] of Object.entries(commandChar)) {
       // console.log(`${key}: ${value.uuid}`);
       const cfg = value;
       if (event.srcElement.uuid == cfg.uuid) {
-        characteristic = cfg;
+        characteristicFound = true;
         if (cfg.id == "datetime") {
           document.getElementById(cfg.id).innerHTML = newValueReceived;
         } else {
@@ -172,7 +172,7 @@ function handleCharacteristicChange(event) {
     }
   }
 
-  if (characteristic == null) {
+  if (characteristicFound == false) {
     console.log("Notification from UNKNOWN Characteristic:", event.srcElement.uuid);
   }
 

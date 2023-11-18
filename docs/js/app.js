@@ -90,9 +90,11 @@ function connectToDevice() {
             characteristicFound = true
             cfg.char = element;
             console.log("Data Characteristic discovered:", cfg.char.uuid);
-            cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-            cfg.char.startNotifications();
-            console.log("Notifications Started.");
+            setTimeout(function () {
+              cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+              cfg.char.startNotifications();
+              console.log("Notifications Started.");
+            }, (index) * 100);
             break;
           }
         }
@@ -104,10 +106,13 @@ function connectToDevice() {
             if (element.uuid == cfg.uuid) {
               characteristicFound = true
               cfg.char = element;
-              console.log("Command Characteristic discovered:", cfg.char.uuid);
-              cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-              cfg.char.startNotifications();
-              console.log("Notifications Started.");
+              cfg.char = element;
+              console.log("Data Characteristic discovered:", cfg.char.uuid);
+              setTimeout(function () {
+                cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+                cfg.char.startNotifications();
+                console.log("Notifications Started.");
+              }, (index) * 100);
               break;
             }
           }
@@ -236,7 +241,7 @@ function disconnectDevice() {
     bleServer.disconnect();
 
     console.log("Device Disconnected");
-    
+
     location.href = location.href;//refresh the page to reinit the bt object
   } else {
     // Throw an error if Bluetooth is not connected

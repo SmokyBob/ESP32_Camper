@@ -52,39 +52,45 @@ function isWebBluetoothEnabled() {
 
 function addCharNotifications() {
   const promArray = [];
+  var i = 0;
   for (const [key, value] of Object.entries(dataChars)) {
     if (value.notificationReg == false) {
+      i = i + 1;
       promArray.push(new Promise((resolve) => {
-        value.char.startNotifications()
-          .then(() => {
-            //Add Event listenener
-            value.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-            value.notificationReg = true;
-            console.log(value.id + " notification added");
-            resolve("ok");
-          })
-          .catch(error => {
-            resolve("nope");
-          });
+        setTimeout(() => {
+          value.char.startNotifications()
+            .then(() => {
+              //Add Event listenener
+              value.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+              value.notificationReg = true;
+              console.log(value.id + " notification added");
+              resolve("ok");
+            })
+            .catch(error => {
+              resolve("nope");
+            });
+        }, i * 100);
       })
       );
     }
   }
   for (const [key, value] of Object.entries(commandChar)) {
-
     if (value.notificationReg == false) {
+      i = i + 1;
       promArray.push(new Promise((resolve) => {
-        value.char.startNotifications()
-          .then(() => {
-            //Add Event listenener
-            value.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-            value.notificationReg = true;
-            console.log(value.id + " notification added");
-            resolve("ok");
-          })
-          .catch(error => {
-            resolve("nope");
-          });
+        setTimeout(() => {
+          value.char.startNotifications()
+            .then(() => {
+              //Add Event listenener
+              value.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+              value.notificationReg = true;
+              console.log(value.id + " notification added");
+              resolve("ok");
+            })
+            .catch(error => {
+              resolve("nope");
+            });
+        }, i * 100);
       })
       );
     }

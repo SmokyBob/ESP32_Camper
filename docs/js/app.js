@@ -54,7 +54,7 @@ function addCharNotifications() {
   const promArray = [];
   for (const [key, value] of Object.entries(dataChars)) {
     if (value.notificationReg == false) {
-      promArray.push(new Promise((resolve, fail) => {
+      promArray.push(new Promise((resolve) => {
         value.char.startNotifications()
           .then(() => {
             //Add Event listenener
@@ -64,7 +64,7 @@ function addCharNotifications() {
             resolve("ok");
           })
           .catch(error => {
-            fail("nope");
+            resolve("nope");
           });
       })
       );
@@ -73,7 +73,7 @@ function addCharNotifications() {
   for (const [key, value] of Object.entries(commandChar)) {
 
     if (value.notificationReg == false) {
-      promArray.push(new Promise((resolve, fail) => {
+      promArray.push(new Promise((resolve) => {
         value.char.startNotifications()
           .then(() => {
             //Add Event listenener
@@ -83,7 +83,7 @@ function addCharNotifications() {
             resolve("ok");
           })
           .catch(error => {
-            fail("nope");
+            resolve("nope");
           });
       })
       );

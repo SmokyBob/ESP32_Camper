@@ -12,18 +12,18 @@ var bleServiceUID = '41cc63d6-8918-4f8d-ab01-e95e4155ee41';
 
 //Read only characteristics
 var dataChars = {};
-dataChars["VOLTAGE"] = { uuid: "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", id: "voltage", char: null };
-dataChars["EXT_TEMPERATURE"] = { uuid: "226115b6-f631-4f82-b58d-b84487b55a64", id: "ext_temperature", char: null };
-dataChars["EXT_HUMIDITY"] = { uuid: "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", id: "ext_humidity", char: null };
+dataChars["VOLTAGE"] = { uuid: "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", id: "voltage", char: null, notificationReg: false };
+dataChars["EXT_TEMPERATURE"] = { uuid: "226115b6-f631-4f82-b58d-b84487b55a64", id: "ext_temperature", char: null, notificationReg: false };
+dataChars["EXT_HUMIDITY"] = { uuid: "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", id: "ext_humidity", char: null, notificationReg: false };
 
 
 //Command characteristics
 var commandChar = {};
-commandChar["WINDOW"] = { uuid: "4efa5b56-0426-42d7-857e-3ae3370b4a1d", id: "window", char: null };
-commandChar["RELAY1"] = { uuid: "e8db3027-e095-435d-929c-f471669209c3", id: "relay1", char: null };
-commandChar["RELAY2"] = { uuid: "4d15f090-6175-4e3c-b076-6ae0f69b7117", id: "relay2", char: null };
-commandChar["AUTOMATION"] = { uuid: "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", id: "automation", char: null };
-commandChar["DATETIME"] = { uuid: "2cdc00e8-907c-4f63-a284-2be098f8ea52", id: "datetime", char: null };
+commandChar["WINDOW"] = { uuid: "4efa5b56-0426-42d7-857e-3ae3370b4a1d", id: "window", char: null, notificationReg: false };
+commandChar["RELAY1"] = { uuid: "e8db3027-e095-435d-929c-f471669209c3", id: "relay1", char: null, notificationReg: false };
+commandChar["RELAY2"] = { uuid: "4d15f090-6175-4e3c-b076-6ae0f69b7117", id: "relay2", char: null, notificationReg: false };
+commandChar["AUTOMATION"] = { uuid: "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", id: "automation", char: null, notificationReg: false };
+commandChar["DATETIME"] = { uuid: "2cdc00e8-907c-4f63-a284-2be098f8ea52", id: "datetime", char: null, notificationReg: false };
 
 //Global Variables to Handle Bluetooth
 var bleServer;
@@ -49,56 +49,58 @@ function isWebBluetoothEnabled() {
   console.log('Web Bluetooth API supported in this browser.');
   return true
 }
-function startCharNot(element) {
-  // element = characteristics[index];
-  var characteristicFound = false;
-  //datachars
-  for (const [key, value] of Object.entries(dataChars)) {
-    // console.log(`${key}: ${value.uuid}`);
-    const cfg = value;
-    if (element.uuid == cfg.uuid) {
-      characteristicFound = true
-      cfg.char = element;
-      console.log("Data Characteristic discovered:", cfg.char.uuid);
-      cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-      cfg.char.startNotifications();
-      console.log("Notifications Started.");
-      break;
-    }
-  }
-  if (characteristicFound == false) {
-    //commandChar
-    for (const [key, value] of Object.entries(commandChar)) {
-      // console.log(`${key}: ${value.uuid}`);
-      const cfg = value;
-      if (element.uuid == cfg.uuid) {
-        characteristicFound = true
-        cfg.char = element;
-        cfg.char = element;
-        console.log("Data Characteristic discovered:", cfg.char.uuid);
-        cfg.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
-        cfg.char.startNotifications();
-        console.log("Notifications Started.");
-        break;
-      }
-    }
-  }
-  if (characteristicFound == false) {
-    console.log("UNKNOWN Characteristic discovered:", element.uuid);
-  }
-}
-function myPromise(element) {
-  return new Promise(res => {
-    window.setTimeout(() => {
-      res(startCharNot(element))
-    }, 100)
-  })
-}
 
-const forEachSeries = async (iterable, action) => {
-  for (const x of iterable) {
-    await action(x)
+function addCharNotifications() {
+  const promArray = [];
+  for (const [key, value] of Object.entries(dataChars)) {
+    if (value.notificationReg == false) {
+      promArray.push(new Promise((resolve, fail) => {
+        value.char.startNotifications()
+          .then(() => {
+            //Add Event listenener
+            value.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+            value.notificationReg = true;
+            console.log(value.id + " notification added");
+            resolve("ok");
+          })
+          .catch(error => {
+            fail("nope");
+          });
+      })
+      );
+    }
   }
+  for (const [key, value] of Object.entries(commandChar)) {
+
+    if (value.notificationReg == false) {
+      promArray.push(new Promise((resolve, fail) => {
+        value.char.startNotifications()
+          .then(() => {
+            //Add Event listenener
+            value.char.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+            value.notificationReg = true;
+            console.log(value.id + " notification added");
+            resolve("ok");
+          })
+          .catch(error => {
+            fail("nope");
+          });
+      })
+      );
+    }
+  }
+  (async function () {
+    const results = await Promise.all(promArray);
+    // outputs `[2, 3, 5]` after five seconds
+    console.log(results);
+
+    //Check if some notificaton failes
+    if (results.includes("nope")) {
+      setTimeout(() => {
+        addCharNotifications();
+      }, 100);
+    }
+  })();
 }
 
 // Connect to BLE Device and Enable Notifications
@@ -130,10 +132,41 @@ function connectToDevice() {
       return service.getCharacteristics();
     })
     .then(characteristics => {
-      forEachSeries(characteristics, myPromise)
-        .then(() => {
-          console.log('all done!')
-        })
+      //Map characteristics
+      for (const element of characteristics) {
+        var characteristicFound = false;
+        //datachars
+        for (const [key, value] of Object.entries(dataChars)) {
+          // console.log(`${key}: ${value.uuid}`);
+          const cfg = value;
+          if (element.uuid == cfg.uuid) {
+            characteristicFound = true
+            cfg.char = element;
+            console.log("Data Characteristic discovered:", cfg.char.uuid);
+            break;
+          }
+        }
+        if (characteristicFound == false) {
+          //commandChar
+          for (const [key, value] of Object.entries(commandChar)) {
+            // console.log(`${key}: ${value.uuid}`);
+            const cfg = value;
+            if (element.uuid == cfg.uuid) {
+              characteristicFound = true
+              cfg.char = element;
+              console.log("Data Characteristic discovered:", cfg.char.uuid);
+              break;
+            }
+          }
+        }
+        if (characteristicFound == false) {
+          console.log("UNKNOWN Characteristic discovered:", element.uuid);
+        }
+      }
+
+      //Add notitications recursively until all norifications are done
+      addCharNotifications();
+
     })
     .catch(error => {
       console.log('Error: ', error);

@@ -28,6 +28,7 @@ enum data
    CONFIG_ENABLE_AUTOMATION,
    CONFIG_HEAT_TEMP_ON,
    CONFIG_HEAT_TEMP_OFF,
+   IGNORE_LOW_VOLT,
 };
 enum dataType
 {
@@ -46,6 +47,7 @@ extern bool last_Relay2;
 extern String last_DateTime;
 extern float last_Ext_Temperature;
 extern float last_Ext_Humidity;
+extern String last_IgnoreLowVolt;
 
 extern float last_SNR;
 extern float last_RSSI;

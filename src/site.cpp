@@ -25,6 +25,17 @@ void api_get(AsyncWebServerRequest *request)
     jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
     jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
     jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
+#if defined(CAMPER)
+    jsonString += "\"automation\":\"" + String((int)settings[8].value) + "\",";
+    String tmpBool = "0";
+    if (last_IgnoreLowVolt != "")
+    {
+      tmpBool = "1";
+    }
+
+    jsonString += "\"220power\":\"" + String(tmpBool) + "\",";
+
+#endif
 
     jsonString += "\"dummy\":null}";
 
@@ -75,6 +86,24 @@ void api_get(AsyncWebServerRequest *request)
       case DATETIME:
         last_DateTime = dataVal;
         setTime(last_DateTime);
+        break;
+      case IGNORE_LOW_VOLT:
+        if (dataVal.toInt() == 1)
+        {
+          struct tm timeinfo;
+          getLocalTime(&timeinfo);
+          char buf[100];
+          strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+          last_IgnoreLowVolt = String(buf);
+        }
+        else
+        {
+          last_IgnoreLowVolt = "";
+        }
+
+        Serial.print("api\\get   last_IgnoreLowVolt: ");
+        Serial.println(last_IgnoreLowVolt);
         break;
       }
     }

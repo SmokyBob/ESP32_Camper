@@ -13,7 +13,6 @@ void runAutomation()
   currTemp = last_Temperature;
 #endif
 
-  // TODO: automation with manual ovverride
 #ifdef Servo_pin
   if (currTemp > -1000)
   {
@@ -48,7 +47,7 @@ void runAutomation()
     }
   }
 #endif
-// TODO: automation with manual ovverride
+
 #ifdef Relay2_pin
   if (currTemp > -1000)
   {

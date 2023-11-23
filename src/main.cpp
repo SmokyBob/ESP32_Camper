@@ -47,8 +47,13 @@ void sendWebSocketMessage()
   jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
 #if defined(CAMPER)
   jsonString += "\"automation\":\"" + String((int)settings[8].value) + "\",";
-#else
-// TODO: for ble, where do we store the automation flag?
+  String tmpBool = "0";
+  if (last_IgnoreLowVolt != "")
+  {
+    tmpBool = "1";
+  }
+
+  jsonString += "\"220power\":\"" + String(tmpBool) + "\",";
 #endif
 
   jsonString += "\"dummy\":null}";
@@ -134,6 +139,22 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
           case DATETIME:
             last_DateTime = dataVal;
             setTime(last_DateTime);
+            break;
+          case IGNORE_LOW_VOLT:
+            if (dataVal.toInt() == 1)
+            {
+              struct tm timeinfo;
+              getLocalTime(&timeinfo);
+              char buf[100];
+              strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+              last_IgnoreLowVolt = String(buf);
+            }
+            else
+            {
+              last_IgnoreLowVolt = "";
+            }
+
             break;
           }
 #if defined(CAMPER)
@@ -245,14 +266,14 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
 #if defined(CAMPER) || defined(HANDHELD)
 // LoRaData format:
 // String examples (0 = Sensor Data):
-//  0?enum.data.TEMP=36
-//  0?enum.data.TEMP=36.00&enum.data.humidity=90.00&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
-//  0?enum.data.relay1=0
+// 0?enum.data.TEMP=36
+// 0?enum.data.TEMP=36.00&enum.data.humidity=90.00&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
+// 0?enum.data.relay1=0
 // RealString
-//  0?3=12065&0=20.00&1=35.00&2=13.23&4=20230416113532
+// 0?3=12065&0=20.00&1=35.00&2=13.23&4=20230416113532
 // String examples (1 = Commands):
-//  1?enum.data.relay1=1
-//  1?enum.data.relay1=0
+// 1?enum.data.relay1=1
+// 1?enum.data.relay1=0
 void sendLoRaSensors()
 {
   // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
@@ -509,25 +530,34 @@ void loop()
       Serial.print("api/sensors: ");
       Serial.println(jsonResult);
 
-      // Allocate a temporary JsonDocument
-      // Don't forget to change the capacity to match your requirements.
-      // Use https://arduinojson.org/v6/assistant to compute the capacity.
-      StaticJsonDocument<384> doc;
-      DeserializationError error = deserializeJson(doc, jsonResult);
+      if (jsonResult == "")
+      {
+        // Lost connection with ext_sensor
+        // Reinit to reconnect
+        EXT_SENSORS_URL = "";
+      }
+      else
+      {
+        // Allocate a temporary JsonDocument
+        // Don't forget to change the capacity to match your requirements.
+        // Use https://arduinojson.org/v6/assistant to compute the capacity.
+        StaticJsonDocument<384> doc;
+        DeserializationError error = deserializeJson(doc, jsonResult);
 
-      // Copy values from the JsonDocument
-      // only the values from ext_sensors
-      last_Ext_Temperature = doc["ext_temperature"];
-      last_Ext_Humidity = doc["ext_humidity"];
+        // Copy values from the JsonDocument
+        // only the values from ext_sensors
+        last_Ext_Temperature = doc["ext_temperature"];
+        last_Ext_Humidity = doc["ext_humidity"];
 
-      String tmp = doc["window"];
-      last_WINDOW = (tmp == "1");
-      String tmp1 = doc["relay1"];
-      last_Relay1 = (tmp1 == "1");
-      String tmp2 = doc["relay2"];
-      last_Relay2 = (tmp2 == "1");
+        String tmp = doc["window"];
+        last_WINDOW = (tmp == "1");
+        String tmp1 = doc["relay1"];
+        last_Relay1 = (tmp1 == "1");
+        String tmp2 = doc["relay2"];
+        last_Relay2 = (tmp2 == "1");
 
-      lastAPICheck = millis();
+        lastAPICheck = millis();
+      }
     }
   }
 
@@ -554,6 +584,13 @@ void loop()
     last_Voltage = doc["voltage"];
 
     lastAPICheck = millis();
+
+    // Check if connected to WIFI
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      Serial.println(F("Wifi Not connected! Reconnecting"));
+      ESP.restart(); // Reinit to reconnect
+    }
   }
 #endif
 
@@ -580,28 +617,55 @@ void loop()
 #endif
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
-  float voltageLimit = settings[5].value;
-  if (last_Relay2)
+  if (last_IgnoreLowVolt != "")
   {
-    // Heater on, check the under load limit
-    voltageLimit = settings[6].value;
-  }
-  if (settings[7].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
-  {
-    // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
-    if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug
+    // diff with current time, if more than an hour set to "" to stop ignoring the low voltage
+    struct tm tm;
+    strptime(last_IgnoreLowVolt.c_str(), "%FT%T", &tm);
+
+    time_t time_last = mktime(&tm);
+    char buf[100];
+    strftime(buf, sizeof(buf), "%FT%T", &tm);
+    // Serial.printf("last_IgnoreLowVolt: %s \n", buf);
+
+    struct tm timeinfo;
+    getLocalTime(&timeinfo);
+    time_t time_curr = mktime(&timeinfo);
+
+    float minutes_passed = (time_curr - time_last) / 60.0;
+    // Serial.printf("mins passed: %.2f \n", minutes_passed);
+
+    if (minutes_passed >= 60.00)
     {
-      uint64_t hrSleepUs = (1 * (settings[7].value) * 60 * 1000); // in milliseconds
-      hrSleepUs = hrSleepUs * 1000;                               // in microseconds
+      // 1hr passed, reenable low voltage check
+      last_IgnoreLowVolt = "";
+    }
+  }
+  if (last_IgnoreLowVolt == "")
+  {
+    float voltageLimit = settings[5].value;
+    if (last_Relay2)
+    {
+      // Heater on, check the under load limit
+      voltageLimit = settings[6].value;
+    }
+    if (settings[7].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
+    {
+      // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
+      if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug
+      {
+        uint64_t hrSleepUs = (1 * (settings[7].value) * 60 * 1000); // in milliseconds
+        hrSleepUs = hrSleepUs * 1000;                               // in microseconds
 #ifdef WIFI_PWD
-      // do many stuff
-      WiFi.mode(WIFI_MODE_NULL);
-      // comment one or both following lines and measure deep sleep current
-      esp_wifi_stop(); // you must do esp_wifi_start() the next time you'll need wifi or esp32 will crash
-      adc_power_release();
+        // do many stuff
+        WiFi.mode(WIFI_MODE_NULL);
+        // comment one or both following lines and measure deep sleep current
+        esp_wifi_stop(); // you must do esp_wifi_start() the next time you'll need wifi or esp32 will crash
+        adc_power_release();
 #endif
-      esp_sleep_enable_timer_wakeup(hrSleepUs);
-      esp_deep_sleep_start();
+        esp_sleep_enable_timer_wakeup(hrSleepUs);
+        esp_deep_sleep_start();
+      }
     }
   }
 #endif

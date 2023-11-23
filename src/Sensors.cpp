@@ -104,7 +104,15 @@ float getVoltage()
 
     double sum = 0.00; // sum will be larger than an item, double for safety.
     for (int i = 0; i < 5; i++)
+    {
       sum += _voltArray[i];
+      
+      Serial.print("  volt[");
+      Serial.print(i);
+      Serial.print("] : ");
+      Serial.println(_voltArray[i]);
+    }
+
     return ((float)sum) / 5; // average will be fractional, so float may be appropriate.
   }
   else

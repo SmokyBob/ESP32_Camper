@@ -24,6 +24,7 @@ commandChar["RELAY1"] = { uuid: "e8db3027-e095-435d-929c-f471669209c3", id: "rel
 commandChar["RELAY2"] = { uuid: "4d15f090-6175-4e3c-b076-6ae0f69b7117", id: "relay2", char: null, notificationReg: false };
 commandChar["AUTOMATION"] = { uuid: "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", id: "automation", char: null, notificationReg: false };
 commandChar["DATETIME"] = { uuid: "2cdc00e8-907c-4f63-a284-2be098f8ea52", id: "datetime", char: null, notificationReg: false };
+commandChar["220POWER"] = { uuid: "70c74d81-5a61-43c0-b82b-08fcc9109ff4", id: "220power", char: null, notificationReg: false };
 
 //Global Variables to Handle Bluetooth
 var bleServer;

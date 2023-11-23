@@ -9,6 +9,7 @@ bool last_Relay1;
 bool last_Relay2;
 float last_Ext_Temperature = NAN;
 float last_Ext_Humidity = NAN;
+String last_IgnoreLowVolt;
 
 String last_DateTime;
 float last_SNR;

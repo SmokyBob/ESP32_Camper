@@ -15,7 +15,7 @@ struct myCharacteristics
   BLECharacteristic *refChar;
 };
 
-myCharacteristics charArray[8]{
+myCharacteristics charArray[9]{
     {"volts", "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
     {"ext_temperature", "226115b6-f631-4f82-b58d-b84487b55a64", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
     {"ext_humidity", "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
@@ -24,6 +24,7 @@ myCharacteristics charArray[8]{
     {"relay1", "e8db3027-e095-435d-929c-f471669209c3", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
     {"relay2", "4d15f090-6175-4e3c-b076-6ae0f69b7117", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
     {"automation", "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"220power", "70c74d81-5a61-43c0-b82b-08fcc9109ff4", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
 };
 
 bool deviceConnected = false;
@@ -115,6 +116,32 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
           settings[8].value = dataVal.toFloat();
           callEXT_SENSORSAPI("api/2", String(CONFIG_ENABLE_AUTOMATION) + "=" + dataVal);
           savePreferences();
+#else
+          // TODO: manage handheld, send lora
+#endif
+        }
+        if (charArray[i].name == "220power")
+        {
+
+#if defined(CAMPER)
+          if (dataVal.toInt() == 1)
+          {
+            struct tm timeinfo;
+            getLocalTime(&timeinfo);
+            char buf[100];
+            strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+            last_IgnoreLowVolt = String(buf);
+          }
+          else
+          {
+            last_IgnoreLowVolt = "";
+          }
+          
+          Serial.print("            last_IgnoreLowVolt: ");
+          Serial.println(last_IgnoreLowVolt);
+
+          callEXT_SENSORSAPI("api/1", String(IGNORE_LOW_VOLT) + "=" + dataVal);
 #else
           // TODO: manage handheld, send lora
 #endif
@@ -225,6 +252,19 @@ void handleBLE()
         {
 #if defined(CAMPER)
           charArray[i].refChar->setValue(String((int)settings[8].value));
+#else
+// TODO: send lora to camper
+#endif
+        }
+        if (charArray[i].name == "220power")
+        {
+          String tmpBool = "0";
+          if (last_IgnoreLowVolt != "")
+          {
+            tmpBool = "1";
+          }
+#if defined(CAMPER)
+          charArray[i].refChar->setValue(String(tmpBool));
 #else
 // TODO: send lora to camper
 #endif

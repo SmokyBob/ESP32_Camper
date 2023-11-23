@@ -58,12 +58,21 @@ input:checked+.slider.blue {
 input:focus+.slider.blue {
   box-shadow: 0 0 1px #4e44e2;
 }
+
 input:checked+.slider.red {
   background-color: #d3280a;
 }
 
 input:focus+.slider.red {
   box-shadow: 0 0 1px #d3280a;
+}
+
+input:checked+.slider.orange {
+  background-color: orange;
+}
+
+input:focus+.slider.orange {
+  box-shadow: 0 0 1px orange;
 }
 
 input:checked+.slider:before {

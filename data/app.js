@@ -84,6 +84,13 @@ function processCommand(event) {
     document.getElementById("automation").checked = false;
   }
 
+  checked = obj["220power"];
+  if (checked == "1") {
+    document.getElementById("220power").checked = true;
+  } else {
+    document.getElementById("220power").checked = false;
+  }
+
   prependToLog(event.data);
 }
 
@@ -105,6 +112,7 @@ propMap["RELAY1"] = { id: "6", type: "1" };
 propMap["RELAY2"] = { id: "7", type: "1" };
 propMap["DATETIME"] = { id: "4", type: "1" };
 propMap["AUTOMATION"] = { id: "18", type: "2" };
+propMap["220POWER"] = { id: "21", type: "1" };
 
 function sendWSCommand(propName, value) {
 

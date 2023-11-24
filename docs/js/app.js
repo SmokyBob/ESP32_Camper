@@ -12,9 +12,9 @@ var bleServiceUID = '41cc63d6-8918-4f8d-ab01-e95e4155ee41';
 
 //Read only characteristics
 var dataChars = {};
-dataChars["VOLTAGE"] = { uuid: "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", id: "voltage", char: null, notificationReg: false };
-dataChars["EXT_TEMPERATURE"] = { uuid: "226115b6-f631-4f82-b58d-b84487b55a64", id: "ext_temperature", char: null, notificationReg: false };
-dataChars["EXT_HUMIDITY"] = { uuid: "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", id: "ext_humidity", char: null, notificationReg: false };
+dataChars["VOLTAGE"] = { uuid: "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", id: "voltage", char: null, notificationReg: false, lastUserNotification: null };
+dataChars["EXT_TEMPERATURE"] = { uuid: "226115b6-f631-4f82-b58d-b84487b55a64", id: "ext_temperature", char: null, notificationReg: false, lastUserNotification: null };
+dataChars["EXT_HUMIDITY"] = { uuid: "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", id: "ext_humidity", char: null, notificationReg: false, lastUserNotification: null };
 
 
 //Command characteristics
@@ -200,6 +200,57 @@ function handleCharacteristicChange(event) {
       characteristicFound = true;
       if (event.target.value.byteLength > 0) {
         document.getElementById(cfg.id).innerHTML = newValueReceived;
+        if (Notification.permission === "granted") {
+          //Check what to notify 
+          if (cfg.id == "voltage") {
+            var bNotify = false;
+            if (cfg.lastUserNotification == null) {
+              bNotify = true;
+            } else {
+              var diffMs = (new Date() - cfg.lastUserNotification); // milliseconds difference
+              var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
+
+              if (diffMins >= 1) {
+                bNotify = true;
+              }
+            }
+            if (parseFloat(newValueReceived) <= 12.5 && bNotify) {
+
+              new Notification(
+                'Voltage low',
+                {
+                  body: 'Current Voltage is ' + newValueReceived,
+                  icon: 'img/bolt.svg'
+                }
+              );
+              cfg.lastUserNotification = new Date();
+            }
+          }
+          if (cfg.id == "ext_temperature") {
+            var bNotify = false;
+            if (cfg.lastUserNotification == null) {
+              bNotify = true;
+            } else {
+              var diffMs = (new Date() - cfg.lastUserNotification); // milliseconds difference
+              var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
+
+              if (diffMins >= 5) {
+                bNotify = true;
+              }
+            }
+            if (parseFloat(newValueReceived) <= 15.0 && bNotify) {
+              new Notification(
+                'Temperature low',
+                {
+                  body: 'Current Temperature is ' + newValueReceived,
+                  icon: 'img/thermometer.svg'
+                }
+              );
+              cfg.lastUserNotification = new Date();
+            }
+          }
+
+        }
       }
       break;
     }
@@ -305,3 +356,16 @@ function getDateTime() {
 
   return myDate.toISOString();
 }
+
+
+document.getElementById('show-notification-button').
+  addEventListener('click', () => {
+    Notification.requestPermission().then((permissionResult) => {
+      if (permissionResult === 'granted') {
+        new Notification(
+          'Notifications ON',
+          { body: 'Configured notifications will be diplayed here (for now hardcoded notifications)' }
+        );
+      }
+    })
+  });

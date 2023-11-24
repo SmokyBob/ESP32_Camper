@@ -1,7 +1,12 @@
-var GHPATH = '/ESP32_Camper';
+
+var base = '/ESP32_Camper';
+if (location.href.startsWith('http://localhost')) {
+  base = '/docs';
+}
+var GHPATH = base;
 var APP_PREFIX = 'esp32_camper_';
-var VERSION = 'version_013';
-var URLS = [    
+var VERSION = 'version_014';
+var URLS = [
   `${GHPATH}/`,
   `${GHPATH}/index.html`,
   `${GHPATH}/css/styles.css`,
@@ -24,10 +29,10 @@ self.addEventListener('fetch', function (e) {
   console.log('Fetch request : ' + e.request.url);
   e.respondWith(
     caches.match(e.request).then(function (request) {
-      if (request) { 
+      if (request) {
         console.log('Responding with cache : ' + e.request.url);
         return request
-      } else {       
+      } else {
         console.log('File is not cached, fetching : ' + e.request.url);
         return fetch(e.request)
       }
@@ -53,7 +58,7 @@ self.addEventListener('activate', function (e) {
       cacheWhitelist.push(CACHE_NAME);
       return Promise.all(keyList.map(function (key, i) {
         if (cacheWhitelist.indexOf(key) === -1) {
-          console.log('Deleting cache : ' + keyList[i] );
+          console.log('Deleting cache : ' + keyList[i]);
           return caches.delete(keyList[i])
         }
       }))

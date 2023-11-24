@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ESP32 Camper Web BLE</title>
   <link rel="canonical" href="https://smokybob.github.io/ESP32_Camper/" />
-  <link rel="manifest" href="/ESP32_Camper/manifest.webmanifest">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="img/truck.png">
 </head>
+
 <body>
- 
+
   <h1>ESP32 Web BLE Application</h1>
-  <button id="connectBleButton" >Connect to BLE Device</button>
+  <button id="connectBleButton">Connect to BLE Device</button>
   <button id="disconnectBleButton">Disconnect BLE Device</button>
   <p>BLE state: <strong><span id="bleState" style="color:#d13a30;">Disconnected</span></strong></p>
   <hr>
+  <button id="show-notification-button">
+    Eneble Device Notification
+  </button>
   <table id="data" style="width: 100%;display: none;">
     <tr>
       <td colspan="3">
@@ -24,18 +29,18 @@
       </td>
     </tr>
     <tr>
-    <td>
-      <img src="img/bolt.svg" alt="Voltage" />
-      <div id="voltage" style="display: inline-block;"></div>
-    </td>
-    <td>
-      <img src="img/thermometer.svg" alt="Temperature" />
-      <div id="ext_temperature" style="display: inline-block;"></div>
-    </td>
-    <td>
-      <img src="img/humidity_percentage.svg" alt="Humidity %" />
-      <div id="ext_humidity" style="display: inline-block;"></div>
-    </td>
+      <td>
+        <img src="img/bolt.svg" alt="Voltage" />
+        <div id="voltage" style="display: inline-block;"></div>
+      </td>
+      <td>
+        <img src="img/thermometer.svg" alt="Temperature" />
+        <div id="ext_temperature" style="display: inline-block;"></div>
+      </td>
+      <td>
+        <img src="img/humidity_percentage.svg" alt="Humidity %" />
+        <div id="ext_humidity" style="display: inline-block;"></div>
+      </td>
     </tr>
     <tr>
       <td>
@@ -78,14 +83,30 @@
     </tr>
   </table>
   <!-- TODO: config tab -->
+
   <script>
-      if (navigator.serviceWorker) {
-        navigator.serviceWorker.register (
-          '/ESP32_Camper/sw.js',
-          {scope: '/ESP32_Camper/'}
-        )
+    if (navigator.serviceWorker) {
+      var base = '/ESP32_Camper/';
+      if (location.href.startsWith('http://localhost')) {
+        base = '/docs/';
       }
+      navigator.serviceWorker.register(
+        base + 'sw.js',
+        { scope: base }
+      ).then((registration) => {
+        Notification.requestPermission().then((permissionResult) => {
+          if (permissionResult === 'granted') {
+            document.getElementById('show-notification-button').style.display = 'none';
+            registration.showNotification(
+              'Notifications ON',
+              { body: 'Configured notifications will be diplayed here (for now hardcoded notifications)' }
+            );
+          }
+        })
+      })
+    }
   </script>
   <script src="js/app.js"></script>
 </body>
+
 </html>

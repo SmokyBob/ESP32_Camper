@@ -366,6 +366,7 @@ document.getElementById('show-notification-button').
           'Notifications ON',
           { body: 'Configured notifications will be diplayed here (for now hardcoded notifications)' }
         );
+        document.getElementById('show-notification-button').style.display = 'none';
       }
     })
   });

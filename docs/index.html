@@ -97,10 +97,6 @@
         Notification.requestPermission().then((permissionResult) => {
           if (permissionResult === 'granted') {
             document.getElementById('show-notification-button').style.display = 'none';
-            registration.showNotification(
-              'Notifications ON',
-              { body: 'Configured notifications will be diplayed here (for now hardcoded notifications)' }
-            );
           }
         })
       })

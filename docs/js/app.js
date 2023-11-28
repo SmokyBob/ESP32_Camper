@@ -215,13 +215,14 @@ function handleCharacteristicChange(event) {
               }
             }
             if (parseFloat(newValueReceived) <= 12.5 && bNotify) {
-
-              new Notification(
-                'Voltage low',
-                {
-                  body: 'Current Voltage is ' + newValueReceived,
-                  icon: 'img/bolt.svg'
-                }
+              //on android notifications can be created ONLY by Service worker
+              //we send a postMessage API commant to the SW with the info for the notification
+              navigator.serviceWorker.controller.postMessage({
+                'type': 'notification',
+                'title': 'Voltage low',
+                'body': 'Current Voltage is ' + newValueReceived,
+                'icon': 'img/bolt.svg'
+              }
               );
               cfg.lastUserNotification = new Date();
             }
@@ -239,13 +240,16 @@ function handleCharacteristicChange(event) {
               }
             }
             if (parseFloat(newValueReceived) <= 15.0 && bNotify) {
-              new Notification(
-                'Temperature low',
-                {
-                  body: 'Current Temperature is ' + newValueReceived,
-                  icon: 'img/thermometer.svg'
-                }
+              //on android notifications can be created ONLY by Service worker
+              //we send a postMessage API commant to the SW with the info for the notification
+              navigator.serviceWorker.controller.postMessage({
+                'type': 'notification',
+                'title': 'Temperature low',
+                'body': 'Current Temperature is ' + newValueReceived,
+                'icon': 'img/thermometer.svg'
+              }
               );
+
               cfg.lastUserNotification = new Date();
             }
           }

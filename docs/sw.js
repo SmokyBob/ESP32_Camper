@@ -5,7 +5,7 @@ if (location.href.startsWith('http://localhost')) {
 }
 var GHPATH = base;
 var APP_PREFIX = 'esp32_camper_';
-var VERSION = 'version_018';
+var VERSION = 'version_019';
 var URLS = [
   `${GHPATH}/`,
   `${GHPATH}/index.html`,
@@ -65,4 +65,23 @@ self.addEventListener('activate', function (e) {
       }))
     })
   )
+})
+
+self.addEventListener('message', function (evt) {
+  //on android, notifications can be triggered only from service worker
+  //we use the postMessage API to get the data from the page and show the notification
+  //ATTENTION!!!
+  //Web BT CAN'T be accessed from the SW ... so notifications might be late
+  console.log('postMessage received', evt.data);
+
+  if (evt.data.type == 'notification') {
+    registration.showNotification(
+      evt.data.title,
+      {
+        body: evt.data.body,
+        icon: evt.data.icon
+      }
+    );
+  }
+
 })

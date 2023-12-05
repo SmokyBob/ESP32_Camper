@@ -12,6 +12,12 @@
 #ifdef EXT_DHT22_pin
 #include "SimpleDHT.h"
 #endif
+#if defined(EXT_SHT2_SDA) || defined(SHT2_SDA)
+#include "SHT2x.h"
+#ifdef CAMPER
+#include "Wire.h"
+#endif
+#endif
 
 void initSensors();
 void readSensors();

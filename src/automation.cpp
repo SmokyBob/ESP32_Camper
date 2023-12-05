@@ -4,7 +4,7 @@ void runAutomation()
 {
   float currTemp = -1000; // Start with extreme negative value to manage nan value / no temp sensor working
 
-#ifdef EXT_DHT22_pin
+#if defined(EXT_DHT22_pin) || defined(EXT_SHT2_SDA)
   if (isnan(last_Ext_Temperature) != true)
   {
     currTemp = last_Ext_Temperature;

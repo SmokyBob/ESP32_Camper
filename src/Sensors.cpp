@@ -14,6 +14,12 @@ Servo windowServo;
 SimpleDHT22 *ext_dht22;
 
 #endif
+#if defined(EXT_SHT2_SDA) || defined(SHT2_SDA)
+SHT2x tempSensor;
+#if defined(CAMPER)
+TwoWire I2Cone = TwoWire(1);
+#endif
+#endif
 
 float _vref = 1100;
 
@@ -48,6 +54,19 @@ void initSensors()
 
 #ifdef EXT_DHT22_pin
   ext_dht22 = new SimpleDHT22(EXT_DHT22_pin);
+  // ext_dht22->setPinInputMode(INPUT_PULLDOWN);
+#endif
+#ifdef EXT_SHT2_SDA
+  bool res = tempSensor.begin(EXT_SHT2_SDA, EXT_SHT2_SCL);
+  Serial.print("EXT_SHT2 init result:");
+  Serial.println(res);
+#endif
+#ifdef SHT2_SDA
+  I2Cone.begin(SHT2_SDA, SHT2_SCL);
+  bool res = tempSensor.begin(&I2Cone);
+  Serial.print("SHT2 init result:");
+  Serial.println(res);
+  tempSensor.reset();
 #endif
 };
 
@@ -106,7 +125,7 @@ float getVoltage()
     for (int i = 0; i < 5; i++)
     {
       sum += _voltArray[i];
-      
+
       Serial.print("  volt[");
       Serial.print(i);
       Serial.print("] : ");
@@ -137,6 +156,7 @@ void readSensors()
 
   if (millis() > lastCheck + maxSensorsPool)
   {
+#if defined(DHT22_pin) || defined(EXT_DHT22_pin)
     int err = SimpleDHTErrSuccess;
 #ifdef DHT22_pin
 
@@ -148,18 +168,102 @@ void readSensors()
     // Serial.printf("temp %.2f \n", last_Temperature);
     // Serial.printf("hum %.2f \n", last_Humidity);
 #endif
-#ifdef Voltage_pin
-    last_Voltage = getVoltage();
-#endif
 #ifdef EXT_DHT22_pin
 
     if ((err = ext_dht22->read2(&last_Ext_Temperature, &last_Ext_Humidity, NULL)) != SimpleDHTErrSuccess)
     {
       Serial.print("Read EXT DHT22 failed, err=");
-      Serial.println(err);
+      Serial.println(SimpleDHTErrCode(err));
     }
     // Serial.printf("temp %.2f \n", last_Ext_Temperature);
     // Serial.printf("hum %.2f \n", last_Ext_Humidity);
+#endif
+#endif
+
+#if defined(EXT_SHT2_SDA) || defined(SHT2_SDA)
+    uint8_t stat = tempSensor.getStatus();
+    Serial.print("SHT2 status: ");
+    Serial.println(stat, HEX);
+    bool readOK = tempSensor.read();
+    float tmpTemp = tempSensor.getTemperature();
+    float tmphum = tempSensor.getHumidity();
+    if (readOK)
+    {
+#ifdef EXT_SHT2_SDA
+      if (!isnan(tmpTemp))
+      {
+        if (isnan(last_Ext_Temperature))
+        {
+          last_Ext_Temperature = tmpTemp;
+        }
+        else
+        {
+          if (tmpTemp >= -40)
+          {
+
+            // allow only change of 40 degs between readings otherwise treat it as an error
+            if ((tmpTemp - last_Ext_Temperature) <= 40)
+            {
+              last_Ext_Temperature = tmpTemp;
+            }
+            else
+            {
+              Serial.printf("                    Read temperature %.2f \n", tmpTemp);
+            }
+          }
+          else
+          {
+            Serial.printf("                    Read temperature %.2f \n", tmpTemp);
+          }
+        }
+      }
+      if (!isnan(tmphum))
+      {
+        last_Ext_Humidity = tmphum;
+      }
+
+      Serial.printf("EXT temperature %.2f \n", last_Ext_Temperature);
+      Serial.printf("EXT hum %.2f \n", last_Ext_Humidity);
+#else
+      if (!isnan(tmpTemp))
+      {
+        if (isnan(last_Temperature))
+        {
+          last_Temperature = tmpTemp;
+        }
+        else
+        {
+          // allow only change of 40 degs between readings otherwise treat it as an error
+          if ((tmpTemp - last_Temperature) <= 40)
+          {
+            last_Temperature = tmpTemp;
+          }
+          else
+          {
+            Serial.printf("                    Read temperature %.2f \n", tmpTemp);
+          };
+        }
+      }
+      if (!isnan(tmphum))
+      {
+        last_Humidity = tmphum;
+      }
+
+      Serial.printf("temperature %.2f \n", last_Temperature);
+      Serial.printf("hum %.2f \n", last_Humidity);
+
+#endif
+    }
+    else
+    {
+      Serial.print("SHT2 error: ");
+      Serial.println(tempSensor.getError(), HEX);
+    }
+
+#endif
+
+#ifdef Voltage_pin
+    last_Voltage = getVoltage();
 #endif
 
     lastCheck = millis();

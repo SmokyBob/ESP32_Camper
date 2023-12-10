@@ -1,4 +1,4 @@
-#if defined(CAMPER) || defined(EXT_SENSORS)
+
 #include "Arduino.h"
 #include "Sensors.h"
 #include "esp_adc_cal.h"
@@ -16,7 +16,7 @@ SimpleDHT22 *ext_dht22;
 #endif
 #if defined(EXT_SHT2_SDA) || defined(SHT2_SDA)
 SHT2x tempSensor;
-#if defined(CAMPER)
+#if defined(CAMPER) || defined(HANDHELD)
 TwoWire I2Cone = TwoWire(1);
 #endif
 #endif
@@ -29,7 +29,7 @@ void initSensors()
   int_dht22 = new SimpleDHT22(DHT22_pin);
 #endif
 
-#ifdef Voltage_pin
+#if defined(Voltage_pin) || defined(VDiv_Batt_pin)
   esp_adc_cal_characteristics_t adc_chars;
   esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
   _vref = adc_chars.vref; // Obtain the device ADC reference voltage
@@ -73,7 +73,7 @@ void initSensors()
 unsigned long lastCheck = 0;
 unsigned long maxSensorsPool = 2500;
 
-#ifdef Voltage_pin
+#if defined(Voltage_pin) || defined(VDiv_Batt_pin)
 float _voltArray[5];
 bool voltInitComplete = false;
 byte voltArrayindex = 0;
@@ -82,16 +82,27 @@ void calculateVoltage()
 {
   float result;
   float readValue; // value read from the sensor
-  readValue = analogRead(Voltage_pin);
+  uint8_t voltPin;
+  float voltCalibration;
 
-  // N.B. this formula assumes a 100k ohm based Voltage divider on the input voltage
-  result = (readValue / 4095) // ADC Resolution (4096 = 0-4095)
-           * VDiv_MaxVolt     // Max Input Voltage use during voltage divider calculation (Ex. 15)
-           * (1100 / _vref)   // Device Calibration offset
-           * (VDiv_Res_Calc   // Theorethical resistance calculated
-              / VDiv_Res_Real // Real Installed resistance (Ex. 27k, or if you have not a 27k ... 20k + 5.1k + 2k in series )
-              ) *
-           settings[4].value; // VDiv_Calibration;
+#if defined(Voltage_pin)
+  voltPin = Voltage_pin;
+  voltCalibration = settings[4].value;
+#elif defined(VDiv_Batt_pin)
+
+  voltPin = VDiv_Batt_pin;
+  voltCalibration = VDiv_Calibration;
+#endif
+
+  readValue = analogRead(voltPin);
+
+  result = (readValue / 4095)  // ADC Resolution (4096 = 0-4095)
+           * VDiv_MaxVolt      // Max Input Voltage use during voltage divider calculation (Ex. 15)
+           * (1100 / _vref)    // Device Calibration offset
+           * ((VDiv_Res_plus + // R1 or the resistence connected to positive (real value)
+               VDiv_Res_gnd) / // R2 or the resistence connectect to GND (real value)
+              VDiv_Res_gnd) *
+           voltCalibration; // VDiv_Calibration;
 
   // Serial.printf("Voltage: %.2f VDiv_Calibration:%.4f\n", result, settings[4].value);
 
@@ -145,7 +156,7 @@ unsigned long voltTick = 0;
 
 void readSensors()
 {
-#ifdef Voltage_pin
+#if defined(Voltage_pin) || defined(VDiv_Batt_pin)
   // Calculate the voltage every second
   if ((millis() - voltTick) > 1000)
   {
@@ -227,6 +238,7 @@ void readSensors()
 #else
       if (!isnan(tmpTemp))
       {
+#if defined(CAMPER)
         if (isnan(last_Temperature))
         {
           last_Temperature = tmpTemp;
@@ -243,14 +255,42 @@ void readSensors()
             Serial.printf("                    Read temperature %.2f \n", tmpTemp);
           };
         }
+        Serial.printf("temperature %.2f \n", last_Temperature);
+
+#elif defined(HANDHELD)
+        if (isnan(hand_Temperature))
+        {
+          hand_Temperature = tmpTemp;
+        }
+        else
+        {
+          // allow only change of 40 degs between readings otherwise treat it as an error
+          if ((tmpTemp - hand_Temperature) <= 40)
+          {
+            hand_Temperature = tmpTemp;
+          }
+          else
+          {
+            Serial.printf("                    Read temperature %.2f \n", tmpTemp);
+          };
+        }
+#endif
       }
+#if defined(CAMPER)
       if (!isnan(tmphum))
       {
         last_Humidity = tmphum;
       }
 
-      Serial.printf("temperature %.2f \n", last_Temperature);
       Serial.printf("hum %.2f \n", last_Humidity);
+#elif defined(HANDHELD)
+      if (!isnan(tmphum))
+      {
+        hand_Humidity = tmphum;
+      }
+
+      Serial.printf("hum %.2f \n", hand_Humidity);
+#endif
 
 #endif
     }
@@ -262,15 +302,18 @@ void readSensors()
 
 #endif
 
-#ifdef Voltage_pin
+#if defined(Voltage_pin)
     last_Voltage = getVoltage();
+#endif
+#if defined(VDiv_Batt_pin)
+    batt_Voltage = getVoltage();
 #endif
 
     lastCheck = millis();
     last_Millis = lastCheck;
   }
 }
-
+#if defined(CAMPER) || defined(EXT_SENSORS)
 int servoDegreeDelay = 5;
 
 int lastPos = -1;

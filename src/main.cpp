@@ -7,8 +7,8 @@
 #ifdef OLED
 #include "OledUtil.h"
 #endif
-#if defined(CAMPER) || defined(EXT_SENSORS)
 #include "Sensors.h"
+#if defined(CAMPER) || defined(EXT_SENSORS)
 #include "automation.h"
 #endif
 
@@ -322,8 +322,8 @@ void setup()
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
   loadPreferences();
-  initSensors();
 #endif
+  initSensors();
 #ifdef OLED
   initOled();
 #endif
@@ -515,9 +515,8 @@ void loop()
   }
 #endif
 #endif
-#if defined(CAMPER) || defined(EXT_SENSORS)
+
   readSensors();
-#endif
 
 #if defined(CAMPER)
   if (EXT_SENSORS_URL != "")

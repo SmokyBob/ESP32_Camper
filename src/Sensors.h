@@ -1,6 +1,6 @@
 #ifndef SENSORS_H
 #define SENSORS_H
-#if defined(CAMPER) || defined(EXT_SENSORS)
+
 #include "Arduino.h"
 #include "globals.h"
 #ifdef DHT22_pin
@@ -14,14 +14,14 @@
 #endif
 #if defined(EXT_SHT2_SDA) || defined(SHT2_SDA)
 #include "SHT2x.h"
-#ifdef CAMPER
+#if defined(CAMPER) || defined(HANDHELD)
 #include "Wire.h"
 #endif
 #endif
 
 void initSensors();
 void readSensors();
-
+#if defined(CAMPER) || defined(EXT_SENSORS)
 void setWindow(bool isOpen);
 void setFan(bool isOn);
 void setHeater(bool isOn);

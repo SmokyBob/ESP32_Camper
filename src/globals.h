@@ -48,6 +48,11 @@ extern String last_DateTime;
 extern float last_Ext_Temperature;
 extern float last_Ext_Humidity;
 extern String last_IgnoreLowVolt;
+#if defined(HANDHELD)
+extern float batt_Voltage;
+extern float hand_Temperature;
+extern float hand_Humidity;
+#endif
 
 extern float last_SNR;
 extern float last_RSSI;
@@ -58,7 +63,9 @@ struct batt_perc
    uint8_t percentage;
 };
 
-extern batt_perc batt_perc_list[14];
+extern batt_perc batt_perc_12_list[14];
+extern batt_perc batt_perc_3_7_list[21];
+
 extern unsigned long lastLORASend;
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
@@ -78,7 +85,7 @@ void resetPreferences();
 #endif
 void setTime(String utcString);
 
-#if defined(CAMPER) 
+#if defined(CAMPER)
 extern String EXT_SENSORS_URL;
 #endif
 #if defined(EXT_SENSORS)

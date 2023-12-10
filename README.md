@@ -14,7 +14,7 @@ This Project is mostly tailored to my needs but can be forked
   - For monitoring and command
 - BLE monitoring and control with notifications
   - For monitoring, commands and configuration
-  - UI via Offline Web App
+  - UI via Offline Web App at https://smokybob.github.io/ESP32_Camper/
 - Automate tasks
   - Open / Close vent at specific temperatures
   - Turn fan on / off at specific temperatures
@@ -36,6 +36,7 @@ This Project is mostly tailored to my needs but can be forked
 
 # TODOS
 ## Code
+- [ ] BLE UI, Tap Friendly sliders on mobile
 - [ ] BLE UI, Configuration edit
 - [ ] BLE UI, Configurable notifications saved in local storage on the UI device
 - [ ] Custom "camper" automations configurable in a list
@@ -45,9 +46,10 @@ This Project is mostly tailored to my needs but can be forked
     - 2023-12-06 18:17:05 Automation 'heater ON temp low' triggered
     - 2023-12-06 18:14:00 Automation 'window Close temp low' triggered
 - [ ] Data Optimization (es. no last_X variables, but an array of object with map to the Enumerators)
+- [ ] Async sensors reading in dedicated threads
 
 ## Hardware
-- [ ] Better Handheld battery and charging
+- [x] Better Handheld battery and charging
 - [ ] High power MOSFET, the board is cheap and easy but limited to 15A ... and for the heater a bigger mosfet with a heatsync would be better then the hacked up piece of aluminium currently in use
 - [ ] CAMPER_OLED temperature sensor, because it's near the battery and we could set heater automation profiles to keep the battery in a good temperature range for charging
 - [ ] SDCard expansion for extensive logging

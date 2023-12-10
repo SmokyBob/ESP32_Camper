@@ -154,7 +154,9 @@ uint8_t towards(struct menu_state *current, struct menu_state *destination)
 uint8_t _flipMode = 1;     // Default 180 Degree flip... because i like the buttons on the right side
 bool _controlMenu = false; // true to navigate and edit the control menu instead of the global menu
 uint8_t _controlSelected = 0;
-float _int_ext = NAN; // if 1 show external, if 0 shows internal
+float _int_ext_hand = NAN; // if 1 show external, if 0 shows internal
+float _hand_camp = NAN;    // if 1 show HANDHELD Battery, if 0 shows CAMPER
+
 // Button navigation
 void click()
 {
@@ -258,13 +260,37 @@ void longPress()
     if (menu_entry_list[destination_state.position].name == "Temperature" ||
         (menu_entry_list[destination_state.position].name == "Humidity"))
     {
-      if (_int_ext == 0)
-        _int_ext = 1;
-      else
-        _int_ext = 0;
+      if (isnan(_int_ext_hand))
+      {
+        _int_ext_hand = 0;
+      }
+      _int_ext_hand = _int_ext_hand + 1;
+      #if defined(HANDHELD)
+      if (_int_ext_hand == 3)
+      {
+        _int_ext_hand = 0;
+      }
+      #else
+      if (_int_ext_hand == 2)
+      {
+        _int_ext_hand = 0;
+      }
+      #endif
 
       _millisLongPress = millis();
     }
+
+#if defined(HANDHELD)
+    if (menu_entry_list[destination_state.position].name == "Voltage")
+    {
+      if (_hand_camp == 0)
+        _hand_camp = 1;
+      else
+        _hand_camp = 0;
+
+      _millisLongPress = millis();
+    }
+#endif
 
     if (menu_entry_list[destination_state.position].name == "Servo and Relays")
     {
@@ -414,7 +440,6 @@ void drawHomePage()
   }
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
-  // TODO: maybe drop this for window status?
   row = 3;
   column = 1;
   x = (column - 1) * columnW;
@@ -424,8 +449,26 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 247); // LORA Signal Font Image
   // Text
   u8g2->setFont(text_Font);
+#if !defined(HANDHELD)
   snprintf(buf, sizeof(buf), "%.2f,%.2f", last_RSSI, last_SNR);
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+#else
+  snprintf(buf, sizeof(buf), "%.2f", last_RSSI);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  row = 3;
+  column = 2;
+  x = (column - 1) * columnW;
+  y = (row - 1) * iconH;
+  // Icon
+  u8g2->setFont(icon_Font);
+  u8g2->drawGlyph(x, y + iconH, 96 - 6); // Battery Font Image
+  // Text
+  u8g2->setFont(text_Font);
+  snprintf(buf, sizeof(buf), "%.2f", batt_Voltage);
+  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+#endif
 }
 
 void drawTemperaturePage()
@@ -433,7 +476,7 @@ void drawTemperaturePage()
   char buf[256];
   int iconH = 48;
   int iconW = 48;
-  int textH = 46;
+  int textH = 16;
   int row = 0;
   int column = 0;
   int columnW = (u8g2->getDisplayWidth() / 2) - 1;
@@ -448,13 +491,13 @@ void drawTemperaturePage()
   u8g2->setFont(u8g2_font_open_iconic_all_6x_t);
   u8g2->drawGlyph(x, y + iconH, 256 + 3); // SUN Font Image
   // Text
-  u8g2->setFont(u8g2_font_inb46_mf);
+  u8g2->setFont(u8g2_font_inb16_mf);
 
-  if (isnan(_int_ext))
+  if (isnan(_int_ext_hand))
   {
-    _int_ext = 0;
+    _int_ext_hand = 0;
   }
-  if (_int_ext == 0)
+  if (_int_ext_hand == 0)
   {
     if (isnan(last_Ext_Temperature) != true)
     {
@@ -462,13 +505,20 @@ void drawTemperaturePage()
     }
     else
     {
+      _int_ext_hand = 1; // no ext_temp, force to internal
       snprintf(buf, sizeof(buf), "%.0fC", last_Temperature);
     }
   }
+  else if (_int_ext_hand == 1)
+  {
+    snprintf(buf, sizeof(buf), "%.2fC", last_Temperature);
+  }
+  #if defined(HANDHELD)
   else
   {
-    snprintf(buf, sizeof(buf), "%.0fC", last_Temperature);
+    snprintf(buf, sizeof(buf), "%.2fC", hand_Temperature);
   }
+  #endif
 
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
@@ -478,7 +528,7 @@ void drawHumidityPage()
   char buf[256];
   int iconH = 48;
   int iconW = 48;
-  int textH = 46;
+  int textH = 16;
   int row = 0;
   int column = 0;
   int columnW = (u8g2->getDisplayWidth() / 2) - 1;
@@ -493,12 +543,12 @@ void drawHumidityPage()
   u8g2->setFont(u8g2_font_open_iconic_all_6x_t);
   u8g2->drawGlyph(x, y + iconH, 160 - 8); // Water Drop Font Image
   // Text
-  u8g2->setFont(u8g2_font_inb46_mf);
-  if (isnan(_int_ext))
+  u8g2->setFont(u8g2_font_inb16_mf);
+  if (isnan(_int_ext_hand))
   {
-    _int_ext = 0;
+    _int_ext_hand = 0;
   }
-  if (_int_ext == 0)
+  if (_int_ext_hand == 0)
   {
     if (isnan(last_Ext_Humidity) != true)
     {
@@ -506,13 +556,20 @@ void drawHumidityPage()
     }
     else
     {
-      snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
+      _int_ext_hand = 1; // no ext_temp, force to internal
+      snprintf(buf, sizeof(buf), "%.2f%%", last_Humidity);
     }
   }
+  else if (_int_ext_hand == 1)
+  {
+    snprintf(buf, sizeof(buf), "%.2f%%", last_Humidity);
+  }
+  #if defined(HANDHELD)
   else
   {
-    snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
+    snprintf(buf, sizeof(buf), "%.2f%%", hand_Humidity);
   }
+  #endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
 
@@ -534,24 +591,65 @@ void drawVoltagePage()
   y = (row - 1) * iconH;
   // Icon
   u8g2->setFont(u8g2_font_open_iconic_all_6x_t);
-  u8g2->drawGlyph(x, y + iconH, 96 + 0); // BOLT Font Image
+  if (isnan(_hand_camp))
+  {
+    _hand_camp = 0;
+  }
+#if !defined(HANDHELD)
+  _hand_camp = 0;
+#endif
+  if (_hand_camp == 0)
+  {
+    u8g2->drawGlyph(x, y + iconH, 96 + 0); // BOLT Font Image
+  }
+  else
+  {
+    u8g2->drawGlyph(x, y + iconH, 96 - 6); // Battery Font Image
+  }
   // Text
   u8g2->setFont(u8g2_font_inb19_mf);
-  snprintf(buf, sizeof(buf), "%.2f", last_Voltage);
+
+  if (_hand_camp == 0)
+  {
+    snprintf(buf, sizeof(buf), "%.2f", last_Voltage);
+  }
+#if defined(HANDHELD)
+  else
+  {
+    snprintf(buf, sizeof(buf), "%.2f", batt_Voltage);
+  }
+#endif
+
   u8g2->drawStr(x + iconW, y + (textH + 2), buf);
 
-  // Calculate battPercentage
+  //  Calculate battPercentage
   uint8_t bp = 0;
-
-  for (size_t i = 0; i < (sizeof(batt_perc_list) / sizeof(batt_perc)); i++)
+  if (_hand_camp == 0)
   {
-    /* table lookup */
-    if (last_Voltage >= batt_perc_list[i].voltage)
+    for (size_t i = 0; i < (sizeof(batt_perc_12_list) / sizeof(batt_perc)); i++)
     {
-      bp = batt_perc_list[i].percentage;
-      break;
+      /* table lookup */
+      if (last_Voltage >= batt_perc_12_list[i].voltage)
+      {
+        bp = batt_perc_12_list[i].percentage;
+        break;
+      }
     }
   }
+#if defined(HANDHELD)
+  else
+  {
+    for (size_t i = 0; i < (sizeof(batt_perc_3_7_list) / sizeof(batt_perc)); i++)
+    {
+      /* table lookup */
+      if (batt_Voltage >= batt_perc_3_7_list[i].voltage)
+      {
+        bp = batt_perc_3_7_list[i].percentage;
+        break;
+      }
+    }
+  }
+#endif
   // Serial.printf("battery perc: %u%%\n", bp);
 
   snprintf(buf, sizeof(buf), "%u%%", bp);

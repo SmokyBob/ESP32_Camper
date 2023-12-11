@@ -151,6 +151,22 @@ uint8_t towards(struct menu_state *current, struct menu_state *destination)
   return r;
 }
 
+ulong _oledStartMillis;
+bool _displayOn;
+
+void turnOffOled()
+{
+  u8g2->setPowerSave(1); // Turn Off display
+  _displayOn = false;
+}
+
+void turnOnOled()
+{
+  u8g2->setPowerSave(0); // Turn ON display
+  _oledStartMillis = millis();
+  _displayOn = true;
+}
+
 uint8_t _flipMode = 1;     // Default 180 Degree flip... because i like the buttons on the right side
 bool _controlMenu = false; // true to navigate and edit the control menu instead of the global menu
 uint8_t _controlSelected = 0;
@@ -161,17 +177,25 @@ float _hand_camp = NAN;    // if 1 show HANDHELD Battery, if 0 shows CAMPER
 void click()
 {
   Serial.println("click");
-  if (!_controlMenu)
+  if (_displayOn == false)
   {
-    to_right(&destination_state);
+    turnOnOled();
   }
   else
   {
-    // Move to next control
-    _controlSelected++;
-    if (_controlSelected > 2)
+
+    if (!_controlMenu)
     {
-      _controlSelected = 0;
+      to_right(&destination_state);
+    }
+    else
+    {
+      // Move to next control
+      _controlSelected++;
+      if (_controlSelected > 2)
+      {
+        _controlSelected = 0;
+      }
     }
   }
 
@@ -265,17 +289,17 @@ void longPress()
         _int_ext_hand = 0;
       }
       _int_ext_hand = _int_ext_hand + 1;
-      #if defined(HANDHELD)
+#if defined(HANDHELD)
       if (_int_ext_hand == 3)
       {
         _int_ext_hand = 0;
       }
-      #else
+#else
       if (_int_ext_hand == 2)
       {
         _int_ext_hand = 0;
       }
-      #endif
+#endif
 
       _millisLongPress = millis();
     }
@@ -334,7 +358,9 @@ void initOled()
 
   u8g2->sendBuffer();
 
-  delay(3000);
+  delay(2000);
+  _oledStartMillis = millis();
+  _displayOn = true;
 
   // Init button
   button = new OneButton(0, true);
@@ -513,12 +539,12 @@ void drawTemperaturePage()
   {
     snprintf(buf, sizeof(buf), "%.2fC", last_Temperature);
   }
-  #if defined(HANDHELD)
+#if defined(HANDHELD)
   else
   {
     snprintf(buf, sizeof(buf), "%.2fC", hand_Temperature);
   }
-  #endif
+#endif
 
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
@@ -564,12 +590,12 @@ void drawHumidityPage()
   {
     snprintf(buf, sizeof(buf), "%.2f%%", last_Humidity);
   }
-  #if defined(HANDHELD)
+#if defined(HANDHELD)
   else
   {
     snprintf(buf, sizeof(buf), "%.2f%%", hand_Humidity);
   }
-  #endif
+#endif
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 }
 
@@ -836,26 +862,36 @@ void drawPage()
   // keep watching the push button
   button->tick();
 
-  if ((u_long)(millis() - lastDraw) >= 50)
+  if (_displayOn)
   {
-    // Move to the correct menu
-    do
+    if ((u_long)(millis() - _oledStartMillis) >= (60 * 1000))
     {
-    } while (towards(&current_state, &destination_state)); // loop till destination is reached
+      turnOffOled();
+    }
+    else
+    {
+      if ((u_long)(millis() - lastDraw) >= 50)
+      {
+        // Move to the correct menu
+        do
+        {
+        } while (towards(&current_state, &destination_state)); // loop till destination is reached
 
-    // Clear the screen
-    u8g2->clearBuffer();
+        // Clear the screen
+        u8g2->clearBuffer();
 
-    // Call the page draw function
-    (*menu_entry_list[destination_state.position].drawFunc)();
+        // Call the page draw function
+        (*menu_entry_list[destination_state.position].drawFunc)();
 
-    // Draw bottom menu
-    drawMenu(&destination_state);
+        // Draw bottom menu
+        drawMenu(&destination_state);
 
-    // Send pixel to screen
-    u8g2->sendBuffer();
+        // Send pixel to screen
+        u8g2->sendBuffer();
 
-    lastDraw = millis();
+        lastDraw = millis();
+      }
+    }
   }
 };
 #endif

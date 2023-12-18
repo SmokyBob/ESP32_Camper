@@ -9,11 +9,6 @@
 #include <Wire.h>
 #include <U8g2lib.h>
 
-// OLED pins for TTGO_LORA_V1
-#define OLED_SDA 4
-#define OLED_SCL 15
-#define OLED_RST 16
-
 struct menu_entry_type
 {
   const uint8_t *font;

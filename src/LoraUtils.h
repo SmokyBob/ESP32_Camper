@@ -10,16 +10,6 @@
 #include <SPI.h>
 #include <RadioLib.h>
 
-// define the pins used by the LoRa transceiver module
-#define RADIO_SCLK_PIN 5
-#define RADIO_MISO_PIN 19
-#define RADIO_MOSI_PIN 27
-#define RADIO_CS_PIN 18
-#define RADIO_DIO0_PIN 26
-#define RADIO_RST_PIN 14
-#define RADIO_DIO1_PIN 33
-#define RADIO_BUSY_PIN 32
-
 // 433.0 for Asia/europe
 // 866.0 for Europe
 // 915.0 for North America
@@ -32,7 +22,13 @@
 
 #endif
 
+#if defined(RADIO_SX1276)
 extern SX1276 radio;
+#endif
+
+#if defined(RADIO_SX1262)
+extern SX1262 radio;
+#endif
 
 // save transmission state between loops
 extern int loraState;

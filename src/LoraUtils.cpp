@@ -7,7 +7,14 @@
 #include "Sensors.h"
 #endif
 
+#if defined(RADIO_SX1276)
 SX1276 radio = nullptr;
+#endif
+
+#if defined(RADIO_SX1262)
+SX1262 radio = nullptr;
+#endif
+
 int loraState = RADIOLIB_ERR_NONE;
 volatile bool loraOperationDone = false;
 volatile bool interruptEnabled = true;
@@ -46,6 +53,7 @@ void setLoraFlags(void)
 void initLora()
 {
 
+  Serial.println("Starting LoRa");
   radio = new Module(RADIO_CS_PIN, RADIO_DIO0_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 
   // SPI LoRa pins
@@ -74,7 +82,12 @@ void initLora()
 
     // set the function that will be called
     // when new packet is received/transmitted
+    #if defined(RADIO_SX1276)
     radio.setDio0Action(setLoraFlags, RISING);
+    #endif
+    #if defined(RADIO_SX1262)
+    radio.setDio1Action(setLoraFlags);
+    #endif
 
 // different initial state for CAMPER and HANDHELD
 #ifdef CAMPER

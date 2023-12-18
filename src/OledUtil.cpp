@@ -369,6 +369,7 @@ void initOled()
   button->attachDoubleClick(doubleClick);   // left
   button->attachDuringLongPress(longPress); // current menu Commands
 
+  Serial.println("OLED Finished");
 #endif
 }
 

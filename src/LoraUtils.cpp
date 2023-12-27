@@ -9,10 +9,15 @@
 
 #if defined(RADIO_SX1276)
 SX1276 radio = nullptr;
+float currentLimit = 120;
 #endif
 
 #if defined(RADIO_SX1262)
+// #define VSPI FSPI to fix the pin mapping for the board
+SPIClass spi(FSPI);
+SPISettings spiSettings(100000, MSBFIRST, SPI_MODE0);
 SX1262 radio = nullptr;
+float currentLimit = 140; // Higher OCP limit for SX126x PA
 #endif
 
 int loraState = RADIOLIB_ERR_NONE;
@@ -54,10 +59,17 @@ void initLora()
 {
 
   Serial.println("Starting LoRa");
+#if defined(RADIO_SX1276)
   radio = new Module(RADIO_CS_PIN, RADIO_DIO0_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 
   // SPI LoRa pins
   SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
+#endif
+#if defined(RADIO_SX1262)
+  radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN, spi, spiSettings);
+
+  spi.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_CS_PIN); // SCK, MISO, MOSI, SS
+#endif
   // When the power is turned on, a delay is required.
   delay(1500);
   int counter = 0;
@@ -78,20 +90,16 @@ void initLora()
     radio.setOutputPower(LORA_POWER);
     radio.setBandwidth(LORA_BANDWIDTH);
     radio.setSpreadingFactor(LORA_SPREDING_FACTOR);
-    radio.setCurrentLimit(120);
+    radio.setCodingRate(LORA_CODING_RATE);
+    radio.setCurrentLimit(currentLimit);
 
     // set the function that will be called
     // when new packet is received/transmitted
-    #if defined(RADIO_SX1276)
-    radio.setDio0Action(setLoraFlags, RISING);
-    #endif
-    #if defined(RADIO_SX1262)
-    radio.setDio1Action(setLoraFlags);
-    #endif
-
+    radio.setPacketReceivedAction(setLoraFlags);
+    radio.setPacketSentAction(setLoraFlags);
 // different initial state for CAMPER and HANDHELD
 #ifdef CAMPER
-    Serial.print(F("[SX1276] Starting to transmit ... "));
+    Serial.print(F("Starting to transmit ... "));
     loraState = radio.startTransmit(String(DEVICE_NAME) + " online");
     transmitFlag = true;
 #endif
@@ -308,6 +316,10 @@ void loraSend(String message)
     // Send message
     radio.startTransmit(message);
     transmitFlag = true;
+
+    Serial.print("sent Message:");
+    Serial.println(message);
+
     // we're ready to send more packets,
     // enable interrupt service routine
     interruptEnabled = true;

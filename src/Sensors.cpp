@@ -42,18 +42,18 @@ void initSensors()
   setWindow(false);
 #endif
 
-#ifdef Relay1_pin
-  // Set pin to output
-  pinMode(Relay1_pin, OUTPUT);
-  //Init fan off
-  setFan(false);
-#endif
-
 #ifdef Relay2_pin
   // Set pin to output
   pinMode(Relay2_pin, OUTPUT);
   //Init heater off
   setHeater(false);
+#endif
+
+#ifdef Relay1_pin
+  // Set pin to output
+  pinMode(Relay1_pin, OUTPUT);
+  //Init fan off
+  setFan(false);
 #endif
 
 #ifdef EXT_DHT22_pin

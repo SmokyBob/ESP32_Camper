@@ -50,7 +50,8 @@ This Project is mostly tailored to my needs but can be forked
 
 ## Hardware
 - [x] Better Handheld battery and charging
-- [ ] High power MOSFET, the board is cheap and easy but limited to 15A ... and for the heater a bigger mosfet with a heatsync would be better then the hacked up piece of aluminium currently in use
+- [x] High power MOSFET, the board is cheap and easy but limited to 15A ... and for the heater a bigger mosfet with a heatsync would be better then the hacked up piece of aluminium currently in use
+  - a simpler way was to use an automotive 30a 12v Relay, triggered with the mosfet board (this way the high amps are managed by the relay)
 - [ ] CAMPER_OLED temperature sensor, because it's near the battery and we could set heater automation profiles to keep the battery in a good temperature range for charging
 - [ ] SDCard expansion for extensive logging
 

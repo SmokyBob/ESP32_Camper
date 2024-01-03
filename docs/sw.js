@@ -87,9 +87,9 @@ self.addEventListener('message', function (evt) {
 })
 
 self.addEventListener('notificationclick', function (event) {
-  let url = self.location.origin + base;
+  let url = self.location.origin + base + "/";
   if (location.href.startsWith('http://localhost')) {
-    url += "/index.html";
+    url += "index.html";
   }
   event.notification.close(); // Android needs explicit close.
   event.waitUntil(

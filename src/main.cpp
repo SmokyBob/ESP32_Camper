@@ -403,6 +403,7 @@ u_long webSockeUpdate = 0;
 #if defined(CAMPER) || defined(EXT_SENSORS)
 unsigned long lastAPICheck = 0;
 unsigned long maxAPIPool = 2500;
+unsigned long lastLowVolt = 0;
 #endif
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
@@ -651,7 +652,26 @@ void loop()
     if (settings[7].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
     {
       // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
-      if (last_Voltage > 6 && last_Voltage < voltageLimit) //>6 to avoid sleep when connected to the usb for debug
+      if (last_Voltage > 6) //>6 to avoid sleep when connected to the usb for debug
+      {
+        if (last_Voltage < voltageLimit)
+        {
+          if (lastLowVolt == 0)
+          {
+            lastLowVolt = millis();
+          }
+        }
+        else
+        {
+          lastLowVolt = 0;
+        }
+      }
+      else
+      {
+        lastLowVolt = 0;
+      }
+      //Go to sleep if undervoltage for more than 30 seconds
+      if (lastLowVolt > 0 && (millis() > (lastLowVolt + (30 * 1000))))
       {
         uint64_t hrSleepUs = (1 * (settings[7].value) * 60 * 1000); // in milliseconds
         hrSleepUs = hrSleepUs * 1000;                               // in microseconds

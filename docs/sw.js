@@ -5,7 +5,7 @@ if (location.href.startsWith('http://localhost')) {
 }
 var GHPATH = base;
 var APP_PREFIX = 'esp32_camper_';
-var VERSION = 'version_021';
+var VERSION = 'version_022';
 var URLS = [
   `${GHPATH}/`,
   `${GHPATH}/index.html`,
@@ -67,6 +67,7 @@ self.addEventListener('activate', function (e) {
   )
 })
 
+var sendNotification = false;
 self.addEventListener('message', function (evt) {
   //on android, notifications can be triggered only from service worker
   //we use the postMessage API to get the data from the page and show the notification
@@ -75,13 +76,19 @@ self.addEventListener('message', function (evt) {
   console.log('postMessage received', evt.data);
 
   if (evt.data.type == 'notification') {
-    registration.showNotification(
-      evt.data.title,
-      {
-        body: evt.data.body,
-        icon: evt.data.icon
-      }
-    );
+    if (sendNotification) {
+      registration.showNotification(
+        evt.data.title,
+        {
+          body: evt.data.body,
+          icon: evt.data.icon
+        }
+      );
+    }
+
+  }
+  if (evt.data.type == 'enableNotification') {
+    sendNotification = evt.data.value;
   }
 
 })

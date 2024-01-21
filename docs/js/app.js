@@ -364,13 +364,29 @@ function getDateTime() {
 
 document.getElementById('show-notification-button').
   addEventListener('click', () => {
-    Notification.requestPermission().then((permissionResult) => {
-      if (permissionResult === 'granted') {
-        new Notification(
-          'Notifications ON',
-          { body: 'Configured notifications will be diplayed here (for now hardcoded notifications)' }
-        );
-        document.getElementById('show-notification-button').style.display = 'none';
+    if (document.getElementById('show-notification-button').className == 'enable') {
+      Notification.requestPermission().then((permissionResult) => {
+        if (permissionResult === 'granted') {
+          new Notification(
+            'Notifications ON',
+            { body: 'Configured notifications will be diplayed here (for now hardcoded notifications)' }
+          );
+          document.getElementById('show-notification-button').innerText = 'Disable notifications';
+          document.getElementById('show-notification-button').className = 'disable';
+          navigator.serviceWorker.controller.postMessage({
+            'type': 'enableNotification',
+            'value': 'true'
+          }
+          );
+        }
+      })
+    } else {
+      document.getElementById('show-notification-button').innerText = 'Enable Device Notification';
+      document.getElementById('show-notification-button').className = 'enable';
+      navigator.serviceWorker.controller.postMessage({
+        'type': 'enableNotification',
+        'value': 'false'
       }
-    })
+      );
+    }
   });

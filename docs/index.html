@@ -16,11 +16,13 @@
   <h1>ESP32 Web BLE Application</h1>
   <button id="connectBleButton">Connect to BLE Device</button>
   <button id="disconnectBleButton">Disconnect BLE Device</button>
+  <br>
+  <br>
+  <button id="show-notification-button" class="enable">
+    Enable Device Notification
+  </button>
   <p>BLE state: <strong><span id="bleState" style="color:#d13a30;">Disconnected</span></strong></p>
   <hr>
-  <button id="show-notification-button">
-    Eneble Device Notification
-  </button>
   <table id="data" style="width: 100%;display: none;">
     <tr>
       <td colspan="3">
@@ -96,7 +98,13 @@
       ).then((registration) => {
         Notification.requestPermission().then((permissionResult) => {
           if (permissionResult === 'granted') {
-            document.getElementById('show-notification-button').style.display = 'none';
+            document.getElementById('show-notification-button').innerText = 'Disable notifications';
+            document.getElementById('show-notification-button').className = 'disable';
+            navigator.serviceWorker.controller.postMessage({
+              'type': 'enableNotification',
+              'value': 'true'
+            }
+            );
           }
         })
       })

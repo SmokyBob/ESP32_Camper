@@ -102,7 +102,7 @@
             document.getElementById('show-notification-button').className = 'disable';
             navigator.serviceWorker.controller.postMessage({
               'type': 'enableNotification',
-              'value': 'true'
+              'value': true
             }
             );
           }

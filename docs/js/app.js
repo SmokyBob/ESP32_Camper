@@ -375,7 +375,7 @@ document.getElementById('show-notification-button').
           document.getElementById('show-notification-button').className = 'disable';
           navigator.serviceWorker.controller.postMessage({
             'type': 'enableNotification',
-            'value': 'true'
+            'value': true
           }
           );
         }
@@ -385,7 +385,7 @@ document.getElementById('show-notification-button').
       document.getElementById('show-notification-button').className = 'enable';
       navigator.serviceWorker.controller.postMessage({
         'type': 'enableNotification',
-        'value': 'false'
+        'value': false
       }
       );
     }

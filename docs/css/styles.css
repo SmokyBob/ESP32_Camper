@@ -101,3 +101,8 @@ button#disconnectBleButton {
     padding-left: 24px;
     height: 36px;
 }
+
+button#show-notification-button {
+    padding-left: 24px;
+    height: 36px;
+}

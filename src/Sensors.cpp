@@ -397,8 +397,11 @@ void setHeater(bool isOn)
 #ifdef Relay2_pin
   if (isOn)
   {
-    // Force fan ON
-    setFan(true);
+    
+    if (!heaterWithFan){
+      // Force fan ON if the heater has no internal fan
+      setFan(true);
+    }
     // Turn Heater Off
     digitalWrite(Relay2_pin, HIGH);
   }

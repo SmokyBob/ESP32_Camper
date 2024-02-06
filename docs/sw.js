@@ -5,7 +5,7 @@ if (location.href.startsWith('http://localhost')) {
 }
 var GHPATH = base;
 var APP_PREFIX = 'esp32_camper_';
-var VERSION = 'version_024';
+var VERSION = 'version_025';
 var URLS = [
   `${GHPATH}/`,
   `${GHPATH}/index.html`,
@@ -23,6 +23,7 @@ var URLS = [
   `${GHPATH}/img/schedule.svg`,
   `${GHPATH}/img/sync.svg`,
   `${GHPATH}/img/thermometer.svg`,
+  `${GHPATH}/img/truck.png`,
 ]
 
 var CACHE_NAME = APP_PREFIX + VERSION

@@ -166,8 +166,11 @@ void turnOnOled()
   _oledStartMillis = millis();
   _displayOn = true;
 }
-
-uint8_t _flipMode = 1;     // Default 180 Degree flip... because i like the buttons on the right side
+#ifdef CAMPER
+uint8_t _flipMode = 1;     // Default 180 Degree flip... because i like the buttons on the right side for the camper
+#else
+uint8_t _flipMode = 0;     // Default for the handheld
+#endif
 bool _controlMenu = false; // true to navigate and edit the control menu instead of the global menu
 uint8_t _controlSelected = 0;
 float _int_ext_hand = NAN; // if 1 show external, if 0 shows internal

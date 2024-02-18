@@ -65,8 +65,8 @@ void initSensors()
   Serial.print("EXT_SHT2 init result:");
   Serial.println(res);
 #endif
-#ifdef SHT2_SDA
-  I2Cone.begin(SHT2_SDA, SHT2_SCL);
+#ifdef SHT2_SDA 
+  I2Cone.begin(SHT2_SDA, SHT2_SCL,400000); //Added frequency to avoid issues with oled
   bool res = tempSensor.begin(&I2Cone);
   Serial.print("SHT2 init result:");
   Serial.println(res);

@@ -167,9 +167,9 @@ void turnOnOled()
   _displayOn = true;
 }
 #ifdef CAMPER
-uint8_t _flipMode = 1;     // Default 180 Degree flip... because i like the buttons on the right side for the camper
+uint8_t _flipMode = 1; // Default 180 Degree flip... because i like the buttons on the right side for the camper
 #else
-uint8_t _flipMode = 0;     // Default for the handheld
+uint8_t _flipMode = 0; // Default for the handheld
 #endif
 bool _controlMenu = false; // true to navigate and edit the control menu instead of the global menu
 uint8_t _controlSelected = 0;
@@ -186,7 +186,7 @@ void click()
   }
   else
   {
-
+    turnOnOled();
     if (!_controlMenu)
     {
       to_right(&destination_state);
@@ -206,6 +206,7 @@ void click()
 void doubleClick()
 {
   Serial.println("Double click");
+  turnOnOled();
 
   if (!_controlMenu)
   {
@@ -270,6 +271,7 @@ void longPress()
 {
   if ((millis() - _millisLongPress) > 2000)
   {
+    turnOnOled();
     // Check Current Page
     if (menu_entry_list[destination_state.position].name == "Home")
     {
@@ -293,10 +295,17 @@ void longPress()
       }
       _int_ext_hand = _int_ext_hand + 1;
 #if defined(HANDHELD)
+#if !defined(USE_MLX90614)
       if (_int_ext_hand == 3)
       {
         _int_ext_hand = 0;
       }
+#else
+      if (_int_ext_hand == 4)
+      {
+        _int_ext_hand = 0;
+      }
+#endif
 #else
       if (_int_ext_hand == 2)
       {
@@ -504,6 +513,7 @@ void drawHomePage()
 void drawTemperaturePage()
 {
   char buf[256];
+  char buf_type[256];
   int iconH = 48;
   int iconW = 48;
   int textH = 16;
@@ -527,35 +537,57 @@ void drawTemperaturePage()
   {
     _int_ext_hand = 0;
   }
+
   if (_int_ext_hand == 0)
   {
     if (isnan(last_Ext_Temperature) != true)
     {
-      snprintf(buf, sizeof(buf), "%.2fC", last_Ext_Temperature);
+      snprintf(buf, sizeof(buf), "%.2f", last_Ext_Temperature);
+      snprintf(buf_type, sizeof(buf_type), "%s", "c ext");
     }
     else
     {
       _int_ext_hand = 1; // no ext_temp, force to internal
-      snprintf(buf, sizeof(buf), "%.0fC", last_Temperature);
     }
   }
-  else if (_int_ext_hand == 1)
+  if (_int_ext_hand == 1)
   {
-    snprintf(buf, sizeof(buf), "%.2fC", last_Temperature);
+    if (isnan(last_Temperature))
+    {
+      _int_ext_hand = _int_ext_hand + 1; // no in_temp, force to next
+#if !defined(HANDHELD)
+      _int_ext_hand = 0;
+#endif
+    }
+    else
+    {
+      snprintf(buf, sizeof(buf), "%.2f", last_Temperature);
+      snprintf(buf_type, sizeof(buf_type), "%s", "c int");
+    }
   }
 #if defined(HANDHELD)
-  else
+  if (_int_ext_hand == 2)
   {
-    snprintf(buf, sizeof(buf), "%.2fC", hand_Temperature);
+    snprintf(buf, sizeof(buf), "%.2f", hand_Temperature);
+    snprintf(buf_type, sizeof(buf_type), "%s", "h amb");
+  }
+#if defined(USE_MLX90614)
+  if (_int_ext_hand == 3)
+  {
+    snprintf(buf, sizeof(buf), "%.2f", hand_obj_Temperature);
+    snprintf(buf_type, sizeof(buf_type), "%s", "h IR");
   }
 #endif
+#endif
 
-  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+  u8g2->drawStr(x + iconW, y + (textH + 2), buf);
+  u8g2->drawStr(x + iconW, y + ((textH + 2) * 2), buf_type);
 }
 
 void drawHumidityPage()
 {
   char buf[256];
+  char buf_type[256];
   int iconH = 48;
   int iconW = 48;
   int textH = 16;
@@ -582,30 +614,45 @@ void drawHumidityPage()
   {
     if (isnan(last_Ext_Humidity) != true)
     {
-      snprintf(buf, sizeof(buf), "%.2f%%", last_Ext_Humidity);
+      snprintf(buf, sizeof(buf), "%.2f", last_Ext_Humidity);
+      snprintf(buf_type, sizeof(buf_type), "%s", "c ext");
     }
     else
     {
       _int_ext_hand = 1; // no ext_temp, force to internal
-      snprintf(buf, sizeof(buf), "%.2f%%", last_Humidity);
     }
   }
-  else if (_int_ext_hand == 1)
+  if (_int_ext_hand == 1)
   {
-    snprintf(buf, sizeof(buf), "%.2f%%", last_Humidity);
+    if (isnan(last_Humidity))
+    {
+      _int_ext_hand = _int_ext_hand + 1; // no in_hum, force to next
+#if !defined(HANDHELD)
+      _int_ext_hand = 0;
+#endif
+    }
+    else
+    {
+      snprintf(buf, sizeof(buf), "%.2f", last_Humidity);
+      snprintf(buf_type, sizeof(buf_type), "%s", "c int");
+    }
   }
 #if defined(HANDHELD)
-  else
+  if (_int_ext_hand >= 2)
   {
-    snprintf(buf, sizeof(buf), "%.2f%%", hand_Humidity);
+    snprintf(buf, sizeof(buf), "%.2f", hand_Humidity);
+    snprintf(buf_type, sizeof(buf_type), "%s", "h amb");
   }
 #endif
-  u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  u8g2->drawStr(x + iconW, y + (textH + 2), buf);
+  u8g2->drawStr(x + iconW, y + ((textH + 2) * 2), buf_type);
 }
 
 void drawVoltagePage()
 {
   char buf[256];
+  char buf_type[256];
   int iconH = 48;
   int iconW = 48;
   int textH = 19;

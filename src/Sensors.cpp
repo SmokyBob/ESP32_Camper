@@ -20,6 +20,9 @@ SHT2x tempSensor;
 TwoWire I2Cone = TwoWire(1);
 #endif
 #endif
+#if defined(USE_MLX90614)
+Adafruit_MLX90614 mlx = Adafruit_MLX90614();
+#endif
 
 float _vref = 1100;
 
@@ -45,14 +48,14 @@ void initSensors()
 #ifdef Relay2_pin
   // Set pin to output
   pinMode(Relay2_pin, OUTPUT);
-  //Init heater off
+  // Init heater off
   setHeater(false);
 #endif
 
 #ifdef Relay1_pin
   // Set pin to output
   pinMode(Relay1_pin, OUTPUT);
-  //Init fan off
+  // Init fan off
   setFan(false);
 #endif
 
@@ -65,12 +68,17 @@ void initSensors()
   Serial.print("EXT_SHT2 init result:");
   Serial.println(res);
 #endif
-#ifdef SHT2_SDA 
-  I2Cone.begin(SHT2_SDA, SHT2_SCL,400000); //Added frequency to avoid issues with oled
+#if defined(SHT2_SDA) || defined(USE_MLX90614)
+  I2Cone.begin(SHT2_SDA, SHT2_SCL, 50000); // this frequency works for SHT2 and MLX90614 sensors
+#endif
+#ifdef SHT2_SDA
   bool res = tempSensor.begin(&I2Cone);
   Serial.print("SHT2 init result:");
   Serial.println(res);
   tempSensor.reset();
+#endif
+#ifdef USE_MLX90614
+  mlx.begin(0x5A, &I2Cone);
 #endif
 };
 
@@ -313,6 +321,13 @@ void readSensors()
     batt_Voltage = getVoltage();
 #endif
 
+#if defined(USE_MLX90614)
+  float tmpObjTemp = mlx.readObjectTempC();
+  if (!isnan(tmpObjTemp)){
+    hand_obj_Temperature = tmpObjTemp;
+  }
+#endif
+
     lastCheck = millis();
     last_Millis = lastCheck;
   }
@@ -397,8 +412,9 @@ void setHeater(bool isOn)
 #ifdef Relay2_pin
   if (isOn)
   {
-    
-    if (!heaterWithFan){
+
+    if (!heaterWithFan)
+    {
       // Force fan ON if the heater has no internal fan
       setFan(true);
     }

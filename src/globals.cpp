@@ -15,6 +15,9 @@ float batt_Voltage = 0;
 float hand_Temperature = NAN;
 float hand_Humidity = NAN;
 #endif
+#if defined(USE_MLX90614)
+float hand_obj_Temperature = NAN;
+#endif
 
 String last_DateTime;
 float last_SNR;

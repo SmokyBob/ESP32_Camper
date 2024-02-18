@@ -53,6 +53,9 @@ extern float batt_Voltage;
 extern float hand_Temperature;
 extern float hand_Humidity;
 #endif
+#if defined(USE_MLX90614)
+extern float hand_obj_Temperature;
+#endif
 
 extern float last_SNR;
 extern float last_RSSI;

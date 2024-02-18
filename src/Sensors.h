@@ -19,6 +19,10 @@
 #endif
 #endif
 
+#ifdef USE_MLX90614
+#include "Adafruit_MLX90614.h"
+#endif
+
 void initSensors();
 void readSensors();
 #if defined(CAMPER) || defined(EXT_SENSORS)

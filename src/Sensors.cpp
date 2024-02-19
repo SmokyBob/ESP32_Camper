@@ -33,9 +33,11 @@ void initSensors()
 #endif
 
 #if defined(Voltage_pin) || defined(VDiv_Batt_pin)
+#if !defined(ARDUINO_heltec_wifi_lora_32_V3)
   esp_adc_cal_characteristics_t adc_chars;
   esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
   _vref = adc_chars.vref; // Obtain the device ADC reference voltage
+#endif
 #endif
 
 #ifdef Servo_pin
@@ -108,6 +110,8 @@ void calculateVoltage()
 
   readValue = analogRead(voltPin);
 
+  Serial.printf("Voltage read: %.2f\n", readValue);
+
   result = (readValue / 4095)  // ADC Resolution (4096 = 0-4095)
            * VDiv_MaxVolt      // Max Input Voltage use during voltage divider calculation (Ex. 15)
            * (1100 / _vref)    // Device Calibration offset
@@ -116,7 +120,7 @@ void calculateVoltage()
               VDiv_Res_gnd) *
            voltCalibration; // VDiv_Calibration;
 
-  // Serial.printf("Voltage: %.2f VDiv_Calibration:%.4f\n", result, settings[4].value);
+  Serial.printf("Voltage: %.2f _vref: %.2f VDiv_Calibration:%.4f\n", result, _vref, voltCalibration);
 
   // Notes on VDiv_Calibration
   // Calibration calculated by measurement with a multimiter
@@ -322,10 +326,11 @@ void readSensors()
 #endif
 
 #if defined(USE_MLX90614)
-  float tmpObjTemp = mlx.readObjectTempC();
-  if (!isnan(tmpObjTemp)){
-    hand_obj_Temperature = tmpObjTemp;
-  }
+    float tmpObjTemp = mlx.readObjectTempC();
+    if (!isnan(tmpObjTemp))
+    {
+      hand_obj_Temperature = tmpObjTemp;
+    }
 #endif
 
     lastCheck = millis();

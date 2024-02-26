@@ -5,7 +5,7 @@ if (location.href.startsWith('http://localhost')) {
 }
 var GHPATH = base;
 var APP_PREFIX = 'esp32_camper_';
-var VERSION = 'version_025';
+var VERSION = 'version_026';
 var URLS = [
   `${GHPATH}/`,
   `${GHPATH}/index.html`,
@@ -23,7 +23,6 @@ var URLS = [
   `${GHPATH}/img/schedule.svg`,
   `${GHPATH}/img/sync.svg`,
   `${GHPATH}/img/thermometer.svg`,
-  `${GHPATH}/img/truck.png`,
 ]
 
 var CACHE_NAME = APP_PREFIX + VERSION
@@ -41,7 +40,7 @@ self.addEventListener('fetch', function (e) {
     })
   )
 })
-
+var sendNotification = "false";
 self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
@@ -68,7 +67,7 @@ self.addEventListener('activate', function (e) {
   )
 })
 
-var sendNotification = false;
+
 self.addEventListener('message', function (evt) {
   //on android, notifications can be triggered only from service worker
   //we use the postMessage API to get the data from the page and show the notification
@@ -77,7 +76,7 @@ self.addEventListener('message', function (evt) {
   console.log('postMessage received', evt.data);
 
   if (evt.data.type == 'notification') {
-    if (sendNotification) {
+    if (sendNotification == "true") {
       registration.showNotification(
         evt.data.title,
         {
@@ -90,6 +89,14 @@ self.addEventListener('message', function (evt) {
   }
   if (evt.data.type == 'enableNotification') {
     sendNotification = evt.data.value;
+    if (sendNotification == "true") {
+      registration.showNotification(
+        'Notifications ON',
+        {
+          body: 'Configured notifications will be diplayed here (for now hardcoded notifications)'
+        }
+      );
+    }
   }
 
 })

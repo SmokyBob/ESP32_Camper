@@ -95,20 +95,34 @@
       navigator.serviceWorker.register(
         base + 'sw.js',
         { scope: base }
-      ).then((registration) => {
-        Notification.requestPermission().then((permissionResult) => {
-          if (permissionResult === 'granted') {
-            document.getElementById('show-notification-button').innerText = 'Disable notifications';
-            document.getElementById('show-notification-button').className = 'disable';
-            navigator.serviceWorker.controller.postMessage({
-              'type': 'enableNotification',
-              'value': true
-            }
-            );
-          }
-        })
-      })
+      )
+      var sendNotification = "false";
+
+      sendNotification = localStorage.getItem('notification-permission');
+      if (sendNotification == null) {
+        sendNotification = "false";
+        localStorage.setItem('notification-permission', sendNotification);
+      }
+      if (sendNotification == "true") {
+        document.getElementById('show-notification-button').innerText = 'Disable notifications';
+        document.getElementById('show-notification-button').className = 'disable';
+        navigator.serviceWorker.controller.postMessage({
+          'type': 'enableNotification',
+          'value': "true"
+        }
+        );
+      } else {
+        document.getElementById('show-notification-button').innerText = 'Enable Device Notification';
+        document.getElementById('show-notification-button').className = 'enable';
+        navigator.serviceWorker.controller.postMessage({
+          'type': 'enableNotification',
+          'value': "false"
+        }
+        );
+      };
     }
+
+
   </script>
   <script src="js/app.js"></script>
 </body>

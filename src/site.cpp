@@ -1,6 +1,6 @@
 #include "site.h"
 #include "globals.h"
-#include <AsyncElegantOTA.h>
+#include <ElegantOTA.h>
 
 AsyncWebServer server(80);
 #if defined(CAMPER) || defined(EXT_SENSORS)
@@ -292,8 +292,8 @@ void initSite(AsyncWebSocket *webSocket)
   server.addHandler(webSocket);
 #endif
   Serial.println(F("Start OTA"));
-  // Start AsyncElegantOTA
-  AsyncElegantOTA.begin(&server);
+  // Start ElegantOTA (async using build flag)
+  ElegantOTA.begin(&server);
 
   // Start webserver
   server.begin();

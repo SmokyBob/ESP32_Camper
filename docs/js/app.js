@@ -375,13 +375,6 @@ document.getElementById('show-notification-button').
           }
           );
           localStorage.setItem('notification-permission', 'true');
-
-          navigator.serviceWorker.controller.postMessage({
-                'type': 'notification',
-                'title': 'Notifications ON',
-                'body': 'Configured notifications will be diplayed here (for now hardcoded notifications)'
-              }
-              );
         }
       })
     } else {

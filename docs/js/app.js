@@ -365,27 +365,30 @@ function getDateTime() {
 document.getElementById('show-notification-button').
   addEventListener('click', () => {
     if (document.getElementById('show-notification-button').className == 'enable') {
-      sendNotification = "true";
-      localStorage.setItem('notification-permission', sendNotification);
       Notification.requestPermission().then((permissionResult) => {
         if (permissionResult === 'granted') {
           document.getElementById('show-notification-button').innerText = 'Disable notifications';
           document.getElementById('show-notification-button').className = 'disable';
           navigator.serviceWorker.controller.postMessage({
             'type': 'enableNotification',
-            'value': "true"
+            'value': true
           }
           );
+
+          navigator.serviceWorker.controller.postMessage({
+                'type': 'notification',
+                'title': 'Notifications ON',
+                'body': 'Configured notifications will be diplayed here (for now hardcoded notifications)'
+              }
+              );
         }
       })
     } else {
-      sendNotification = "false";
-      localStorage.setItem('notification-permission', sendNotification);
       document.getElementById('show-notification-button').innerText = 'Enable Device Notification';
       document.getElementById('show-notification-button').className = 'enable';
       navigator.serviceWorker.controller.postMessage({
         'type': 'enableNotification',
-        'value': "false"
+        'value': false
       }
       );
     }

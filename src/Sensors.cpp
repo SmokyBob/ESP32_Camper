@@ -14,11 +14,11 @@ Servo windowServo;
 SimpleDHT22 *ext_dht22;
 
 #endif
-#if defined(EXT_SHT2_SDA) || defined(SHT2_SDA)
+#if defined(EXT_SHT2_SDA) || defined(USE_SHT2)
 SHT2x tempSensor;
-#if defined(CAMPER) || defined(HANDHELD)
-TwoWire I2Cone = TwoWire(1);
 #endif
+#if defined(EXT_SHT2_SDA) || defined(USE_SHT2) || defined(USE_MLX90614)
+TwoWire I2Cone = TwoWire(1);
 #endif
 #if defined(USE_MLX90614)
 Adafruit_MLX90614 mlx = Adafruit_MLX90614();
@@ -70,10 +70,10 @@ void initSensors()
   Serial.print("EXT_SHT2 init result:");
   Serial.println(res);
 #endif
-#if defined(SHT2_SDA) || defined(USE_MLX90614)
+#if defined(USE_SHT2) || defined(USE_MLX90614)
   I2Cone.begin(SHT2_SDA, SHT2_SCL, 50000); // this frequency works for SHT2 and MLX90614 sensors
 #endif
-#ifdef SHT2_SDA
+#ifdef USE_SHT2
   bool res = tempSensor.begin(&I2Cone);
   Serial.print("SHT2 init result:");
   Serial.println(res);
@@ -207,7 +207,7 @@ void readSensors()
 #endif
 #endif
 
-#if defined(EXT_SHT2_SDA) || defined(SHT2_SDA)
+#if defined(EXT_SHT2_SDA) || defined(USE_SHT2)
     uint8_t stat = tempSensor.getStatus();
     Serial.print("SHT2 status: ");
     Serial.println(stat, HEX);
@@ -331,6 +331,13 @@ void readSensors()
     {
       hand_obj_Temperature = tmpObjTemp;
     }
+#if defined(USE_SHT2) == false
+    float tmpTemp = mlx.readAmbientTempC();
+    if (!isnan(tmpTemp))
+    {
+      hand_Temperature = tmpTemp;
+    }
+#endif
 #endif
 
     lastCheck = millis();

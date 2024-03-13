@@ -12,7 +12,7 @@
 #ifdef EXT_DHT22_pin
 #include "SimpleDHT.h"
 #endif
-#if defined(EXT_SHT2_SDA) || defined(SHT2_SDA)
+#if defined(EXT_SHT2_SDA) || defined(USE_SHT2)
 #include "SHT2x.h"
 #if defined(CAMPER) || defined(HANDHELD)
 #include "Wire.h"

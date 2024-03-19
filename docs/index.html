@@ -27,42 +27,42 @@
     <tr>
       <td colspan="3">
         <img src="img/schedule.svg" alt="Time" />
-        <div id="datetime" style="display: inline-block;"></div>
+        <div id="DATETIME" style="display: inline-block;"></div>
       </td>
     </tr>
     <tr>
       <td>
         <img src="img/bolt.svg" alt="Voltage" />
-        <div id="voltage" style="display: inline-block;"></div>
+        <div id="VOLTS" style="display: inline-block;"></div>
       </td>
       <td>
         <img src="img/thermometer.svg" alt="Temperature" />
-        <div id="ext_temperature" style="display: inline-block;"></div>
+        <div id="EXT_TEMP" style="display: inline-block;"></div>
       </td>
       <td>
         <img src="img/humidity_percentage.svg" alt="Humidity %" />
-        <div id="ext_humidity" style="display: inline-block;"></div>
+        <div id="EXT_HUM" style="display: inline-block;"></div>
       </td>
     </tr>
     <tr>
       <td>
         <img src="img/sync.svg" alt="Window" />
         <label class="switch">
-          <input id="window" type="checkbox" onclick="onCheckChanged(this);">
+          <input id="B_WINDOW" type="checkbox" onclick="onCheckChanged(this);">
           <span class="slider green round"></span>
         </label>
       </td>
       <td>
         <img src="img/mode_fan.svg" alt="Fan" />
         <label class="switch">
-          <input id="relay1" type="checkbox" onclick="onCheckChanged(this);">
+          <input id="B_FAN" type="checkbox" onclick="onCheckChanged(this);">
           <span class="slider blue round"></span>
         </label>
       </td>
       <td>
         <img src="img/heat.svg" alt="Heater" />
         <label class="switch">
-          <input id="relay2" type="checkbox" onclick="onCheckChanged(this);">
+          <input id="B_HEATER" type="checkbox" onclick="onCheckChanged(this);">
           <span class="slider red round"></span>
         </label>
       </td>
@@ -71,14 +71,14 @@
       <td>
         <img src="img/autoplay.svg" alt="Heater" />
         <label class="switch">
-          <input id="automation" type="checkbox" onclick="onCheckChanged(this);">
+          <input id="B_AUTOMATION" type="checkbox" onclick="onCheckChanged(this);">
           <span class="slider round"></span>
         </label>
       </td>
       <td>
         <img src="img/power.svg" alt="Ignore low Voltage" />
         <label class="switch">
-          <input id="220power" type="checkbox" onclick="onCheckChanged(this);">
+          <input id="B_VOLT_LIM_IGN" type="checkbox" onclick="onCheckChanged(this);">
           <span class="slider orange round"></span>
         </label>
       </td>

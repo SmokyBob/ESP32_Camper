@@ -5,57 +5,63 @@
 #include "Preferences.h"
 #endif
 
-enum data
+struct keys_t
 {
-   TEMPERATURE,
-   HUMIDITY,
-   VOLTS,
-   MILLIS,
-   DATETIME, // Format: yyyyMMddHHmmss
-   WINDOW,   // Controls the servo: 0 = open, 1 = closed
-   RELAY1,
-   RELAY2,
-   EXT_TEMPERATURE,
-   EXT_HUMIDITY,
-   CONFIG_SERVO_CLOSED_POS,
-   CONFIG_SERVO_OPEN_POS,
-   CONFIG_SERVO_CLOSED_TEMP,
-   CONFIG_SERVO_OPEN_TEMP,
-   CONFIG_VOLTAGE_ACTUAL,
-   CONFIG_VOLTAGE_LIMIT,
-   CONFIG_VOLTAGE_LIMIT_UNDER_LOAD,
-   CONFIG_VOLTAGE_SLEEP_MINUTES,
-   CONFIG_ENABLE_AUTOMATION,
-   CONFIG_HEAT_TEMP_ON,
-   CONFIG_HEAT_TEMP_OFF,
-   IGNORE_LOW_VOLT,
+   int id;
+   char key[15]; // 15 so that it can be used as preferences keys
+   String description;
+   String value;
+   String ble_uuid;
+   bool auto_condition;
+   bool auto_action;
 };
+
+extern keys_t data[15]; // See .c file for details and to add values
+keys_t getDataObj(String key);
+String getDataVal(String key);
+void setDataVal(String key, String value);
+
+extern keys_t config[12]; // See .c file for details and to add values
+keys_t getConfigObj(String key);
+String getConfigVal(String key);
+void setConfigVal(String key, String value);
+
+enum automation_conditions
+{
+   AC_EQ,
+   AC_NEQ,
+   AC_LET,
+   AC_GET
+};
+enum automation_action
+{
+   AC_TRUE,
+   AC_FALSE,
+   AC_OPEN,
+   AC_CLOSE
+};
+
+struct automation_t
+{
+   int order;
+   bool enabled;
+   int data_id;
+   automation_conditions condition;
+   String value;
+   int action_id;
+   automation_action action;
+};
+
+extern automation_t **automationArray;
+
 enum dataType
 {
    DATA,
-   COMMAND,
    CONFIGS
 };
 
 extern u_long last_Millis;
-extern float last_Temperature;
-extern float last_Humidity;
-extern float last_Voltage;
-extern bool last_WINDOW;
-extern bool last_Relay1;
-extern bool last_Relay2;
-extern String last_DateTime;
-extern float last_Ext_Temperature;
-extern float last_Ext_Humidity;
 extern String last_IgnoreLowVolt;
-#if defined(HANDHELD)
-extern float batt_Voltage;
-extern float hand_Temperature;
-extern float hand_Humidity;
-#endif
-#if defined(USE_MLX90614)
-extern float hand_obj_Temperature;
-#endif
 
 extern float last_SNR;
 extern float last_RSSI;
@@ -72,21 +78,13 @@ extern batt_perc batt_perc_3_7_list[21];
 extern unsigned long lastLORASend;
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
-struct setting
-{
-   String name;
-   String description;
-   float value;
-};
-
-extern setting settings[11];
 
 void loadPreferences();
 void savePreferences();
 void resetPreferences();
 
 #endif
-void setTime(String utcString);
+void setDateTime(String utcString);
 
 #if defined(CAMPER)
 extern String EXT_SENSORS_URL;

@@ -101,7 +101,7 @@ void calculateVoltage()
 
 #if defined(Voltage_pin)
   voltPin = Voltage_pin;
-  voltCalibration = settings[4].value;
+  voltCalibration = getConfigVal("VOLT_ACTUAL").toFloat();
 #elif defined(VDiv_Batt_pin)
 
   voltPin = VDiv_Batt_pin;
@@ -153,10 +153,10 @@ float getVoltage()
     {
       sum += _voltArray[i];
 
-      Serial.print("  volt[");
-      Serial.print(i);
-      Serial.print("] : ");
-      Serial.println(_voltArray[i]);
+      // Serial.print("  volt[");
+      // Serial.print(i);
+      // Serial.print("] : ");
+      // Serial.println(_voltArray[i]);
     }
 
     return ((float)sum) / 5; // average will be fractional, so float may be appropriate.
@@ -172,6 +172,7 @@ unsigned long voltTick = 0;
 
 void readSensors()
 {
+  String currVal = "";
 #if defined(Voltage_pin) || defined(VDiv_Batt_pin)
   // Calculate the voltage every second
   if ((millis() - voltTick) > 1000)
@@ -185,6 +186,8 @@ void readSensors()
   {
 #if defined(DHT22_pin) || defined(EXT_DHT22_pin)
     int err = SimpleDHTErrSuccess;
+    float last_Ext_Temperature = NAN;
+    float last_Ext_Humidity = NAN;
 #ifdef DHT22_pin
 
     if ((err = int_dht22->read2(&last_Temperature, &last_Humidity, NULL)) != SimpleDHTErrSuccess)
@@ -205,6 +208,8 @@ void readSensors()
     // Serial.printf("temp %.2f \n", last_Ext_Temperature);
     // Serial.printf("hum %.2f \n", last_Ext_Humidity);
 #endif
+    setDataVal("EXT_TEMP", String(last_Ext_Temperature));
+    setDataVal("EXT_HUM", String(last_Ext_Humidity));
 #endif
 
 #if defined(EXT_SHT2_SDA) || defined(USE_SHT2)
@@ -219,9 +224,10 @@ void readSensors()
 #ifdef EXT_SHT2_SDA
       if (!isnan(tmpTemp))
       {
-        if (isnan(last_Ext_Temperature))
+        currVal = getDataVal("EXT_TEMP");
+        if (currVal == "")
         {
-          last_Ext_Temperature = tmpTemp;
+          setDataVal("EXT_TEMP", String(tmpTemp));
         }
         else
         {
@@ -229,9 +235,9 @@ void readSensors()
           {
 
             // allow only change of 40 degs between readings otherwise treat it as an error
-            if ((tmpTemp - last_Ext_Temperature) <= 40)
+            if ((tmpTemp - currVal.toFloat()) <= 40)
             {
-              last_Ext_Temperature = tmpTemp;
+              setDataVal("EXT_TEMP", String(tmpTemp));
             }
             else
             {
@@ -244,27 +250,27 @@ void readSensors()
           }
         }
       }
+      currVal = getDataVal("EXT_HUM");
       if (!isnan(tmphum))
       {
-        last_Ext_Humidity = tmphum;
+        setDataVal("EXT_HUM", String(tmphum));
       }
 
-      Serial.printf("EXT temperature %.2f \n", last_Ext_Temperature);
-      Serial.printf("EXT hum %.2f \n", last_Ext_Humidity);
 #else
       if (!isnan(tmpTemp))
       {
 #if defined(CAMPER)
-        if (isnan(last_Temperature))
+        currVal = getDataVal("TEMP");
+        if (currVal == "")
         {
-          last_Temperature = tmpTemp;
+          setDataVal("TEMP", String(tmpTemp));
         }
         else
         {
           // allow only change of 40 degs between readings otherwise treat it as an error
-          if ((tmpTemp - last_Temperature) <= 40)
+          if ((tmpTemp - currVal.toFloat()) <= 40)
           {
-            last_Temperature = tmpTemp;
+            setDataVal("TEMP", String(tmpTemp));
           }
           else
           {
@@ -274,16 +280,17 @@ void readSensors()
         Serial.printf("temperature %.2f \n", last_Temperature);
 
 #elif defined(HANDHELD)
-        if (isnan(hand_Temperature))
+        currVal = getDataVal("AMB_TEMP");
+        if (currVal == "")
         {
-          hand_Temperature = tmpTemp;
+          setDataVal("AMB_TEMP", String(tmpTemp));
         }
         else
         {
           // allow only change of 40 degs between readings otherwise treat it as an error
-          if ((tmpTemp - hand_Temperature) <= 40)
+          if ((tmpTemp - currVal.toFloat()) <= 40)
           {
-            hand_Temperature = tmpTemp;
+            setDataVal("AMB_TEMP", String(tmpTemp));
           }
           else
           {
@@ -293,19 +300,21 @@ void readSensors()
 #endif
       }
 #if defined(CAMPER)
+      currVal = getDataVal("HUM");
       if (!isnan(tmphum))
       {
-        last_Humidity = tmphum;
+        setDataVal("HUM", String(tmphum));
       }
 
-      Serial.printf("hum %.2f \n", last_Humidity);
+      Serial.printf("hum %.2f \n", tmphum);
 #elif defined(HANDHELD)
+      currVal = getDataVal("AMB_HUM");
       if (!isnan(tmphum))
       {
-        hand_Humidity = tmphum;
+        setDataVal("AMB_HUM", String(tmphum));
       }
 
-      Serial.printf("hum %.2f \n", hand_Humidity);
+      Serial.printf("hum %.2f \n", tmphum);
 #endif
 
 #endif
@@ -319,23 +328,23 @@ void readSensors()
 #endif
 
 #if defined(Voltage_pin)
-    last_Voltage = getVoltage();
+    setDataVal("VOLTS", String(getVoltage()));
 #endif
 #if defined(VDiv_Batt_pin)
-    batt_Voltage = getVoltage();
+    setDataVal("HAND_VOLTS", String(getVoltage()));
 #endif
 
 #if defined(USE_MLX90614)
     float tmpObjTemp = mlx.readObjectTempC();
     if (!isnan(tmpObjTemp))
     {
-      hand_obj_Temperature = tmpObjTemp;
+      setDataVal("IR_TEMP", String(tmpObjTemp));
     }
 #if defined(USE_SHT2) == false
     float tmpTemp = mlx.readAmbientTempC();
     if (!isnan(tmpTemp))
     {
-      hand_Temperature = tmpTemp;
+      setDataVal("AMB_TEMP", String(tmpTemp));
     }
 #endif
 #endif
@@ -352,8 +361,10 @@ int lastPos = -1;
 void setWindow(bool isOpen)
 {
 #ifdef Servo_pin
-  int closePos = (int)settings[0].value;
-  int openPos = (int)settings[1].value;
+  int closePos = getConfigVal("SERVO_CL_POS").toInt();
+  int openPos = getConfigVal("SERVO_OP_POS").toInt();
+
+  bool last_WINDOW = (getDataVal("B_WINDOW") == "1");
 
   Serial.printf("isOpen: %d lastPos: %d LastWindow %u\n", isOpen, lastPos, last_WINDOW);
   Serial.printf("closePos: %d openPos: %d\n", closePos, openPos);
@@ -367,34 +378,19 @@ void setWindow(bool isOpen)
   {
     int pos = lastPos;
 
-    // Save value first than move to avoid multiple same command
-    last_WINDOW = isOpen;
-
     if (isOpen)
     {
+      // Save value first than move to avoid multiple same command
+      setDataVal("B_WINDOW", "1");
       windowServo.write(openPos);
       lastPos = openPos;
-      // // TODO: run in a different task for BLE APP
-      // //  Move to the Open Position
-      // for (pos = pos; pos <= openPos; pos++)
-      // {
-      //   windowServo.write(pos);
-      //   lastPos = pos;
-      //   delay(servoDegreeDelay);
-      // }
     }
     else
     {
+      // Save value first than move to avoid multiple same command
+      setDataVal("B_WINDOW", "0");
       windowServo.write(closePos);
       lastPos = closePos;
-      // // TODO: run in a different task for BLE APP
-      // //  Move to Close Position
-      // for (pos = pos; pos >= closePos; pos--)
-      // {
-      //   windowServo.write(pos);
-      //   lastPos = pos;
-      //   delay(servoDegreeDelay);
-      // }
     }
   }
 
@@ -409,13 +405,14 @@ void setFan(bool isOn)
 #ifdef Relay1_pin
   if (isOn)
   {
+    setDataVal("B_FAN", "1");
     digitalWrite(Relay1_pin, HIGH);
   }
   else
   {
+    setDataVal("B_FAN", "0");
     digitalWrite(Relay1_pin, LOW);
   }
-  last_Relay1 = isOn;
 #endif
 };
 
@@ -424,7 +421,7 @@ void setHeater(bool isOn)
 #ifdef Relay2_pin
   if (isOn)
   {
-
+    setDataVal("B_HEATER", "1");
     if (!heaterWithFan)
     {
       // Force fan ON if the heater has no internal fan
@@ -435,10 +432,10 @@ void setHeater(bool isOn)
   }
   else
   {
+    setDataVal("B_HEATER", "0");
     // Turn Heater Off, leave fan on
     digitalWrite(Relay2_pin, LOW);
   }
-  last_Relay2 = isOn;
 #endif
 };
 #endif

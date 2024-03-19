@@ -134,7 +134,7 @@ void loraReceive()
 
     // you can read received data as an Arduino String
     String str;
-    int state = radio.readData(str); // TODO: struct instead of a human readable string? should be a smaller payload
+    int state = radio.readData(str);
     // you can also read received data as byte array
     /*
       byte byteArr[8];
@@ -174,89 +174,59 @@ void loraReceive()
 
           if (type == DATA)
           {
-            switch (dataEnum)
+            // Loop over the data array
+            for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
             {
-#if not(defined(CAMPER))
-            case TEMPERATURE:
-              last_Temperature = dataVal.toFloat();
-              break;
-            case HUMIDITY:
-              last_Humidity = dataVal.toFloat();
-              break;
-            case VOLTS:
-              last_Voltage = dataVal.toFloat();
-              break;
-            case WINDOW:
-              last_WINDOW = (dataVal.toInt() == 1);
-              break;
-            case RELAY1:
-              last_Relay1 = (dataVal.toInt() == 1);
-              break;
-            case RELAY2:
-              last_Relay2 = (dataVal.toInt() == 1);
-              break;
-            case EXT_TEMPERATURE:
-              last_Ext_Temperature = dataVal.toFloat();
-              break;
-            case EXT_HUMIDITY:
-              last_Ext_Humidity = dataVal.toFloat();
-              break;
-#endif
-            case MILLIS:
-              last_Millis = dataVal.toInt();
-              break;
-            case DATETIME:
-              last_DateTime = dataVal;
-              break;
+              // Same id, update value
+              if (data[i].id == dataEnum)
+              {
+                data[i].value = dataVal;
 
-            default:
-              break;
-            }
-          }
-
-          if (type == COMMAND)
-          {
-            switch (dataEnum)
-            {
-            case WINDOW:
-              last_WINDOW = (dataVal.toInt() == 1);
+                // data with commands
+                if (strcmp(data[i].key, "B_WINDOW") == 0)
+                {
 #ifdef Servo_pin
-              setWindow(last_WINDOW);
+                  setWindow((dataVal == "1"));
 #endif
 #if defined(CAMPER)
-              // call EXT_SENSORS API to send the command
-              callEXT_SENSORSAPI("api/1", String(WINDOW) + "=" + String(last_WINDOW));
+                  // call EXT_SENSORS API to send the command
+                  callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                  // Force a lora send on next loop
+                  lastLORASend = 0;
 #endif
-              break;
-            case RELAY1:
-              last_Relay1 = (dataVal.toInt() == 1);
+                }
+                if (strcmp(data[i].key, "B_FAN") == 0)
+                {
 #ifdef Relay1_pin
-              setFan(last_Relay1);
+                  setFan((dataVal == "1"));
 #endif
 #if defined(CAMPER)
-              // call EXT_SENSORS API to send the command
-              callEXT_SENSORSAPI("api/1", String(RELAY1) + "=" + String(last_Relay1));
+                  // call EXT_SENSORS API to send the command
+                  callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                  // Force a lora send on next loop
+                  lastLORASend = 0;
 #endif
-              break;
-            case RELAY2:
-              last_Relay2 = (dataVal.toInt() == 1);
+                }
+                if (strcmp(data[i].key, "B_HEATER") == 0)
+                {
 #ifdef Relay2_pin
-              setHeater(last_Relay2);
+                  setHeater((dataVal == "1"));
 #endif
 #if defined(CAMPER)
-              // call EXT_SENSORS API to send the command
-              callEXT_SENSORSAPI("api/1", String(RELAY2) + "=" + String(last_Relay2));
+                  // call EXT_SENSORS API to send the command
+                  callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                  // Force a lora send on next loop
+                  lastLORASend = 0;
 #endif
-              break;
-            case DATETIME:
-              last_DateTime = dataVal;
-              setTime(last_DateTime);
-              break;
+                  if (strcmp(data[i].key, "DATETIME") == 0)
+                  {
+                    setDateTime(dataVal);
+                  }
+                }
+
+                break; // found, exit loop
+              }
             }
-#if defined(CAMPER)
-            // Force a lora send on next loop
-            lastLORASend = 0;
-#endif
           }
 
           // type == CONFIGS not used in lora message but only in UI config

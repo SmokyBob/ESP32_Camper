@@ -35,25 +35,20 @@ AsyncWebSocket *webSocket;
 void sendWebSocketMessage()
 {
   String jsonString = "{";
-  jsonString += "\"millis\":\"" + String(last_Millis) + "\",";
-  jsonString += "\"temperature\":\"" + String(last_Temperature) + "\",";
-  jsonString += "\"humidity\":\"" + String(last_Humidity) + "\",";
-  jsonString += "\"ext_temperature\":\"" + String(last_Ext_Temperature) + "\",";
-  jsonString += "\"ext_humidity\":\"" + String(last_Ext_Humidity) + "\",";
-  jsonString += "\"voltage\":\"" + String(last_Voltage) + "\",";
-  jsonString += "\"datetime\":\"" + String(last_DateTime) + "\",";
-  jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
-  jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
-  jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
+  for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+  {
+    jsonString += "\"" + String(data[i].key) + "\":\"" + data[i].value + "\",";
+  }
+
 #if defined(CAMPER)
-  jsonString += "\"automation\":\"" + String((int)settings[8].value) + "\",";
+  jsonString += "\"B_AUTOMATION\":\"" + getConfigVal("B_AUTOMATION") + "\",";
   String tmpBool = "0";
   if (last_IgnoreLowVolt != "")
   {
     tmpBool = "1";
   }
 
-  jsonString += "\"220power\":\"" + String(tmpBool) + "\",";
+  jsonString += "\"B_VOLT_LIM_IGN\":\"" + String(tmpBool) + "\",";
 #endif
 
   jsonString += "\"dummy\":null}";
@@ -61,14 +56,14 @@ void sendWebSocketMessage()
   webSocket->textAll(jsonString); // send the JSON object through the websocket
 }
 
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
+void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
 {
   AwsFrameInfo *info = (AwsFrameInfo *)arg;
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
   {
-    data[len] = 0;
-    String str = (char *)data;
-    Serial.print("ws command received: ");
+    dataPointer[len] = 0;
+    String str = (char *)dataPointer;
+    Serial.print("      ws command received: ");
     Serial.println(str);
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
@@ -92,7 +87,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         // Send the config to the Ext Sensor via API
         callEXT_SENSORSAPI("api/2", str);
       }
-      if (type == COMMAND)
+      if (type == DATA)
       {
         // Send the commands to the Ext Sensor via API
         callEXT_SENSORSAPI("api/1", str);
@@ -114,49 +109,44 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
           dataVal = str.substring(str.indexOf('=') + 1);
         }
 
-        if (type == COMMAND)
+        if (type == DATA)
         {
-          switch (dataEnum)
+          // Loop over the data array
+          for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
           {
-          case WINDOW:
-            last_WINDOW = (dataVal.toInt() == 1);
+            // Same id, update value
+            if (data[i].id == dataEnum)
+            {
+              data[i].value = dataVal;
+
+              // data with actions
+              if (strcmp(data[i].key, "B_WINDOW") == 0)
+              {
 #ifdef Servo_pin
-            setWindow(last_WINDOW);
+                setWindow((dataVal == "1"));
 #endif
-            break;
-          case RELAY1:
-            last_Relay1 = (dataVal.toInt() == 1);
+              }
+              if (strcmp(data[i].key, "B_FAN") == 0)
+              {
 #ifdef Relay1_pin
-            setFan(last_Relay1);
+                setFan((dataVal == "1"));
 #endif
-            break;
-          case RELAY2:
-            last_Relay2 = (dataVal.toInt() == 1);
+              }
+              if (strcmp(data[i].key, "B_HEATER") == 0)
+              {
 #ifdef Relay2_pin
-            setHeater(last_Relay2);
+                setHeater((dataVal == "1"));
 #endif
-            break;
-          case DATETIME:
-            last_DateTime = dataVal;
-            setTime(last_DateTime);
-            break;
-          case IGNORE_LOW_VOLT:
-            if (dataVal.toInt() == 1)
-            {
-              struct tm timeinfo;
-              getLocalTime(&timeinfo);
-              char buf[100];
-              strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+              }
+              if (strcmp(data[i].key, "DATETIME") == 0)
+              {
+                setDateTime(dataVal);
+              }
 
-              last_IgnoreLowVolt = String(buf);
+              break; // found, exit loop
             }
-            else
-            {
-              last_IgnoreLowVolt = "";
-            }
-
-            break;
           }
+
 #if defined(CAMPER)
           // Force a lora send on next loop
           lastLORASend = 0;
@@ -166,54 +156,47 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         }
 #if defined(CAMPER) || defined(EXT_SENSORS)
         if (type == CONFIGS)
-        {
-          switch (dataEnum)
+        { // Loop over the config array
+          for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
           {
-          case CONFIG_SERVO_CLOSED_POS:
-            settings[0].value = dataVal.toFloat();
-            break;
-          case CONFIG_SERVO_OPEN_POS:
-            settings[1].value = dataVal.toFloat();
-            break;
-          case CONFIG_SERVO_CLOSED_TEMP:
-            settings[2].value = dataVal.toFloat();
-            break;
-          case CONFIG_SERVO_OPEN_TEMP:
-            settings[3].value = dataVal.toFloat();
-            break;
-          case CONFIG_VOLTAGE_ACTUAL:
-          {
-            float currVal = dataVal.substring(0, dataVal.indexOf('|')).toFloat();
-            float tmpVolt = dataVal.substring(dataVal.indexOf('|') + 1).toFloat();
-
-            if (currVal != tmpVolt)
+            // Same id, update value
+            if (config[i].id == dataEnum)
             {
-              tmpVolt = tmpVolt / settings[4].value;
+              config[i].value = dataVal;
+              Serial.printf(" update config id: %u value:%s \n", dataEnum, dataVal);
 
-              settings[4].value = currVal / tmpVolt;
+              // configs with actions
+              if (strcmp(config[i].key, "B_VOLT_LIM_IGN") == 0)
+              {
+                if (dataVal == "1")
+                {
+                  struct tm timeinfo;
+                  getLocalTime(&timeinfo);
+                  char buf[100];
+                  strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+                  last_IgnoreLowVolt = String(buf);
+                }
+                else
+                {
+                  last_IgnoreLowVolt = "";
+                }
+              }
+              if (strcmp(config[i].key, "VOLT_ACTUAL") == 0)
+              {
+                float currVal = dataVal.substring(0, dataVal.indexOf('|')).toFloat();
+                float tmpVolt = dataVal.substring(dataVal.indexOf('|') + 1).toFloat();
+
+                if (currVal != tmpVolt)
+                {
+                  tmpVolt = tmpVolt / config[i].value.toFloat();
+
+                  config[i].value = String(currVal / tmpVolt);
+                }
+              }
+
+              break; // found, exit loop
             }
-            break;
-          }
-          case CONFIG_VOLTAGE_LIMIT:
-            settings[5].value = dataVal.toFloat();
-            break;
-          case CONFIG_VOLTAGE_LIMIT_UNDER_LOAD:
-            settings[6].value = dataVal.toFloat();
-            break;
-          case CONFIG_VOLTAGE_SLEEP_MINUTES:
-            settings[7].value = dataVal.toFloat();
-            break;
-          case CONFIG_ENABLE_AUTOMATION:
-            Serial.print("CONFIG_ENABLE_AUTOMATION:");
-            Serial.println(dataVal);
-            settings[8].value = dataVal.toFloat();
-            break;
-          case CONFIG_HEAT_TEMP_ON:
-            settings[9].value = dataVal.toFloat();
-            break;
-          case CONFIG_HEAT_TEMP_OFF:
-            settings[10].value = dataVal.toFloat();
-            break;
           }
 
           savePreferences();
@@ -229,7 +212,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         {
           str = "";
         }
-        // Serial.println(str);
+        Serial.println(str);
       } while (str.length() > 0);
     }
   }
@@ -279,35 +262,26 @@ void sendLoRaSensors()
   // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
   if (millis() > (lastLORASend + (LORA_DC * 1000)))
   {
-    if (last_DateTime.length() > 0)
+    String currVal = getDataVal("DATETIME");
+    if (currVal.length() > 0)
     {
       struct tm timeinfo;
       getLocalTime(&timeinfo);
       char buf[100];
       strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-      last_DateTime = String(buf);
-      setTime(last_DateTime); // save the new time
+      currVal = String(buf);
+      setDateTime(currVal); // save the new time
     }
+    setDataVal("MILLIS", String(millis()));
     String LoRaMessage = String(DATA) + "?";
-    LoRaMessage += String(MILLIS) + "=" + String(millis()) + "&";
-#if defined(CAMPER)
-    LoRaMessage += String(TEMPERATURE) + "=" + String(last_Temperature) + "&";
-    LoRaMessage += String(HUMIDITY) + "=" + String(last_Humidity) + "&";
-    LoRaMessage += String(VOLTS) + "=" + String(last_Voltage) + "&";
-    LoRaMessage += String(WINDOW) + "=" + String(last_WINDOW) + "&";
-    LoRaMessage += String(RELAY1) + "=" + String(last_Relay1) + "&";
-    LoRaMessage += String(RELAY2) + "=" + String(last_Relay2) + "&";
-    if (isnan(last_Ext_Temperature) != true)
+
+    // loop data[] and build the message (some values might get ignored)
+    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
     {
-      LoRaMessage += String(EXT_TEMPERATURE) + "=" + String(last_Ext_Temperature) + "&";
+      LoRaMessage += String(data[i].id) + "=" + data[i].value + "&";
     }
-    if (isnan(last_Ext_Humidity) != true)
-    {
-      LoRaMessage += String(EXT_HUMIDITY) + "=" + String(last_Ext_Humidity) + "&";
-    }
-#endif
-    LoRaMessage += String(DATETIME) + "=" + String(last_DateTime) + "&";
+
     LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
     Serial.println(LoRaMessage);
     loraSend(LoRaMessage);
@@ -445,14 +419,16 @@ void loop()
   {
     if (webSocket->getClients().length() > 0)
     {
-      if (last_DateTime.length() > 0)
+      String currVal = getDataVal("DATETIME");
+      if (currVal.length() > 0)
       {
         struct tm timeinfo;
         getLocalTime(&timeinfo);
         char buf[100];
         strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-        last_DateTime = String(buf);
+        currVal = String(buf);
+        setDataVal("DATETIME", currVal);
       }
       sendWebSocketMessage(); // Update the root page with the latest data
     }
@@ -546,15 +522,32 @@ void loop()
 
         // Copy values from the JsonDocument
         // only the values from ext_sensors
-        last_Ext_Temperature = doc["ext_temperature"];
-        last_Ext_Humidity = doc["ext_humidity"];
+        String tmp = "";
+        String key = "";
+        key = "EXT_TEMP";
+        tmp = "";
+        tmp = doc[key.c_str()].as<String>();
+        setDataVal(key, tmp);
 
-        String tmp = doc["window"];
-        last_WINDOW = (tmp == "1");
-        String tmp1 = doc["relay1"];
-        last_Relay1 = (tmp1 == "1");
-        String tmp2 = doc["relay2"];
-        last_Relay2 = (tmp2 == "1");
+        key = "EXT_HUM";
+        tmp = "";
+        tmp = doc[key.c_str()].as<String>();
+        setDataVal(key, tmp);
+
+        key = "B_WINDOW";
+        tmp = "";
+        tmp = doc[key.c_str()].as<String>();
+        setDataVal(key, tmp);
+
+        key = "B_FAN";
+        tmp = "";
+        tmp = doc[key.c_str()].as<String>();
+        setDataVal(key, tmp);
+
+        key = "B_HEATER";
+        tmp = "";
+        tmp = doc[key.c_str()].as<String>();
+        setDataVal(key, tmp);
 
         lastAPICheck = millis();
       }
@@ -580,8 +573,11 @@ void loop()
     DeserializationError error = deserializeJson(doc, jsonResult);
 
     // Copy values from the JsonDocument
-    // only the values from ext_sensors
-    last_Voltage = doc["voltage"];
+    // only the values from CAMPER
+    String key = "VOLTS";
+    String tmp = "";
+    tmp = doc[key.c_str()].as<String>();
+    setDataVal(key, tmp);
 
     lastAPICheck = millis();
 
@@ -596,7 +592,7 @@ void loop()
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
   // Run automation if enabled in settings
-  if (settings[8].value > 0.00)
+  if (getConfigVal("B_AUTOMATION") == "1")
   {
     runAutomation();
   }
@@ -643,18 +639,18 @@ void loop()
   }
   if (last_IgnoreLowVolt == "")
   {
-    float voltageLimit = settings[5].value;
-    if (last_Relay2)
+    float voltageLimit = getConfigVal("VOLT_LIM").toFloat();
+    if (getDataVal("B_HEATER") == "1")
     {
       // Heater on, check the under load limit
-      voltageLimit = settings[6].value;
+      voltageLimit = getConfigVal("VOLT_LIM_UL").toFloat();
     }
-    if (settings[7].value > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
+    if (getConfigVal("VOLT_LIM_SL_M").toInt() > 0) // Check only if sleep time is >0 (n.b. set to 0 only for debug to avoid shortening the life of the battery)
     {
       // Sleep for 30 mins if voltage below X volts (defautl 12.0v = 9% for lifepo4 batteries)
-      if (last_Voltage > 6) //>6 to avoid sleep when connected to the usb for debug
+      if (getDataVal("VOLTS").toFloat() > 6) //>6 to avoid sleep when connected to the usb for debug
       {
-        if (last_Voltage < voltageLimit)
+        if (getDataVal("VOLTS").toFloat() < voltageLimit)
         {
           if (lastLowVolt == 0)
           {
@@ -670,11 +666,11 @@ void loop()
       {
         lastLowVolt = 0;
       }
-      //Go to sleep if undervoltage for more than 30 seconds
+      // Go to sleep if undervoltage for more than 30 seconds
       if (lastLowVolt > 0 && (millis() > (lastLowVolt + (30 * 1000))))
       {
-        uint64_t hrSleepUs = (1 * (settings[7].value) * 60 * 1000); // in milliseconds
-        hrSleepUs = hrSleepUs * 1000;                               // in microseconds
+        uint64_t hrSleepUs = (1 * (getConfigVal("VOLT_LIM_SL_M").toInt()) * 60 * 1000); // in milliseconds
+        hrSleepUs = hrSleepUs * 1000;                                                   // in microseconds
 #ifdef WIFI_PWD
         // do many stuff
         WiFi.mode(WIFI_MODE_NULL);

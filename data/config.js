@@ -1,15 +1,18 @@
 function updateConfigs() {
-  var str = "2?";
+  var str = "1?";
 
   var elems = document.getElementsByClassName("params");
   for (let index = 0; index < elems.length; index++) {
     const element = elems[index];
     str += element.name + "=";
     switch (element.id) {
-      case "VDiv_Calib":
+      case "VOLT_ACTUAL":
         str += element.value + "|" + element.attributes["data-value"] + "&";
         break;
-      case "bAutomation":
+      case "B_AUTOMATION":
+        str += ((element.checked) ? "1" : "0") + "&";
+        break;
+      case "B_VOLT_LIM_IGN":
         str += ((element.checked) ? "1" : "0") + "&";
         break;
       default:
@@ -31,7 +34,7 @@ function addParam(name, desc, enumerator, value) {
   label.innerText = desc + ":";
   label.style.display = "table-cell";
   var elInput = document.createElement("input");
-  if (name == "bAutomation") {
+  if (name == "B_AUTOMATION" ||name == "B_VOLT_LIM_IGN") {
     elInput.type = "checkbox";
     elInput.checked = (value == 0.00) ? false : true;
     console.log(value);

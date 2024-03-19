@@ -1,25 +1,107 @@
 #include "globals.h"
 
-u_long last_Millis;
-float last_Temperature = NAN;
-float last_Humidity = NAN;
-float last_Voltage = 0;
-bool last_WINDOW;
-bool last_Relay1;
-bool last_Relay2;
-float last_Ext_Temperature = NAN;
-float last_Ext_Humidity = NAN;
-String last_IgnoreLowVolt;
-#if defined(HANDHELD)
-float batt_Voltage = 0;
-float hand_Temperature = NAN;
-float hand_Humidity = NAN;
-#endif
-#if defined(USE_MLX90614)
-float hand_obj_Temperature = NAN;
-#endif
+keys_t data[15] = {
+    {1, "TEMP", "Temperature", "", "", true, false},
+    {2, "HUM", "Humidity", "", "", true, false},
+    {3, "VOLTS", "Battery Voltage", "", "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", true, false},
+    {4, "MILLIS", "Millis", "", "", false, false},
+    {5, "DATETIME", "Date and Time", "", "2cdc00e8-907c-4f63-a284-2be098f8ea52", false, false},
+    {6, "B_WINDOW", "Window Open/Closed", "0", "4efa5b56-0426-42d7-857e-3ae3370b4a1d", false, true},
+    {7, "B_FAN", "Fan On/Off", "0", "e8db3027-e095-435d-929c-f471669209c3", false, true},
+    {8, "B_HEATER", "Heater On/Off", "0", "4d15f090-6175-4e3c-b076-6ae0f69b7117", false, true},
+    {9, "EXT_TEMP", "External sensor Temperature", "", "226115b6-f631-4f82-b58d-b84487b55a64", true, false},
+    {10, "EXT_HUM", "External sensor Humidity", "", "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", true, false},
+    {11, "AMB_TEMP", "Ambient Temperature", "", "", false, false},
+    {12, "AMB_HUM", "Ambient Humidity", "", "", false, false},
+    {13, "IR_TEMP", "IR sensor Temperature", "", "", false, false},
+    {14, "HAND_VOLTS", "Handheld Battery Voltage", "", "", false, false},
+    {15, "TIME", "Time", "", "", true, false},
+};
+// TODO: add week day value
+keys_t getDataObj(String key)
+{
+    keys_t toRet;
+    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+    {
+        if (key.equals(data[i].key))
+        {
+            toRet = data[i];
+            break;
+        }
+    }
+    return toRet;
+};
 
-String last_DateTime;
+String getDataVal(String key)
+{
+    return getDataObj(key).value;
+};
+
+void setDataVal(String key, String value)
+{
+    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+    {
+        if (key.equals(data[i].key))
+        {
+            data[i].value = value;
+            break;
+            ;
+        }
+    }
+}
+
+keys_t config[12] = {
+    {1, "SERVO_CL_POS", "Window Closed (servo degs)", "", "", false, false},
+    {2, "SERVO_OP_POS", "Window OPEN (servo degs)", "", "", false, false},
+    {3, "SERVO_CL_TEMP", "AUTOMATION: Window Closed (temp)", "", "", false, false}, // TODO: move to automation
+    {4, "SERVO_OP_TEMP", "AUTOMATION: Window OPEN (temp)", "", "", false, false},   // TODO: move to automation
+    {5, "VOLT_ACTUAL", "Current voltage for calibration", "", "", false, false},    // stored preference value is VDiv_Calibration
+    {6, "VOLT_LIM", "Low Voltage (init sleep)", "", "", false, false},
+    {7, "VOLT_LIM_UL", "Low Voltage UNDER LOAD (init sleep)", "", "", false, false},
+    {8, "VOLT_LIM_SL_M", "Sleep time on Low Voltage (minutes)", "", "", false, false},
+    {9, "B_VOLT_LIM_IGN", "Force Ignore Voltage Limits ON/OFF", "", "70c74d81-5a61-43c0-b82b-08fcc9109ff4", false, false},
+    {10, "HEAT_ON_TEMP", "AUTOMATION: Turn HEATER ON (temp)", "", "", false, false},   // TODO: move to automation
+    {11, "HEAT_OFF_TEMP", "AUTOMATION: Turn HEATER OFF (temp)", "", "", false, false}, // TODO: move to automation
+    {12, "B_AUTOMATION", "Enable automation", "", "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", false, false},
+};
+
+keys_t getConfigObj(String key)
+{
+    keys_t toRet;
+    for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
+    {
+        if (key.equals(config[i].key))
+        {
+            toRet = config[i];
+            break;
+        }
+    }
+    return toRet;
+};
+
+String getConfigVal(String key)
+{
+    return getConfigObj(key).value;
+};
+
+void setConfigVal(String key, String value)
+{
+    for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
+    {
+        if (key.equals(config[i].key))
+        {
+            config[i].value = value;
+
+            break;
+        }
+    }
+};
+
+automation_t **automationArray = NULL;
+
+u_long last_Millis;
+String last_IgnoreLowVolt;
+
 float last_SNR;
 float last_RSSI;
 
@@ -75,18 +157,6 @@ unsigned long lastLORASend = 0;
 #ifndef Servo_OPEN_pos
 #define Servo_OPEN_pos 175
 #endif
-setting settings[11]{
-    {"ServoPosClosed", "AUTOMATION: Window Closed (servo degs)", Servo_closed_pos},
-    {"ServoPosOpen", "AUTOMATION: Window OPEN (servo degs)", Servo_OPEN_pos},
-    {"ServoTempClosed", "AUTOMATION: Window Closed (temp)", 20},
-    {"ServoTempOpen", "AUTOMATION: Window OPEN (temp)", 30},
-    {"VDiv_Calib", "Current voltage for calibration", VDiv_Calibration},
-    {"voltageLimit", "Low Voltage (init sleep)", 12.00},
-    {"voltageLim_Load", "Low Voltage UNDER LOAD (init sleep)", 11.40},
-    {"lowVoltSleepMin", "Sleep time on Low Voltage (minutes)", 30.00},
-    {"bAutomation", "Enable automation", 0.00}, // default false
-    {"heatTempOn", "AUTOMATION: Turn HEATER ON (temp)", 15.00},
-    {"heatTempOff", "AUTOMATION: Turn HEATER off (temp)", 18.00}};
 
 Preferences prf_config;
 
@@ -94,24 +164,43 @@ void loadPreferences()
 {
     prf_config.begin("CAMPER", false);
 
-    settings[0].value = prf_config.getFloat("ServoPosClosed", Servo_closed_pos);
-    settings[1].value = prf_config.getFloat("ServoPosOpen", Servo_OPEN_pos);
-    settings[2].value = prf_config.getFloat("ServoTempClosed", 20);
-    settings[3].value = prf_config.getFloat("ServoTempOpen", 30);
-    settings[4].value = prf_config.getFloat("VDiv_Calib", VDiv_Calibration);
-    settings[5].value = prf_config.getFloat("voltageLimit", 12.00);
-    settings[6].value = prf_config.getFloat("voltageLim_Load", 11.40);
-    settings[7].value = prf_config.getFloat("lowVoltSleepMin", 30.00);
-    settings[8].value = prf_config.getFloat("bAutomation", 0.00);
-    settings[9].value = prf_config.getFloat("heatTempOn", 15.00);
-    settings[10].value = prf_config.getFloat("heatTempOff", 18.00);
+    String key = "";
+    key = "SERVO_CL_POS";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(Servo_closed_pos)));
+    key = "SERVO_OP_POS";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(Servo_OPEN_pos)));
+    key = "SERVO_CL_TEMP";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(20)));
+    key = "SERVO_OP_TEMP";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(30)));
+    key = "VOLT_ACTUAL";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(VDiv_Calibration)));
 
-    last_DateTime = prf_config.getString("lastTime", "");
+    key = "VOLT_LIM";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(12.00)));
+    key = "VOLT_LIM_UL";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(11.40)));
+    key = "VOLT_LIM_SL_M";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(30)));
+
+    key = "B_VOLT_LIM_IGN";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(0)));
+
+    // TODO: move to automation
+    key = "HEAT_ON_TEMP";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(5.00)));
+    key = "HEAT_OFF_TEMP";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(10.00)));
+
+    key = "B_AUTOMATION";
+    setConfigVal(key, prf_config.getString(key.c_str(), String(0)));
+
+    String last_DateTime = prf_config.getString("lastTime", "");
 
     prf_config.end();
     if (last_DateTime.compareTo("") != 0)
     {
-        setTime(last_DateTime);
+        setDateTime(last_DateTime);
     }
 
     savePreferences();
@@ -122,36 +211,63 @@ void savePreferences()
 
     prf_config.begin("CAMPER", false);
 
-    for (size_t i = 0; i < (sizeof(settings) / sizeof(setting)); i++)
+    for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
     {
-        prf_config.putFloat(settings[i].name.c_str(), settings[i].value);
+        prf_config.putString(config[i].key, config[i].value);
     }
 
-    prf_config.putString("lastTime", last_DateTime);
+    prf_config.putString("lastTime", getDataVal("DATETIME"));
 
     prf_config.end();
 };
 
 void resetPreferences()
 {
-    settings[0].value = Servo_closed_pos;
-    settings[1].value = Servo_OPEN_pos;
-    settings[2].value = 20;
-    settings[3].value = 30;
-    settings[4].value = VDiv_Calibration;
-    settings[5].value = 12.00;
-    settings[5].value = 11.40;
-    settings[7].value = 30.00;
-    settings[8].value = 0.00;
-    settings[9].value = 15.00;
-    settings[10].value = 18.00;
+    String key = "";
+    key = "SERVO_CL_POS";
+    setConfigVal(key, String(Servo_closed_pos));
+    key = "SERVO_OP_POS";
+    setConfigVal(key, String(Servo_OPEN_pos));
+    key = "SERVO_CL_TEMP";
+    setConfigVal(key, String(20));
+    key = "SERVO_OP_TEMP";
+    setConfigVal(key, String(30));
+    key = "VOLT_ACTUAL";
+    setConfigVal(key, String(VDiv_Calibration));
+
+    key = "VOLT_LIM";
+    setConfigVal(key, String(12.00));
+    key = "VOLT_LIM_UL";
+    setConfigVal(key, String(11.40));
+    key = "VOLT_LIM_SL_M";
+    setConfigVal(key, String(30));
+
+    // TODO: move to automation
+    key = "HEAT_ON_TEMP";
+    setConfigVal(key, String(5.00));
+    key = "HEAT_OFF_TEMP";
+    setConfigVal(key, String(10.00));
+
+    key = "B_AUTOMATION";
+    setConfigVal(key, String(0));
+
+    // Full preferences cleanup
+    prf_config.begin("CAMPER", false);
+    prf_config.clear();
+    prf_config.end();
 
     savePreferences();
 };
 
+// TODO: load automation from Preferences
+//       "auto_0" contains the number of preferences
+//       init the dinamic array
+//       automationArray = (automation_t **)calloc(X, sizeof(automation_t *));
+//       load and save automation
+
 #endif
 
-void setTime(String utcString)
+void setDateTime(String utcString)
 {
     // Read in timezone of format 2023-03-14T00:00:00.000Z
     struct tm tm;
@@ -160,7 +276,7 @@ void setTime(String utcString)
     time_t t = mktime(&tm);
     char buf[100];
     strftime(buf, sizeof(buf), "%FT%T", &tm);
-    Serial.printf("Setting time: %s", buf);
+    Serial.printf("Setting DateTime: %s \n", buf);
     struct timeval now = {.tv_sec = t};
     settimeofday(&now, NULL);
 #if defined(CAMPER) || defined(EXT_SENSORS)
@@ -169,6 +285,8 @@ void setTime(String utcString)
 
     prf_config.end();
 #endif
+    setDataVal("DATETIME", utcString);
+    // TODO: update data[X].key== "TIME" with current time value
 };
 
 #if defined(CAMPER)

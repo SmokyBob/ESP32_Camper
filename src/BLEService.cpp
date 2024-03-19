@@ -10,21 +10,21 @@ BLEServer *pServer = NULL;
 struct myCharacteristics
 {
   String name;
-  String uuid;
+  dataType arraySrc;
   uint16_t properties;
   BLECharacteristic *refChar;
 };
 
 myCharacteristics charArray[9]{
-    {"volts", "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
-    {"ext_temperature", "226115b6-f631-4f82-b58d-b84487b55a64", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
-    {"ext_humidity", "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
-    {"datetime", "2cdc00e8-907c-4f63-a284-2be098f8ea52", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
-    {"window", "4efa5b56-0426-42d7-857e-3ae3370b4a1d", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
-    {"relay1", "e8db3027-e095-435d-929c-f471669209c3", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
-    {"relay2", "4d15f090-6175-4e3c-b076-6ae0f69b7117", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
-    {"automation", "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
-    {"220power", "70c74d81-5a61-43c0-b82b-08fcc9109ff4", NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"VOLTS", DATA, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
+    {"EXT_TEMP", DATA, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
+    {"EXT_HUM", DATA, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ, nullptr},
+    {"DATETIME", DATA, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"B_WINDOW", DATA, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"B_FAN", DATA, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"B_HEATER", DATA, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"B_AUTOMATION", CONFIGS, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    {"B_VOLT_LIM_IGN", CONFIGS, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
 };
 
 bool deviceConnected = false;
@@ -53,100 +53,73 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
     std::string value = pCharacteristic->getValue();
     Serial.println(value.c_str());
     String dataVal = value.c_str();
-    for (size_t i = 0; i < (sizeof(charArray) / sizeof(myCharacteristics)); i++)
+    bool found = false;
+    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
     {
-      if (charArray[i].uuid.equals(pCharacteristic->getUUID().toString().c_str()))
+      if (data[i].ble_uuid.equals(pCharacteristic->getUUID().toString().c_str()))
       {
-        if (charArray[i].name == "volts")
-        {
-          last_Voltage = dataVal.toFloat();
-        }
+        data[i].value = dataVal;
+        found = true;
 
-        if (charArray[i].name == "ext_temperature")
+        // data with actions
+        if (strcmp(data[i].key, "DATETIME") == 0)
         {
-          last_Temperature = dataVal.toFloat();
+          setDateTime(dataVal);
         }
-
-        if (charArray[i].name == "ext_humidity")
-        {
-          last_Humidity = dataVal.toFloat();
-        }
-
-        if (charArray[i].name == "datetime")
-        {
-          last_DateTime = dataVal;
-          setTime(last_DateTime);
-        }
-
-        if (charArray[i].name == "window")
+        if (strcmp(data[i].key, "B_WINDOW") == 0 || strcmp(data[i].key, "B_FAN") == 0 || strcmp(data[i].key, "B_HEATER") == 0)
         {
 #if defined(CAMPER)
-          callEXT_SENSORSAPI("api/1", String(WINDOW) + "=" + dataVal);
-#else
-          // TODO: manage handheld, send lora
-#endif
-          last_WINDOW = (dataVal.toInt() == 1);
-        }
-
-        if (charArray[i].name == "relay1")
-        {
-
-#if defined(CAMPER)
-          callEXT_SENSORSAPI("api/1", String(RELAY1) + "=" + dataVal);
-#else
-          // TODO: manage handheld, send lora
-#endif
-          last_Relay1 = (dataVal.toInt() == 1);
-        }
-
-        if (charArray[i].name == "relay2")
-        {
-#if defined(CAMPER)
-          callEXT_SENSORSAPI("api/1", String(RELAY2) + "=" + dataVal);
-#else
-          // TODO: manage handheld, send lora
-#endif
-          last_Relay2 = (dataVal.toInt() == 1);
-        }
-
-        if (charArray[i].name == "automation")
-        {
-
-#if defined(CAMPER)
-          settings[8].value = dataVal.toFloat();
-          callEXT_SENSORSAPI("api/2", String(CONFIG_ENABLE_AUTOMATION) + "=" + dataVal);
-          savePreferences();
+          callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
 #else
           // TODO: manage handheld, send lora
 #endif
         }
-        if (charArray[i].name == "220power")
-        {
+        break; // found, exit loop
+      }
+    }
 
-#if defined(CAMPER)
-          if (dataVal.toInt() == 1)
+    if (!found)
+    {
+      for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
+      {
+        if (config[i].ble_uuid.equals(pCharacteristic->getUUID().toString().c_str()))
+        {
+          config[i].value = dataVal;
+          found = true;
+          // configs with actions
+          if (strcmp(config[i].key, "B_AUTOMATION") == 0)
           {
-            struct tm timeinfo;
-            getLocalTime(&timeinfo);
-            char buf[100];
-            strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
-
-            last_IgnoreLowVolt = String(buf);
-          }
-          else
-          {
-            last_IgnoreLowVolt = "";
-          }
-          
-          Serial.print("            last_IgnoreLowVolt: ");
-          Serial.println(last_IgnoreLowVolt);
-
-          callEXT_SENSORSAPI("api/1", String(IGNORE_LOW_VOLT) + "=" + dataVal);
+#if defined(CAMPER)
+            callEXT_SENSORSAPI("api/2", String(config[i].id) + "=" + dataVal);
+            savePreferences();
 #else
-          // TODO: manage handheld, send lora
+            // TODO: manage handheld, send lora
 #endif
+          }
+          if (strcmp(config[i].key, "B_220POWER") == 0)
+          {
+            if (dataVal.toInt() == 1)
+            {
+              struct tm timeinfo;
+              getLocalTime(&timeinfo);
+              char buf[100];
+              strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+              last_IgnoreLowVolt = String(buf);
+            }
+            else
+            {
+              last_IgnoreLowVolt = "";
+            }
+
+            Serial.print("            last_IgnoreLowVolt: ");
+            Serial.println(last_IgnoreLowVolt);
+
+            callEXT_SENSORSAPI("api/1", String(config[i].id) + "=" + dataVal);
+          }
+
+          break; // found, exit loop
         }
-        break;
       }
     }
   };
@@ -173,9 +146,17 @@ void initBLEService()
 
   for (size_t i = 0; i < (sizeof(charArray) / sizeof(myCharacteristics)); i++)
   {
+    String uuid;
+    if (charArray[i].arraySrc == DATA)
+    {
+      uuid = getDataObj(charArray[i].name).ble_uuid;
+    }
+    if (charArray[i].arraySrc == CONFIGS)
+    {
+      uuid = getConfigObj(charArray[i].name).ble_uuid;
+    }
     charArray[i].refChar = pService->createCharacteristic(
-        NimBLEUUID(charArray[i].uuid.c_str()),
-        charArray[i].properties);
+        NimBLEUUID(uuid.c_str()), charArray[i].properties);
 
     if ((charArray[i].properties & BLE_GATT_CHR_PROP_WRITE) != 0)
     {
@@ -210,65 +191,27 @@ void handleBLE()
     {
       for (size_t i = 0; i < (sizeof(charArray) / sizeof(myCharacteristics)); i++)
       {
-
-        if (charArray[i].name == "volts")
+        String dataVal;
+        if (charArray[i].arraySrc == DATA)
         {
-          charArray[i].refChar->setValue(String(last_Voltage));
+          dataVal = getDataVal(charArray[i].name);
+        }
+        if (charArray[i].arraySrc == CONFIGS)
+        {
+          dataVal = getConfigVal(charArray[i].name);
         }
 
-        if (charArray[i].name == "ext_temperature")
+        // Characteristics with custom checks
+        if (charArray[i].name == "B_220POWER")
         {
-          if (!isnan(last_Ext_Temperature))
-            charArray[i].refChar->setValue(String(last_Ext_Temperature));
-        }
-
-        if (charArray[i].name == "ext_humidity")
-        {
-          if (!isnan(last_Ext_Humidity))
-            charArray[i].refChar->setValue(String(last_Ext_Humidity));
-        }
-
-        if (charArray[i].name == "datetime")
-        {
-          charArray[i].refChar->setValue(last_DateTime);
-        }
-
-        if (charArray[i].name == "window")
-        {
-          charArray[i].refChar->setValue(String(last_WINDOW));
-        }
-
-        if (charArray[i].name == "relay1")
-        {
-          charArray[i].refChar->setValue(String(last_Relay1));
-        }
-
-        if (charArray[i].name == "relay2")
-        {
-          charArray[i].refChar->setValue(String(last_Relay2));
-        }
-
-        if (charArray[i].name == "automation")
-        {
-#if defined(CAMPER)
-          charArray[i].refChar->setValue(String((int)settings[8].value));
-#else
-// TODO: send lora to camper
-#endif
-        }
-        if (charArray[i].name == "220power")
-        {
-          String tmpBool = "0";
+          dataVal = "0";
           if (last_IgnoreLowVolt != "")
           {
-            tmpBool = "1";
+            dataVal = "1";
           }
-#if defined(CAMPER)
-          charArray[i].refChar->setValue(String(tmpBool));
-#else
-// TODO: send lora to camper
-#endif
         }
+
+        charArray[i].refChar->setValue(dataVal);
 
         charArray[i].refChar->notify();
       }

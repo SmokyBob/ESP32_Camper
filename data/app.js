@@ -18,7 +18,7 @@ function init() {
   Socket.onopen = function (event) {
     //Send updated date from the device
     var myDate = new Date(new Date().getTime() + (-1 * (new Date().getTimezoneOffset()) * 60 * 1000));
-    sendWSCommand("datetime", myDate.toISOString());
+    sendWSCommand("DATETIME", myDate.toISOString());
   }
 
   Socket.onmessage = function (event) {
@@ -51,45 +51,29 @@ function processCommand(event) {
   var obj = JSON.parse(event.data);
 
   //ccess properties and update UI elements
-  document.getElementById("datetime").innerHTML = obj["datetime"];
-  document.getElementById("voltage").innerHTML = obj["voltage"];
-  document.getElementById("ext_temperature").innerHTML = obj["ext_temperature"];
-  document.getElementById("ext_humidity").innerHTML = obj["ext_humidity"];
+  document.getElementById("DATETIME").innerHTML = obj["DATETIME"];
+  document.getElementById("VOLTS").innerHTML = obj["VOLTS"];
+  document.getElementById("EXT_TEMP").innerHTML = obj["EXT_TEMP"];
+  document.getElementById("EXT_HUM").innerHTML = obj["EXT_HUM"];
 
-  var checked = obj["window"];
+  var checked = obj["B_WINDOW"];
   if (checked == "1") {
-    document.getElementById("window").checked = true;
+    document.getElementById("B_WINDOW").checked = true;
   } else {
-    document.getElementById("window").checked = false;
+    document.getElementById("B_WINDOW").checked = false;
   }
 
-  checked = obj["relay1"];
-  if (checked == "1") {
-    document.getElementById("relay1").checked = true;
-  } else {
-    document.getElementById("relay1").checked = false;
-  }
+  checked = obj["B_FAN"];
+  document.getElementById("B_FAN").checked = (checked == "1");
 
-  checked = obj["relay2"];
-  if (checked == "1") {
-    document.getElementById("relay2").checked = true;
-  } else {
-    document.getElementById("relay2").checked = false;
-  }
+  checked = obj["B_HEATER"];
+  document.getElementById("B_HEATER").checked = (checked == "1");
 
-  checked = obj["automation"];
-  if (checked == "1") {
-    document.getElementById("automation").checked = true;
-  } else {
-    document.getElementById("automation").checked = false;
-  }
+  checked = obj["B_AUTOMATION"];
+  document.getElementById("B_AUTOMATION").checked = (checked == "1");
 
-  checked = obj["220power"];
-  if (checked == "1") {
-    document.getElementById("220power").checked = true;
-  } else {
-    document.getElementById("220power").checked = false;
-  }
+  checked = obj["B_VOLT_LIM_IGN"];
+  document.getElementById("B_VOLT_LIM_IGN").checked = (checked == "1");
 
   prependToLog(event.data);
 }
@@ -107,12 +91,12 @@ function prependToLog(message) {
 }
 
 var propMap = {};
-propMap["WINDOW"] = { id: "5", type: "1" };
-propMap["RELAY1"] = { id: "6", type: "1" };
-propMap["RELAY2"] = { id: "7", type: "1" };
-propMap["DATETIME"] = { id: "4", type: "1" };
-propMap["AUTOMATION"] = { id: "18", type: "2" };
-propMap["220POWER"] = { id: "21", type: "1" };
+propMap["B_WINDOW"] = { id: "6", type: "0" };
+propMap["B_FAN"] = { id: "7", type: "0" };
+propMap["RELAY2"] = { id: "8", type: "0" };
+propMap["DATETIME"] = { id: "5", type: "0" };
+propMap["B_AUTOMATION"] = { id: "12", type: "1" };
+propMap["B_VOLT_LIM_IGN"] = { id: "9", type: "1" };
 
 function sendWSCommand(propName, value) {
 
@@ -132,6 +116,4 @@ function onCheckChanged(chkBox) {
 
 window.onload = function (event) {
   init();
-
-
 }

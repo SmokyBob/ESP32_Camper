@@ -166,7 +166,7 @@ void turnOnOled()
   _oledStartMillis = millis();
   _displayOn = true;
 }
-uint8_t _flipMode = 1; // Default 180 Degree flip... because i like the buttons on the right side for the camper
+uint8_t _flipMode = 1;     // Default 180 Degree flip... because i like the buttons on the right side for the camper
 bool _controlMenu = false; // true to navigate and edit the control menu instead of the global menu
 uint8_t _controlSelected = 0;
 float _int_ext_hand = NAN; // if 1 show external, if 0 shows internal
@@ -214,52 +214,60 @@ void doubleClick()
     // if sensor, call the appropriate funcition directly
     // if handheld, send command with lora, but change the value locally asap
     String LoRaMessage;
+    keys_t currData;
     switch (_controlSelected)
     {
     case 0:
-      last_WINDOW = !last_WINDOW;
-#if defined(CAMPER)
-      // call EXT_SENSORS API to send the command
-      callEXT_SENSORSAPI("api/1", String(WINDOW) + "=" + String(last_WINDOW));
-#else
-      // send lora command
-      LoRaMessage = String(COMMAND) + "?";
-      LoRaMessage += String(WINDOW) + "=" + String(last_WINDOW) + "&";
-      LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
-      // Serial.println(LoRaMessage);
-      loraSend(LoRaMessage);
-#endif
+      currData = getDataObj("B_WINDOW");
+      if (currData.value == "0")
+      {
+        currData.value = "1";
+      }
+      else
+      {
+        currData.value = "0";
+      }
       break;
     case 1:
-      last_Relay1 = !last_Relay1;
-#if defined(CAMPER)
-      // call EXT_SENSORS API to send the command
-      callEXT_SENSORSAPI("api/1", String(RELAY1) + "=" + String(last_Relay1));
-#else
-
-      // send lora command
-      LoRaMessage = String(COMMAND) + "?";
-      LoRaMessage += String(RELAY1) + "=" + String(last_Relay1) + "&";
-      LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
-      // Serial.println(LoRaMessage);
-      loraSend(LoRaMessage);
-#endif
+      currData = getDataObj("B_FAN");
+      if (currData.value == "0")
+      {
+        currData.value = "1";
+      }
+      else
+      {
+        currData.value = "0";
+      }
       break;
     case 2:
-      last_Relay2 = !last_Relay2;
-#if defined(CAMPER)
-      // call EXT_SENSORS API to send the command
-      callEXT_SENSORSAPI("api/1", String(RELAY2) + "=" + String(last_Relay2));
-#else
-      // send lora command
-      LoRaMessage = String(COMMAND) + "?";
-      LoRaMessage += String(RELAY2) + "=" + String(last_Relay2) + "&";
-      LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
-      // Serial.println(LoRaMessage);
-      loraSend(LoRaMessage);
-#endif
+      currData = getDataObj("B_HEATER");
+      if (currData.value == "0")
+      {
+        currData.value = "1";
+      }
+      else
+      {
+        currData.value = "0";
+      }
       break;
     }
+
+    // Forward Data
+#if defined(CAMPER)
+    // call EXT_SENSORS API to send the command
+    callEXT_SENSORSAPI("api/1", String(currData.id) + "=" + currData.value);
+#else
+    // send lora command
+    LoRaMessage = String(DATA) + "?";
+    LoRaMessage += String(currData.id) + "=" + currData.value + "&";
+    LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+    // Serial.println(LoRaMessage);
+    loraSend(LoRaMessage);
+#endif
+    // Save data... needed?
+    String dummy = getDataVal(currData.key);
+    Serial.printf("     currDataVal: %s , from Function: %s \n", currData.value, dummy);
+    setDataVal(currData.key, currData.value); //
   }
 } // doubleClick
 u_long _millisLongPress = 0;
@@ -383,6 +391,7 @@ void initOled()
 
 void drawHomePage()
 {
+  String currVal = "";
   // Icon configs for the current page
   const uint8_t *icon_Font = u8g2_font_open_iconic_all_2x_t;
   int iconH = 16;
@@ -408,11 +417,12 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 112 + 11); // CLOCK Font
   // Text
   u8g2->setFont(text_Font);
+  currVal = getDataVal("DATETIME");
   // Show time of last message if available
-  if (last_DateTime.length() > 0)
+  if (currVal.length() > 0)
   {
     struct tm tm;
-    strptime(last_DateTime.c_str(), "%FT%T", &tm);
+    strptime(currVal.c_str(), "%FT%T", &tm);
 
     strftime(buf, sizeof(buf), "%R", &tm); // HH:MM with seconds in detail page
   }
@@ -433,8 +443,10 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 96); // VOLTAGE Font Image
   // Text
   u8g2->setFont(text_Font);
-  snprintf(buf, sizeof(buf), "%.2f", last_Voltage);
+  snprintf(buf, sizeof(buf), "%s", getDataVal("VOLTS"));
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  // Serial.printf("VOLTS: %s\n", getDataVal("VOLTS"));
 
   row = 2;
   column = 1;
@@ -445,15 +457,20 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 48 + 1); // TEMPERATURE Font Image
   // Text
   u8g2->setFont(text_Font);
-  if (isnan(last_Ext_Temperature) != true)
+  currVal = getDataVal("EXT_TEMP");
+  if (currVal != "")
   {
-    snprintf(buf, sizeof(buf), "%.2fC", last_Ext_Temperature);
+    snprintf(buf, sizeof(buf), "%sC", currVal);
   }
   else
   {
-    snprintf(buf, sizeof(buf), "%.0f C", last_Temperature);
+    currVal = getDataVal("TEMP");
+    snprintf(buf, sizeof(buf), "%sC", currVal);
   }
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
+
+  // Serial.printf("TEMP: %sC\n", getDataVal("TEMP"));
+  // Serial.printf("EXT_TEMP: %sC\n", getDataVal("EXT_TEMP"));
 
   row = 2;
   column = 2;
@@ -464,17 +481,20 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 48 + 2); // HUMIDITY Font Image
   // Text
   u8g2->setFont(text_Font);
-  snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
-  if (isnan(last_Ext_Humidity) != true)
+  currVal = getDataVal("EXT_HUM");
+  if (currVal != "")
   {
-    snprintf(buf, sizeof(buf), "%.2f%%", last_Ext_Humidity);
+    snprintf(buf, sizeof(buf), "%s%%", currVal);
   }
   else
   {
-    snprintf(buf, sizeof(buf), "%.0f%%", last_Humidity);
+    currVal = getDataVal("HUM");
+    snprintf(buf, sizeof(buf), "%s%%", currVal);
   }
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
+  // Serial.printf("HUM: %sC\n", getDataVal("HUM"));
+  // Serial.printf("EXT_HUM: %sC\n", getDataVal("EXT_HUM"));
   row = 3;
   column = 1;
   x = (column - 1) * columnW;
@@ -500,7 +520,7 @@ void drawHomePage()
   u8g2->drawGlyph(x, y + iconH, 96 - 6); // Battery Font Image
   // Text
   u8g2->setFont(text_Font);
-  snprintf(buf, sizeof(buf), "%.2f", batt_Voltage);
+  snprintf(buf, sizeof(buf), "%s", getDataVal("HAND_VOLTS"));
   u8g2->drawStr(x + iconW + ICON_BGAP, y + (textH + ((iconH - textH) / 2)), buf);
 
 #endif
@@ -508,6 +528,7 @@ void drawHomePage()
 
 void drawTemperaturePage()
 {
+  String currVal = "";
   char buf[256];
   char buf_type[256];
   int iconH = 48;
@@ -536,9 +557,10 @@ void drawTemperaturePage()
 
   if (_int_ext_hand == 0)
   {
-    if (isnan(last_Ext_Temperature) != true)
+    currVal = getDataVal("EXT_TEMP");
+    if (currVal != "")
     {
-      snprintf(buf, sizeof(buf), "%.2f", last_Ext_Temperature);
+      snprintf(buf, sizeof(buf), "%s", currVal);
       snprintf(buf_type, sizeof(buf_type), "%s", "c ext");
     }
     else
@@ -548,7 +570,8 @@ void drawTemperaturePage()
   }
   if (_int_ext_hand == 1)
   {
-    if (isnan(last_Temperature))
+    currVal = getDataVal("TEMP");
+    if (currVal != "")
     {
       _int_ext_hand = _int_ext_hand + 1; // no in_temp, force to next
 #if !defined(HANDHELD)
@@ -557,20 +580,20 @@ void drawTemperaturePage()
     }
     else
     {
-      snprintf(buf, sizeof(buf), "%.2f", last_Temperature);
+      snprintf(buf, sizeof(buf), "%s", currVal);
       snprintf(buf_type, sizeof(buf_type), "%s", "c int");
     }
   }
 #if defined(HANDHELD)
   if (_int_ext_hand == 2)
   {
-    snprintf(buf, sizeof(buf), "%.2f", hand_Temperature);
+    snprintf(buf, sizeof(buf), "%s", getDataVal("AMB_TEMP"));
     snprintf(buf_type, sizeof(buf_type), "%s", "h amb");
   }
 #if defined(USE_MLX90614)
   if (_int_ext_hand == 3)
   {
-    snprintf(buf, sizeof(buf), "%.2f", hand_obj_Temperature);
+    snprintf(buf, sizeof(buf), "%s", getDataVal("IR_TEMP"));
     snprintf(buf_type, sizeof(buf_type), "%s", "h IR");
   }
 #endif
@@ -582,6 +605,7 @@ void drawTemperaturePage()
 
 void drawHumidityPage()
 {
+  String currVal = "";
   char buf[256];
   char buf_type[256];
   int iconH = 48;
@@ -608,9 +632,10 @@ void drawHumidityPage()
   }
   if (_int_ext_hand == 0)
   {
-    if (isnan(last_Ext_Humidity) != true)
+    currVal = getDataVal("EXT_HUM");
+    if (currVal != "")
     {
-      snprintf(buf, sizeof(buf), "%.2f", last_Ext_Humidity);
+      snprintf(buf, sizeof(buf), "%s", currVal);
       snprintf(buf_type, sizeof(buf_type), "%s", "c ext");
     }
     else
@@ -620,7 +645,8 @@ void drawHumidityPage()
   }
   if (_int_ext_hand == 1)
   {
-    if (isnan(last_Humidity))
+    currVal = getDataVal("HUM");
+    if (currVal != "")
     {
       _int_ext_hand = _int_ext_hand + 1; // no in_hum, force to next
 #if !defined(HANDHELD)
@@ -629,14 +655,14 @@ void drawHumidityPage()
     }
     else
     {
-      snprintf(buf, sizeof(buf), "%.2f", last_Humidity);
+      snprintf(buf, sizeof(buf), "%s", currVal);
       snprintf(buf_type, sizeof(buf_type), "%s", "c int");
     }
   }
 #if defined(HANDHELD)
   if (_int_ext_hand >= 2)
   {
-    snprintf(buf, sizeof(buf), "%.2f", hand_Humidity);
+    snprintf(buf, sizeof(buf), "%s", getDataVal("AMB_HUM"));
     snprintf(buf_type, sizeof(buf_type), "%s", "h amb");
   }
 #endif
@@ -684,12 +710,12 @@ void drawVoltagePage()
 
   if (_hand_camp == 0)
   {
-    snprintf(buf, sizeof(buf), "%.2f", last_Voltage);
+    snprintf(buf, sizeof(buf), "%s", getDataVal("VOLTS"));
   }
 #if defined(HANDHELD)
   else
   {
-    snprintf(buf, sizeof(buf), "%.2f", batt_Voltage);
+    snprintf(buf, sizeof(buf), "%s", getDataVal("HAND_VOLTS"));
   }
 #endif
 
@@ -699,6 +725,7 @@ void drawVoltagePage()
   uint8_t bp = 0;
   if (_hand_camp == 0)
   {
+    float last_Voltage = getDataVal("VOLTS").toFloat();
     for (size_t i = 0; i < (sizeof(batt_perc_12_list) / sizeof(batt_perc)); i++)
     {
       /* table lookup */
@@ -712,6 +739,7 @@ void drawVoltagePage()
 #if defined(HANDHELD)
   else
   {
+    float batt_Voltage = getDataVal("HAND_VOLTS").toFloat();
     for (size_t i = 0; i < (sizeof(batt_perc_3_7_list) / sizeof(batt_perc)); i++)
     {
       /* table lookup */
@@ -731,6 +759,7 @@ void drawVoltagePage()
 
 void drawLoraPage()
 {
+  String currVal = "";
   // Icon configs for the current page
   const uint8_t *icon_Font = u8g2_font_streamline_all_t;
   int iconH = 22;
@@ -756,13 +785,14 @@ void drawLoraPage()
   u8g2->drawGlyph(x, y + iconH, 336 + 8); // CLOCK Font
   // Text
   u8g2->setFont(text_Font);
+  currVal = getDataVal("DATETIME");
   // Show time of last message if available
-  if (last_DateTime.length() > 0)
+  if (currVal.length() > 0)
   {
     struct tm tm;
-    strptime(last_DateTime.c_str(), "%FT%T", &tm);
+    strptime(currVal.c_str(), "%FT%T", &tm);
 
-    strftime(buf, sizeof(buf), "%T", &tm);
+    strftime(buf, sizeof(buf), "%R", &tm); // HH:MM with seconds in detail page
   }
   else
   {
@@ -786,6 +816,7 @@ void drawLoraPage()
 
 void drawControlsPage()
 {
+  String currVal = "";
   // Icon configs for the current page
   const uint8_t *icon_Font = u8g2_font_streamline_all_t;
   int iconH = 22;
@@ -815,7 +846,8 @@ void drawControlsPage()
   }
   // Text
   u8g2->setFont(text_Font);
-  if (last_WINDOW)
+  currVal = getDataVal("B_WINDOW");
+  if (currVal == "1")
   {
     snprintf(buf, sizeof(buf), "OPEN");
   }
@@ -838,7 +870,8 @@ void drawControlsPage()
   }
   // Text
   u8g2->setFont(text_Font);
-  if (last_Relay1)
+  currVal = getDataVal("B_FAN");
+  if (currVal == "1")
   {
     snprintf(buf, sizeof(buf), "ON");
   }
@@ -861,7 +894,8 @@ void drawControlsPage()
   }
   // Text
   u8g2->setFont(text_Font);
-  if (last_Relay2)
+  currVal = getDataVal("B_HEATER");
+  if (currVal == "1")
   {
     snprintf(buf, sizeof(buf), "ON");
   }

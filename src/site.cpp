@@ -15,26 +15,20 @@ void api_get(AsyncWebServerRequest *request)
   if (request->url().indexOf("api/sensors") > 0)
   {
     String jsonString = "{";
-    jsonString += "\"millis\":\"" + String(last_Millis) + "\",";
-    jsonString += "\"temperature\":\"" + String(last_Temperature) + "\",";
-    jsonString += "\"humidity\":\"" + String(last_Humidity) + "\",";
-    jsonString += "\"ext_temperature\":\"" + String(last_Ext_Temperature) + "\",";
-    jsonString += "\"ext_humidity\":\"" + String(last_Ext_Humidity) + "\",";
-    jsonString += "\"voltage\":\"" + String(last_Voltage) + "\",";
-    jsonString += "\"datetime\":\"" + String(last_DateTime) + "\",";
-    jsonString += "\"window\":\"" + String(last_WINDOW) + "\",";
-    jsonString += "\"relay1\":\"" + String(last_Relay1) + "\",";
-    jsonString += "\"relay2\":\"" + String(last_Relay2) + "\",";
+    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+    {
+      jsonString += "\"" + String(data[i].key) + "\":\"" + data[i].value + "\",";
+    }
+
 #if defined(CAMPER)
-    jsonString += "\"automation\":\"" + String((int)settings[8].value) + "\",";
+    jsonString += "\"B_AUTOMATION\":\"" + getConfigVal("B_AUTOMATION") + "\",";
     String tmpBool = "0";
     if (last_IgnoreLowVolt != "")
     {
       tmpBool = "1";
     }
 
-    jsonString += "\"220power\":\"" + String(tmpBool) + "\",";
-
+    jsonString += "\"B_VOLT_LIM_IGN\":\"" + String(tmpBool) + "\",";
 #endif
 
     jsonString += "\"dummy\":null}";
@@ -46,7 +40,7 @@ void api_get(AsyncWebServerRequest *request)
   }
   if (request->url().startsWith("/api/1"))
   {
-    // Command
+    // Command/data
     for (size_t i = 0; i < request->params(); i++)
     {
       AsyncWebParameter *param = request->getParam(i);
@@ -54,57 +48,85 @@ void api_get(AsyncWebServerRequest *request)
       String dataVal = param->value();
 
       Serial.printf("Command %u : %s \n", dataEnum, dataVal);
-
-      switch (dataEnum)
+      bool bFound = false;
+      // Loop over the data array
+      for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
       {
-      case WINDOW:
+        // Same id, update value
+        if (data[i].id == dataEnum)
+        {
+          data[i].value = dataVal;
+          bFound = true;
+
+          // data with commands
+          if (strcmp(data[i].key, "B_WINDOW") == 0)
+          {
 #ifdef Servo_pin
-        setWindow((dataVal.toInt() == 1));
-#else
-        callEXT_SENSORSAPI(rawUrl, param->name() + "=" + dataVal);
+            setWindow((dataVal == "1"));
 #endif
-        last_WINDOW = (dataVal.toInt() == 1);
-        break;
-      case RELAY1:
-
+#if defined(CAMPER)
+            // call EXT_SENSORS API to send the command
+            callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+#endif
+          }
+          if (strcmp(data[i].key, "B_FAN") == 0)
+          {
 #ifdef Relay1_pin
-        setFan((dataVal.toInt() == 1));
-#else
-        callEXT_SENSORSAPI(rawUrl, param->name() + "=" + dataVal);
+            setFan((dataVal == "1"));
 #endif
-        last_Relay1 = (dataVal.toInt() == 1);
-        break;
-      case RELAY2:
-
+#if defined(CAMPER)
+            // call EXT_SENSORS API to send the command
+            callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+#endif
+          }
+          if (strcmp(data[i].key, "B_HEATER") == 0)
+          {
 #ifdef Relay2_pin
-        setHeater((dataVal.toInt() == 1));
-#else
-        callEXT_SENSORSAPI(rawUrl, param->name() + "=" + dataVal);
+            setHeater((dataVal == "1"));
 #endif
-        last_Relay2 = (dataVal.toInt() == 1);
-        break;
-      case DATETIME:
-        last_DateTime = dataVal;
-        setTime(last_DateTime);
-        break;
-      case IGNORE_LOW_VOLT:
-        if (dataVal.toInt() == 1)
-        {
-          struct tm timeinfo;
-          getLocalTime(&timeinfo);
-          char buf[100];
-          strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+#if defined(CAMPER)
+            // call EXT_SENSORS API to send the command
+            callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+#endif
+            if (strcmp(data[i].key, "DATETIME") == 0)
+            {
+              setDateTime(dataVal);
+            }
+          }
 
-          last_IgnoreLowVolt = String(buf);
+          break; // found, exit loop
         }
-        else
+      }
+      if (!bFound)
+      {
+        // check in configs
+        for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
         {
-          last_IgnoreLowVolt = "";
-        }
+          // Same id, update value
+          if (config[i].id == dataEnum)
+          {
+            config[i].value = dataVal;
+            bFound = true;
+            // configs with actions
+            if (strcmp(config[i].key, "B_VOLT_LIM_IGN") == 0)
+            {
+              if (dataVal == "1")
+              {
+                struct tm timeinfo;
+                getLocalTime(&timeinfo);
+                char buf[100];
+                strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-        Serial.print("api\\get   last_IgnoreLowVolt: ");
-        Serial.println(last_IgnoreLowVolt);
-        break;
+                last_IgnoreLowVolt = String(buf);
+              }
+              else
+              {
+                last_IgnoreLowVolt = "";
+              }
+            }
+            break;
+          }
+        }
       }
     }
 #if defined(CAMPER)
@@ -120,12 +142,12 @@ void api_get(AsyncWebServerRequest *request)
     for (size_t i = 0; i < request->params(); i++)
     {
       AsyncWebParameter *param = request->getParam(i);
-      int settingID = param->name().toInt() - 10;
+      int configID = param->name().toInt();
       String dataVal = param->value();
 
-      Serial.printf("Config %s : %s \n", settings[settingID].name, dataVal);
+      Serial.printf("Config %s : %s \n", config[configID].key, dataVal);
 
-      settings[settingID].value = dataVal.toFloat();
+      config[configID].value = dataVal;
 
 #if defined(CAMPER)
       // Send the config to the Ext Sesor via API
@@ -133,6 +155,12 @@ void api_get(AsyncWebServerRequest *request)
 #endif
     }
     savePreferences();
+    request->send(200, "text/html", "Command received");
+  }
+  if (request->url().startsWith("/api/3"))
+  {
+    // Automation
+    // TODO: Save automation conditions
     request->send(200, "text/html", "Command received");
   }
 }
@@ -177,8 +205,9 @@ void setWebHandles()
 #if defined(CAMPER) || defined(EXT_SENSORS)
   // API Endpoints
   server.on("/api/sensors", HTTP_GET, api_get);
-  server.on("/api/1", HTTP_GET, api_get);
-  server.on("/api/2", HTTP_GET, api_get);
+  server.on("/api/1", HTTP_GET, api_get); // Command/data
+  server.on("/api/2", HTTP_GET, api_get); // Configs
+  server.on("/api/3", HTTP_GET, api_get); // Automation
 #endif
 #if defined(CAMPER) || defined(HANDHELD)
   server.serveStatic("/", LittleFS, "/"); // Try the FS first for static files
@@ -220,19 +249,19 @@ void setWebHandles()
 #if defined(CAMPER)
               html += "<script>";
 
-              for (size_t i = 0; i < (sizeof(settings) / sizeof(setting)); i++)
+              for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
               {
                 String js = "addParam('{0}','{3}',{1},{2});";
-                js.replace("{0}", settings[i].name);
-                js.replace("{3}", settings[i].description);
-                js.replace("{1}", String(i + CONFIG_SERVO_CLOSED_POS));
-                if (settings[i].name == "VDiv_Calib")
+                js.replace("{0}", config[i].key);
+                js.replace("{3}", config[i].description);
+                js.replace("{1}", String(config[i].id));
+                if (strcmp(config[i].key,"VOLT_ACTUAL")==0)
                 {
-                  js.replace("{2}", String(last_Voltage));
+                  js.replace("{2}", getDataVal("VOLTS"));
                 }
                 else
                 {
-                  js.replace("{2}", String(settings[i].value));
+                  js.replace("{2}", String(config[i].value));
                 }
                 Serial.print("js: ");
                 Serial.println(js);
@@ -243,7 +272,9 @@ void setWebHandles()
 #endif
               request->send(200, "text/html", html); });
 #endif
-
+#if defined(CAMPER) || defined(EXT_SENSORS)
+// TODO: automation page similar to config with dinamic rows and postback values
+#endif
   server.onNotFound([](AsyncWebServerRequest *request)
                     { request->send(200, "text/plain", "File not found"); });
 }

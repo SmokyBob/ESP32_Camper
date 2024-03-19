@@ -12,19 +12,19 @@ var bleServiceUID = '41cc63d6-8918-4f8d-ab01-e95e4155ee41';
 
 //Read only characteristics
 var dataChars = {};
-dataChars["VOLTAGE"] = { uuid: "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", id: "voltage", char: null, notificationReg: false, lastUserNotification: null };
-dataChars["EXT_TEMPERATURE"] = { uuid: "226115b6-f631-4f82-b58d-b84487b55a64", id: "ext_temperature", char: null, notificationReg: false, lastUserNotification: null };
-dataChars["EXT_HUMIDITY"] = { uuid: "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", id: "ext_humidity", char: null, notificationReg: false, lastUserNotification: null };
+dataChars["VOLTS"] = { uuid: "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", id: "VOLTS", char: null, notificationReg: false, lastUserNotification: null };
+dataChars["EXT_TEMP"] = { uuid: "226115b6-f631-4f82-b58d-b84487b55a64", id: "EXT_TEMP", char: null, notificationReg: false, lastUserNotification: null };
+dataChars["EXT_HUM"] = { uuid: "b95cdb8a-7ee4-48c6-a818-fd11e60881f4", id: "EXT_HUM", char: null, notificationReg: false, lastUserNotification: null };
 
 
 //Command characteristics
 var commandChar = {};
-commandChar["WINDOW"] = { uuid: "4efa5b56-0426-42d7-857e-3ae3370b4a1d", id: "window", char: null, notificationReg: false };
-commandChar["RELAY1"] = { uuid: "e8db3027-e095-435d-929c-f471669209c3", id: "relay1", char: null, notificationReg: false };
-commandChar["RELAY2"] = { uuid: "4d15f090-6175-4e3c-b076-6ae0f69b7117", id: "relay2", char: null, notificationReg: false };
-commandChar["AUTOMATION"] = { uuid: "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", id: "automation", char: null, notificationReg: false };
-commandChar["DATETIME"] = { uuid: "2cdc00e8-907c-4f63-a284-2be098f8ea52", id: "datetime", char: null, notificationReg: false };
-commandChar["220POWER"] = { uuid: "70c74d81-5a61-43c0-b82b-08fcc9109ff4", id: "220power", char: null, notificationReg: false };
+commandChar["B_WINDOW"] = { uuid: "4efa5b56-0426-42d7-857e-3ae3370b4a1d", id: "B_WINDOW", char: null, notificationReg: false };
+commandChar["B_FAN"] = { uuid: "e8db3027-e095-435d-929c-f471669209c3", id: "B_FAN", char: null, notificationReg: false };
+commandChar["B_HEATER"] = { uuid: "4d15f090-6175-4e3c-b076-6ae0f69b7117", id: "B_HEATER", char: null, notificationReg: false };
+commandChar["B_AUTOMATION"] = { uuid: "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", id: "B_AUTOMATION", char: null, notificationReg: false };
+commandChar["DATETIME"] = { uuid: "2cdc00e8-907c-4f63-a284-2be098f8ea52", id: "DATETIME", char: null, notificationReg: false };
+commandChar["B_VOLT_LIM_IGN"] = { uuid: "70c74d81-5a61-43c0-b82b-08fcc9109ff4", id: "B_VOLT_LIM_IGN", char: null, notificationReg: false };
 
 //Global Variables to Handle Bluetooth
 var bleServer;
@@ -202,7 +202,7 @@ function handleCharacteristicChange(event) {
         document.getElementById(cfg.id).innerHTML = newValueReceived;
         if (Notification.permission === "granted") {
           //Check what to notify 
-          if (cfg.id == "voltage") {
+          if (cfg.id == "VOLTS") {
             var bNotify = false;
             if (cfg.lastUserNotification == null) {
               bNotify = true;
@@ -227,7 +227,7 @@ function handleCharacteristicChange(event) {
               cfg.lastUserNotification = new Date();
             }
           }
-          if (cfg.id == "ext_temperature") {
+          if (cfg.id == "EXT_TEMP") {
             var bNotify = false;
             if (cfg.lastUserNotification == null) {
               bNotify = true;
@@ -266,7 +266,7 @@ function handleCharacteristicChange(event) {
       const cfg = value;
       if (event.srcElement.uuid == cfg.uuid) {
         characteristicFound = true;
-        if (cfg.id == "datetime") {
+        if (cfg.id == "DATETIME") {
           document.getElementById(cfg.id).innerHTML = newValueReceived;
         } else {
           var chk = document.getElementById(cfg.id);
@@ -347,12 +347,13 @@ function disconnectDevice() {
 
     console.log("Device Disconnected");
 
-    location.href = location.href;//refresh the page to reinit the bt object
   } else {
     // Throw an error if Bluetooth is not connected
     console.error("Bluetooth is not connected.");
     window.alert("Bluetooth is not connected.")
   }
+
+  location.href = location.href;//refresh the page to reinit the bt object
 }
 
 function getDateTime() {

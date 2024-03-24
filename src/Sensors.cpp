@@ -110,7 +110,7 @@ void calculateVoltage()
 
   readValue = analogRead(voltPin);
 
-  Serial.printf("Voltage read: %.2f\n", readValue);
+  // Serial.printf("Voltage read: %.2f\n", readValue);
 
   result = (readValue / 4095)  // ADC Resolution (4096 = 0-4095)
            * VDiv_MaxVolt      // Max Input Voltage use during voltage divider calculation (Ex. 15)
@@ -120,7 +120,7 @@ void calculateVoltage()
               VDiv_Res_gnd) *
            voltCalibration; // VDiv_Calibration;
 
-  Serial.printf("Voltage: %.2f _vref: %.2f VDiv_Calibration:%.4f\n", result, _vref, voltCalibration);
+  // Serial.printf("Voltage: %.2f _vref: %.2f VDiv_Calibration:%.4f\n", result, _vref, voltCalibration);
 
   // Notes on VDiv_Calibration
   // Calibration calculated by measurement with a multimiter

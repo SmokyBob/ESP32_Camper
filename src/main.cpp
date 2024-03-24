@@ -162,9 +162,8 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
             // Same id, update value
             if (config[i].id == dataEnum)
             {
-              config[i].value = dataVal;
+              bool storeData = true;
               Serial.printf(" update config id: %u value:%s \n", dataEnum, dataVal);
-
               // configs with actions
               if (strcmp(config[i].key, "B_VOLT_LIM_IGN") == 0)
               {
@@ -182,17 +181,31 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
                   last_IgnoreLowVolt = "";
                 }
               }
+
               if (strcmp(config[i].key, "VOLT_ACTUAL") == 0)
               {
+                storeData = false; // don't store the data from the UI, we need to calculate the correct value
+
                 float currVal = dataVal.substring(0, dataVal.indexOf('|')).toFloat();
                 float tmpVolt = dataVal.substring(dataVal.indexOf('|') + 1).toFloat();
+
+                // Serial.printf("     voltage currVal: %.2f tmpVolt:%.2f \n", currVal, tmpVolt);
+                // Serial.printf("     VDiv_Calibration (str / float): %s / %.2f \n", config[i].value, config[i].value.toFloat());
 
                 if (currVal != tmpVolt)
                 {
                   tmpVolt = tmpVolt / config[i].value.toFloat();
+                  tmpVolt = currVal / tmpVolt;//calculate the new VDiv_Calibration;
 
-                  config[i].value = String(currVal / tmpVolt);
+                  // Serial.printf("     stored calibration currVal: %s\n", String(tmpVolt));
+
+                  config[i].value = String(tmpVolt);
                 }
+              }
+
+              if (storeData)
+              {
+                config[i].value = dataVal;
               }
 
               break; // found, exit loop

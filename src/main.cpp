@@ -622,7 +622,7 @@ void loop()
 #endif
 
 #if defined(CAMPER) || defined(HANDHELD)
-  loraReceive(); // Always stay in receive mode to check if data/commands have been received
+  handleLora(); // Always stay in receive mode to check if data/commands have been received
 #endif
 
 #if defined(CAMPER) || defined(EXT_SENSORS)

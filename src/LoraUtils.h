@@ -46,6 +46,6 @@ extern bool transmitFlag;
 
 void initLora();
 
-void loraReceive();
+void handleLora();
 void loraSend(String message);
 #endif

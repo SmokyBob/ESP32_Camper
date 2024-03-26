@@ -6,6 +6,7 @@
 #if defined(CAMPER)
 #include "Sensors.h"
 #endif
+#include <ArduinoQueue.h>
 
 #if defined(RADIO_SX1276)
 SX1276 radio = nullptr;
@@ -32,27 +33,8 @@ bool transmitFlag = false;
 
 void setLoraFlags(void)
 {
-  if (!interruptEnabled)
-  {
-    return;
-  }
   // we sent or received a packet, set the flag
   loraOperationDone = true;
-  //  if we were transmitting, cleanup and delay are needed
-  if (transmitFlag)
-  {
-
-    //  clean up after transmission is finished
-    //  this will ensure transmitter is disabled,
-    //  RF switch is powered down etc.
-    radio.finishTransmit();
-
-    // Start recieve mode back up
-    radio.startReceive();
-    transmitFlag = false;
-    loraOperationDone = false;
-    interruptEnabled = true;
-  }
 }
 
 void initLora()
@@ -91,7 +73,9 @@ void initLora()
     radio.setBandwidth(LORA_BANDWIDTH);
     radio.setSpreadingFactor(LORA_SPREDING_FACTOR);
     radio.setCodingRate(LORA_CODING_RATE);
+#if defined(RADIO_SX1262) == false
     radio.setCurrentLimit(currentLimit);
+#endif
 
     // set the function that will be called
     // when new packet is received/transmitted
@@ -110,6 +94,8 @@ void initLora()
   }
 }
 
+ArduinoQueue<String> LoraSendQueue(20);
+
 // LoRaData format:
 // String examples (0 = Sensor Data):
 //  0?enum.data.TEMP=36
@@ -120,181 +106,184 @@ void initLora()
 // String examples (1 = Commands):
 //  1?enum.data.relay1=1
 //  1?enum.data.relay1=0
-void loraReceive()
+void handleLora()
 {
   // check if the flag is set
   if (loraOperationDone)
   {
-    // disable the interrupt service routine while
-    // processing the data
-    interruptEnabled = false;
-
     // reset flag
     loraOperationDone = false;
 
-    // you can read received data as an Arduino String
-    String str;
-    int state = radio.readData(str);
-    // you can also read received data as byte array
-    /*
-      byte byteArr[8];
-      int state = radio.readData(byteArr, 8);
-    */
-
-    Serial.print("receivedStr:");
-    Serial.println(str);
-
-    if (state == RADIOLIB_ERR_NONE)
+    if (transmitFlag)
     {
-      // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
-      int posCommand = str.indexOf('?');
-
-      // Serial.printf("posCommand: %u\n", posCommand);
-
-      if (posCommand > 0)
-      {
-
-        int type = str.substring(0, posCommand).toInt();
-        // Remove type from string
-        str = str.substring(posCommand + 1);
-        // Serial.println(str);
-        do
-        {
-          int dataEnum = str.substring(0, str.indexOf('=')).toInt();
-          int idxValEnd = str.indexOf('&');
-          String dataVal;
-          if (idxValEnd > 0)
-          {
-            dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
-          }
-          else
-          {
-            dataVal = str.substring(str.indexOf('=') + 1);
-          }
-
-          if (type == DATA)
-          {
-            // Loop over the data array
-            for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
-            {
-              // Same id, update value
-              if (data[i].id == dataEnum)
-              {
-                data[i].value = dataVal;
-
-                // data with commands
-                if (strcmp(data[i].key, "B_WINDOW") == 0)
-                {
-#ifdef Servo_pin
-                  setWindow((dataVal == "1"));
-#endif
-#if defined(CAMPER)
-                  // call EXT_SENSORS API to send the command
-                  callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                  // Force a lora send on next loop
-                  lastLORASend = 0;
-#endif
-                }
-                if (strcmp(data[i].key, "B_FAN") == 0)
-                {
-#ifdef Relay1_pin
-                  setFan((dataVal == "1"));
-#endif
-#if defined(CAMPER)
-                  // call EXT_SENSORS API to send the command
-                  callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                  // Force a lora send on next loop
-                  lastLORASend = 0;
-#endif
-                }
-                if (strcmp(data[i].key, "B_HEATER") == 0)
-                {
-#ifdef Relay2_pin
-                  setHeater((dataVal == "1"));
-#endif
-#if defined(CAMPER)
-                  // call EXT_SENSORS API to send the command
-                  callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                  // Force a lora send on next loop
-                  lastLORASend = 0;
-#endif
-                  if (strcmp(data[i].key, "DATETIME") == 0)
-                  {
-                    setDateTime(dataVal);
-                  }
-                }
-
-                break; // found, exit loop
-              }
-            }
-          }
-
-          // type == CONFIGS not used in lora message but only in UI config
-
-          // Remove the read data from the message
-          if (idxValEnd > 0)
-          {
-            str = str.substring(idxValEnd + 1);
-          }
-          else
-          {
-            str = "";
-          }
-          // Serial.println(str);
-        } while (str.length() > 0);
-      }
       last_SNR = radio.getSNR();
       last_RSSI = radio.getRSSI();
+
+      //  clean up after transmission is finished
+      //  this will ensure transmitter is disabled,
+      //  RF switch is powered down etc.
+
+      radio.finishTransmit();
+
+      // Start recieve mode back up
+      radio.startReceive();
+      transmitFlag = false;
     }
+    else
+    {
 
-    // put module back to listen mode
-    radio.startReceive();
-    transmitFlag = false;
+      // you can read received data as an Arduino String
+      String str;
+      int state = radio.readData(str);
+      // you can also read received data as byte array
+      /*
+        byte byteArr[8];
+        int state = radio.readData(byteArr, 8);
+      */
 
-    // if needed, 'listen' mode can be disabled by calling
-    // any of the following methods:
-    //
-    // radio.standby()
-    // radio.sleep()
-    // radio.transmit();//I guess adio.startTransmit(); too?
-    // radio.receive();
-    // radio.readData();
-    // radio.scanChannel();
+      Serial.print("receivedStr:");
+      Serial.println(str);
 
-    // we're ready to receive / send more packets,
-    // enable interrupt service routine
-    interruptEnabled = true;
+      if (state == RADIOLIB_ERR_NONE)
+      {
+        // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
+        int posCommand = str.indexOf('?');
+
+        // Serial.printf("posCommand: %u\n", posCommand);
+
+        if (posCommand > 0)
+        {
+
+          int type = str.substring(0, posCommand).toInt();
+          // Remove type from string
+          str = str.substring(posCommand + 1);
+          // Serial.println(str);
+          do
+          {
+            int dataEnum = str.substring(0, str.indexOf('=')).toInt();
+            int idxValEnd = str.indexOf('&');
+            String dataVal;
+            if (idxValEnd > 0)
+            {
+              dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
+            }
+            else
+            {
+              dataVal = str.substring(str.indexOf('=') + 1);
+            }
+
+            if (type == DATA)
+            {
+              // Loop over the data array
+              for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+              {
+                // Same id, update value
+                if (data[i].id == dataEnum)
+                {
+                  data[i].value = dataVal;
+
+                  // data with commands
+                  if (strcmp(data[i].key, "B_WINDOW") == 0)
+                  {
+#ifdef Servo_pin
+                    setWindow((dataVal == "1"));
+#endif
+#if defined(CAMPER)
+                    // call EXT_SENSORS API to send the command
+                    callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                    // Force a lora send on next loop
+                    lastLORASend = 0;
+#endif
+                  }
+                  if (strcmp(data[i].key, "B_FAN") == 0)
+                  {
+#ifdef Relay1_pin
+                    setFan((dataVal == "1"));
+#endif
+#if defined(CAMPER)
+                    // call EXT_SENSORS API to send the command
+                    callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                    // Force a lora send on next loop
+                    lastLORASend = 0;
+#endif
+                  }
+                  if (strcmp(data[i].key, "B_HEATER") == 0)
+                  {
+#ifdef Relay2_pin
+                    setHeater((dataVal == "1"));
+#endif
+#if defined(CAMPER)
+                    // call EXT_SENSORS API to send the command
+                    callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                    // Force a lora send on next loop
+                    lastLORASend = 0;
+#endif
+                    if (strcmp(data[i].key, "DATETIME") == 0)
+                    {
+                      setDateTime(dataVal);
+                    }
+                  }
+
+                  break; // found, exit loop
+                }
+              }
+            }
+
+            // type == CONFIGS not used in lora message but only in UI config
+
+            // Remove the read data from the message
+            if (idxValEnd > 0)
+            {
+              str = str.substring(idxValEnd + 1);
+            }
+            else
+            {
+              str = "";
+            }
+            // Serial.println(str);
+          } while (str.length() > 0);
+        }
+        last_SNR = radio.getSNR();
+        last_RSSI = radio.getRSSI();
+      }
+
+      // Check if there are elements to send in the queue
+      if (LoraSendQueue.isEmpty())
+      {
+        // put module back to listen mode
+        radio.startReceive();
+        transmitFlag = false;
+
+        // if needed, 'listen' mode can be disabled by calling
+        // any of the following methods:
+        //
+        // radio.standby()
+        // radio.sleep()
+        // radio.transmit();//I guess adio.startTransmit(); too?
+        // radio.receive();
+        // radio.readData();
+        // radio.scanChannel();
+      }
+      else
+      {
+        // Get the message from the queue
+        String message = LoraSendQueue.dequeue();
+        // Send message
+        radio.startTransmit(message);
+        transmitFlag = true;
+
+        Serial.print("sent Message:");
+        Serial.println(message);
+      }
+    }
   }
 };
 
 void loraSend(String message)
 {
-  // check if the last operation is done OR we are in receive mode
-  if (loraOperationDone || transmitFlag == false)
-  {
-    // disable the interrupt service routine while
-    // processing the data
-    interruptEnabled = false;
-
-    // reset flag
-    loraOperationDone = false;
-    if (transmitFlag)
-    {
-      // wait a second before transmitting again, cleanup made on interrupt
-      delay(1000);
-    }
-    // Send message
-    radio.startTransmit(message);
-    transmitFlag = true;
-
-    Serial.print("sent Message:");
-    Serial.println(message);
-
-    // we're ready to send more packets,
-    // enable interrupt service routine
-    interruptEnabled = true;
-    last_SNR = radio.getSNR();
-    last_RSSI = radio.getRSSI();
-  }
+  // Add string to Queue
+  LoraSendQueue.enqueue(message);
+  //Force lora handle in next loop
+  loraOperationDone = true;
 };
 #endif

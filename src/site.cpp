@@ -33,8 +33,8 @@ void api_get(AsyncWebServerRequest *request)
 
     jsonString += "\"dummy\":null}";
 
-    Serial.print("api get: ");
-    Serial.println(jsonString);
+    // Serial.print("api get: ");
+    // Serial.println(jsonString);
 
     request->send(200, "application/json", jsonString);
   }
@@ -142,12 +142,40 @@ void api_get(AsyncWebServerRequest *request)
     for (size_t i = 0; i < request->params(); i++)
     {
       AsyncWebParameter *param = request->getParam(i);
-      int configID = param->name().toInt();
+      int dataEnum = param->name().toInt();
       String dataVal = param->value();
 
-      Serial.printf("Config %s : %s \n", config[configID].key, dataVal);
+      Serial.printf("Config %u : %s \n", dataEnum, dataVal);
+      bool bFound = false;
+      // check in configs
+        for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
+        {
+          // Same id, update value
+          if (config[i].id == dataEnum)
+          {
+            config[i].value = dataVal;
+            bFound = true;
+            // configs with actions
+            if (strcmp(config[i].key, "B_VOLT_LIM_IGN") == 0)
+            {
+              if (dataVal == "1")
+              {
+                struct tm timeinfo;
+                getLocalTime(&timeinfo);
+                char buf[100];
+                strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-      config[configID].value = dataVal;
+                last_IgnoreLowVolt = String(buf);
+              }
+              else
+              {
+                last_IgnoreLowVolt = "";
+              }
+            }
+            break;
+          }
+        }
+      
 
 #if defined(CAMPER)
       // Send the config to the Ext Sesor via API

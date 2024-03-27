@@ -4,14 +4,14 @@
 #include "esp_adc_cal.h"
 
 #ifdef DHT22_pin
-SimpleDHT22 *int_dht22;
+DHT *int_dht22;
 #endif
 #ifdef Servo_pin
 Servo windowServo;
 #endif
 
 #ifdef EXT_DHT22_pin
-SimpleDHT22 *ext_dht22;
+DHT *ext_dht22;
 
 #endif
 #if defined(EXT_SHT2_SDA) || defined(USE_SHT2)
@@ -30,6 +30,8 @@ void initSensors()
 {
 #ifdef DHT22_pin
   int_dht22 = new SimpleDHT22(DHT22_pin);
+  int_dht22 = new DHT();
+  int_dht22->setup(DHT22_pin, int_dht22->DHT22);
 #endif
 
 #if defined(Voltage_pin) || defined(VDiv_Batt_pin)
@@ -62,8 +64,10 @@ void initSensors()
 #endif
 
 #ifdef EXT_DHT22_pin
-  ext_dht22 = new SimpleDHT22(EXT_DHT22_pin);
-  // ext_dht22->setPinInputMode(INPUT_PULLDOWN);
+
+  ext_dht22 = new DHT();
+  ext_dht22->setup(EXT_DHT22_pin, ext_dht22->DHT22);
+
 #endif
 #ifdef EXT_SHT2_SDA
   bool res = tempSensor.begin(EXT_SHT2_SDA, EXT_SHT2_SCL);
@@ -185,7 +189,7 @@ void readSensors()
   if (millis() > lastCheck + maxSensorsPool)
   {
 #if defined(DHT22_pin) || defined(EXT_DHT22_pin)
-    int err = SimpleDHTErrSuccess;
+
     float last_Ext_Temperature = NAN;
     float last_Ext_Humidity = NAN;
 #ifdef DHT22_pin
@@ -199,17 +203,24 @@ void readSensors()
     // Serial.printf("hum %.2f \n", last_Humidity);
 #endif
 #ifdef EXT_DHT22_pin
+    last_Ext_Temperature = ext_dht22->getTemperature();
+    last_Ext_Humidity = ext_dht22->getHumidity();
 
-    if ((err = ext_dht22->read2(&last_Ext_Temperature, &last_Ext_Humidity, NULL)) != SimpleDHTErrSuccess)
-    {
-      Serial.print("Read EXT DHT22 failed, err=");
-      Serial.println(SimpleDHTErrCode(err));
-    }
+    // Serial.print("Read EXT DHT22, status ");
+    // Serial.println(ext_dht22->getStatusString());
+
     // Serial.printf("temp %.2f \n", last_Ext_Temperature);
     // Serial.printf("hum %.2f \n", last_Ext_Humidity);
 #endif
-    setDataVal("EXT_TEMP", String(last_Ext_Temperature));
-    setDataVal("EXT_HUM", String(last_Ext_Humidity));
+    if (!isnan(last_Ext_Temperature))
+    {
+      setDataVal("EXT_TEMP", String(last_Ext_Temperature));
+    }
+
+    if (!isnan(last_Ext_Humidity))
+    {
+      setDataVal("EXT_HUM", String(last_Ext_Humidity));
+    }
 #endif
 
 #if defined(EXT_SHT2_SDA) || defined(USE_SHT2)

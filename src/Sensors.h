@@ -4,13 +4,13 @@
 #include "Arduino.h"
 #include "globals.h"
 #ifdef DHT22_pin
-#include "SimpleDHT.h"
+#include "DHT.h"
 #endif
 #ifdef Servo_pin
 #include "ESP32Servo.h"
 #endif
 #ifdef EXT_DHT22_pin
-#include "SimpleDHT.h"
+#include "DHT.h"
 #endif
 #if defined(EXT_SHT2_SDA) || defined(USE_SHT2)
 #include "SHT2x.h"

@@ -115,7 +115,7 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
             Serial.print("            last_IgnoreLowVolt: ");
             Serial.println(last_IgnoreLowVolt);
 
-            callEXT_SENSORSAPI("api/1", String(config[i].id) + "=" + dataVal);
+            callEXT_SENSORSAPI("api/2", String(config[i].id) + "=" + dataVal);
           }
 
           break; // found, exit loop

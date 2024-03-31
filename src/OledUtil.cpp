@@ -214,40 +214,40 @@ void doubleClick()
     // if sensor, call the appropriate funcition directly
     // if handheld, send command with lora, but change the value locally asap
     String LoRaMessage;
-    keys_t currData;
+    keys_t *currData;
     switch (_controlSelected)
     {
     case 0:
       currData = getDataObj("B_WINDOW");
-      if (currData.value == "0")
+      if (currData->value == "0")
       {
-        currData.value = "1";
+        currData->value = "1";
       }
       else
       {
-        currData.value = "0";
+        currData->value = "0";
       }
       break;
     case 1:
       currData = getDataObj("B_FAN");
-      if (currData.value == "0")
+      if (currData->value == "0")
       {
-        currData.value = "1";
+        currData->value = "1";
       }
       else
       {
-        currData.value = "0";
+        currData->value = "0";
       }
       break;
     case 2:
       currData = getDataObj("B_HEATER");
-      if (currData.value == "0")
+      if (currData->value == "0")
       {
-        currData.value = "1";
+        currData->value = "1";
       }
       else
       {
-        currData.value = "0";
+        currData->value = "0";
       }
       break;
     }
@@ -255,19 +255,19 @@ void doubleClick()
     // Forward Data
 #if defined(CAMPER)
     // call EXT_SENSORS API to send the command
-    callEXT_SENSORSAPI("api/1", String(currData.id) + "=" + currData.value);
+    callEXT_SENSORSAPI("api/1", String(currData->id) + "=" + currData->value);
 #else
     // send lora command
     LoRaMessage = String(DATA) + "?";
-    LoRaMessage += String(currData.id) + "=" + currData.value + "&";
+    LoRaMessage += String(currData->id) + "=" + currData->value + "&";
     LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
     // Serial.println(LoRaMessage);
     loraSend(LoRaMessage);
 #endif
     // Save data... needed?
-    String dummy = getDataVal(currData.key);
-    Serial.printf("     currDataVal: %s , from Function: %s \n", currData.value, dummy);
-    setDataVal(currData.key, currData.value); //
+    String dummy = getDataVal(currData->key);
+    Serial.printf("     currDataVal: %s , from Function: %s \n", currData->value, dummy);
+    setDataVal(currData->key, currData->value); //
   }
 } // doubleClick
 u_long _millisLongPress = 0;

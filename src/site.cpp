@@ -41,9 +41,9 @@ void api_get(AsyncWebServerRequest *request)
   if (request->url().startsWith("/api/1"))
   {
     // Command/data
-    for (size_t i = 0; i < request->params(); i++)
+    for (size_t p = 0; p < request->params(); p++)
     {
-      AsyncWebParameter *param = request->getParam(i);
+      AsyncWebParameter *param = request->getParam(p);
       int dataEnum = param->name().toInt();
       String dataVal = param->value();
 
@@ -106,7 +106,6 @@ void api_get(AsyncWebServerRequest *request)
           if (config[i].id == dataEnum)
           {
             config[i].value = dataVal;
-            bFound = true;
             // configs with actions
             if (strcmp(config[i].key, "B_VOLT_LIM_IGN") == 0)
             {
@@ -139,14 +138,13 @@ void api_get(AsyncWebServerRequest *request)
   {
     // CONFIG
     Serial.println("API get Config");
-    for (size_t i = 0; i < request->params(); i++)
+    for (size_t p = 0; p < request->params(); p++)
     {
-      AsyncWebParameter *param = request->getParam(i);
+      AsyncWebParameter *param = request->getParam(p);
       int dataEnum = param->name().toInt();
       String dataVal = param->value();
 
       Serial.printf("Config %u : %s \n", dataEnum, dataVal);
-      bool bFound = false;
       // check in configs
         for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
         {
@@ -154,7 +152,6 @@ void api_get(AsyncWebServerRequest *request)
           if (config[i].id == dataEnum)
           {
             config[i].value = dataVal;
-            bFound = true;
             // configs with actions
             if (strcmp(config[i].key, "B_VOLT_LIM_IGN") == 0)
             {

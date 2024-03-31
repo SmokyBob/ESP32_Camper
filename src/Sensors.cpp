@@ -387,8 +387,6 @@ void setWindow(bool isOpen)
 
   if (last_WINDOW != isOpen)
   {
-    int pos = lastPos;
-
     if (isOpen)
     {
       // Save value first than move to avoid multiple same command

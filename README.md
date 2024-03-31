@@ -15,7 +15,7 @@ This Project is mostly tailored to my needs but can be forked
 - BLE monitoring and control with notifications
   - For monitoring, commands and configuration
   - UI via Offline Web App at https://smokybob.github.io/ESP32_Camper/
-- Automate tasks
+- Automate tasks (WIP)
   - Open / Close vent at specific temperatures
   - Turn fan on / off at specific temperatures
   - Turn heater on / off at specific temperatures
@@ -45,7 +45,7 @@ This Project is mostly tailored to my needs but can be forked
   - Ex. 
     - 2023-12-06 18:17:05 Automation 'heater ON temp low' triggered
     - 2023-12-06 18:14:00 Automation 'window Close temp low' triggered
-- [ ] Data Optimization (es. no last_X variables, but an array of object with map to the Enumerators)
+- [x] Data Optimization (es. no last_X variables, but an array of object with map to the Enumerators)
 - [ ] Async sensors reading in dedicated threads
 
 ## Hardware

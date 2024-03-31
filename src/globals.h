@@ -17,12 +17,12 @@ struct keys_t
 };
 
 extern keys_t data[15]; // See .c file for details and to add values
-keys_t getDataObj(String key);
+keys_t *getDataObj(String key);
 String getDataVal(String key);
 void setDataVal(String key, String value);
 
 extern keys_t config[12]; // See .c file for details and to add values
-keys_t getConfigObj(String key);
+keys_t *getConfigObj(String key);
 String getConfigVal(String key);
 void setConfigVal(String key, String value);
 

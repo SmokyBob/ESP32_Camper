@@ -151,7 +151,12 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
           // Force a lora send on next loop
           lastLORASend = 0;
 #elif defined(HANDHELD)
-          // TODO: send command to CAMPER using lora
+          // send command to CAMPER using lora
+          String LoRaMessage = String(DATA) + "?";
+          LoRaMessage += String(dataEnum) + "=" + dataVal + "&";
+          LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+          // Serial.println(LoRaMessage);
+          loraSend(LoRaMessage);
 #endif
         }
 #if defined(CAMPER) || defined(EXT_SENSORS)
@@ -195,7 +200,7 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
                 if (currVal != tmpVolt)
                 {
                   tmpVolt = tmpVolt / config[i].value.toFloat();
-                  tmpVolt = currVal / tmpVolt;//calculate the new VDiv_Calibration;
+                  tmpVolt = currVal / tmpVolt; // calculate the new VDiv_Calibration;
 
                   // Serial.printf("     stored calibration currVal: %s\n", String(tmpVolt));
 
@@ -243,11 +248,8 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     Serial.printf("WebSocket client #%u disconnected\n", client->id());
     break;
   case WS_EVT_DATA:
-#ifdef CAMPER
+#if defined(CAMPER) ||defined(HANDHELD)
     handleWebSocketMessage(arg, data, len);
-#endif
-#ifdef HANDHELD
-    // TODO: relay the command with LORA to the CAMPER
 #endif
 
     break;

@@ -65,13 +65,26 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
         if (strcmp(data[i].key, "DATETIME") == 0)
         {
           setDateTime(dataVal);
+#if defined(HANDHELD)
+          // send lora command
+          String LoRaMessage = String(DATA) + "?";
+          LoRaMessage += String(data[i].id) + "=" + dataVal + "&";
+          LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+          // Serial.println(LoRaMessage);
+          loraSend(LoRaMessage);
+#endif
         }
         if (strcmp(data[i].key, "B_WINDOW") == 0 || strcmp(data[i].key, "B_FAN") == 0 || strcmp(data[i].key, "B_HEATER") == 0)
         {
 #if defined(CAMPER)
           callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
 #else
-          // TODO: manage handheld, send lora
+          // send lora command
+          String LoRaMessage = String(DATA) + "?";
+          LoRaMessage += String(data[i].id) + "=" + dataVal + "&";
+          LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+          // Serial.println(LoRaMessage);
+          loraSend(LoRaMessage);
 #endif
         }
         break; // found, exit loop
@@ -93,7 +106,12 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
             callEXT_SENSORSAPI("api/2", String(config[i].id) + "=" + dataVal);
             savePreferences();
 #else
-            // TODO: manage handheld, send lora
+            // send lora command
+            String LoRaMessage = String(CONFIGS) + "?";
+            LoRaMessage += String(config[i].id) + "=" + dataVal + "&";
+            LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+            // Serial.println(LoRaMessage);
+            loraSend(LoRaMessage);
 #endif
           }
           if (strcmp(config[i].key, "B_220POWER") == 0)
@@ -114,8 +132,16 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
 
             Serial.print("            last_IgnoreLowVolt: ");
             Serial.println(last_IgnoreLowVolt);
-
+#if defined(CAMPER)
             callEXT_SENSORSAPI("api/2", String(config[i].id) + "=" + dataVal);
+#else
+            // send lora command
+            String LoRaMessage = String(CONFIGS) + "?";
+            LoRaMessage += String(config[i].id) + "=" + dataVal + "&";
+            LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+            // Serial.println(LoRaMessage);
+            loraSend(LoRaMessage);
+#endif
           }
 
           break; // found, exit loop
@@ -149,11 +175,11 @@ void initBLEService()
     String uuid;
     if (charArray[i].arraySrc == DATA)
     {
-      uuid = getDataObj(charArray[i].name).ble_uuid;
+      uuid = getDataObj(charArray[i].name)->ble_uuid;
     }
     if (charArray[i].arraySrc == CONFIGS)
     {
-      uuid = getConfigObj(charArray[i].name).ble_uuid;
+      uuid = getConfigObj(charArray[i].name)->ble_uuid;
     }
     charArray[i].refChar = pService->createCharacteristic(
         NimBLEUUID(uuid.c_str()), charArray[i].properties);

@@ -18,14 +18,14 @@ keys_t data[15] = {
     {15, "TIME", "Time", "", "", true, false},
 };
 // TODO: add week day value
-keys_t getDataObj(String key)
+keys_t *getDataObj(String key)
 {
-    keys_t toRet;
+    keys_t *toRet;
     for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
     {
         if (key.equals(data[i].key))
         {
-            toRet = data[i];
+            toRet = &data[i];
             break;
         }
     }
@@ -34,7 +34,7 @@ keys_t getDataObj(String key)
 
 String getDataVal(String key)
 {
-    return getDataObj(key).value;
+    return getDataObj(key)->value;
 };
 
 void setDataVal(String key, String value)
@@ -44,7 +44,7 @@ void setDataVal(String key, String value)
         if (key.equals(data[i].key))
         {
             data[i].value = value;
-            break;
+            // break;
             ;
         }
     }
@@ -65,14 +65,14 @@ keys_t config[12] = {
     {12, "B_AUTOMATION", "Enable automation", "", "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", false, false},
 };
 
-keys_t getConfigObj(String key)
+keys_t *getConfigObj(String key)
 {
-    keys_t toRet;
+    keys_t *toRet;
     for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
     {
         if (key.equals(config[i].key))
         {
-            toRet = config[i];
+            toRet = &config[i];
             break;
         }
     }
@@ -81,7 +81,7 @@ keys_t getConfigObj(String key)
 
 String getConfigVal(String key)
 {
-    return getConfigObj(key).value;
+    return getConfigObj(key)->value;
 };
 
 void setConfigVal(String key, String value)
@@ -91,8 +91,7 @@ void setConfigVal(String key, String value)
         if (key.equals(config[i].key))
         {
             config[i].value = value;
-
-            break;
+            // break;
         }
     }
 };

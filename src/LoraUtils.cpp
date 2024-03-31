@@ -218,10 +218,11 @@ void handleLora()
                     // Force a lora send on next loop
                     lastLORASend = 0;
 #endif
-                    if (strcmp(data[i].key, "DATETIME") == 0)
-                    {
-                      setDateTime(dataVal);
-                    }
+                  }
+                  
+                  if (strcmp(data[i].key, "DATETIME") == 0)
+                  {
+                    setDateTime(dataVal);
                   }
 
                   break; // found, exit loop
@@ -283,7 +284,7 @@ void loraSend(String message)
 {
   // Add string to Queue
   LoraSendQueue.enqueue(message);
-  //Force lora handle in next loop
+  // Force lora handle in next loop
   loraOperationDone = true;
 };
 #endif

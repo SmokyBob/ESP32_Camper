@@ -78,7 +78,7 @@ void initSensors()
   I2Cone.begin(SHT2_SDA, SHT2_SCL, 50000); // this frequency works for SHT2 and MLX90614 sensors
 #endif
 #ifdef USE_SHT2
-  bool res = tempSensor.begin(&I2Cone);
+  bool res = tempSensor.begin();
   Serial.print("SHT2 init result:");
   Serial.println(res);
   tempSensor.reset();

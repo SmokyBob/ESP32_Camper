@@ -9,7 +9,7 @@ BLEServer *pServer = NULL;
 
 struct myCharacteristics
 {
-  String name;
+  char name[15];
   dataType arraySrc;
   uint16_t properties;
   BLECharacteristic *refChar;
@@ -186,7 +186,7 @@ void initBLEService()
 
     if ((charArray[i].properties & BLE_GATT_CHR_PROP_WRITE) != 0)
     {
-      Serial.println("   Char id:" + charArray[i].name);
+      Serial.printf("   Char id: %s \n", charArray[i].name);
       charArray[i].refChar->setCallbacks(&chrCallbacks);
     }
   }

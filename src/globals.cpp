@@ -18,12 +18,12 @@ keys_t data[15] = {
     {15, "TIME", "Time", "", "", true, false},
 };
 // TODO: add week day value
-keys_t *getDataObj(String key)
+keys_t *getDataObj(const char *key)
 {
     keys_t *toRet;
     for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
     {
-        if (key.equals(data[i].key))
+        if (strcmp(data[i].key, key) == 0)
         {
             toRet = &data[i];
             break;
@@ -32,19 +32,19 @@ keys_t *getDataObj(String key)
     return toRet;
 };
 
-String getDataVal(String key)
+String getDataVal(const char *key)
 {
     return getDataObj(key)->value;
 };
 
-void setDataVal(String key, String value)
+void setDataVal(const char *key, const String value)
 {
     for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
     {
-        if (key.equals(data[i].key))
+        if (strcmp(data[i].key, key) == 0)
         {
             data[i].value = value;
-            // break;
+            break;
             ;
         }
     }
@@ -65,12 +65,12 @@ keys_t config[12] = {
     {12, "B_AUTOMATION", "Enable automation", "", "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", false, false},
 };
 
-keys_t *getConfigObj(String key)
+keys_t *getConfigObj(const char *key)
 {
     keys_t *toRet;
     for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
     {
-        if (key.equals(config[i].key))
+        if (strcmp(config[i].key, key) == 0)
         {
             toRet = &config[i];
             break;
@@ -79,19 +79,19 @@ keys_t *getConfigObj(String key)
     return toRet;
 };
 
-String getConfigVal(String key)
+String getConfigVal(const char *key)
 {
     return getConfigObj(key)->value;
 };
 
-void setConfigVal(String key, String value)
+void setConfigVal(const char *key, const String value)
 {
     for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
     {
-        if (key.equals(config[i].key))
+        if (strcmp(config[i].key, key) == 0)
         {
             config[i].value = value;
-            // break;
+            break;
         }
     }
 };
@@ -163,36 +163,23 @@ void loadPreferences()
 {
     prf_config.begin("CAMPER", false);
 
-    String key = "";
-    key = "SERVO_CL_POS";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(Servo_closed_pos)));
-    key = "SERVO_OP_POS";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(Servo_OPEN_pos)));
-    key = "SERVO_CL_TEMP";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(20)));
-    key = "SERVO_OP_TEMP";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(30)));
-    key = "VOLT_ACTUAL";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(VDiv_Calibration)));
+    setConfigVal("SERVO_CL_POS", prf_config.getString("SERVO_CL_POS", String(Servo_closed_pos)));
+    setConfigVal("SERVO_OP_POS", prf_config.getString("SERVO_OP_POS", String(Servo_OPEN_pos)));
+    setConfigVal("SERVO_CL_TEMP", prf_config.getString("SERVO_CL_TEMP", String(20)));
+    setConfigVal("SERVO_OP_TEMP", prf_config.getString("SERVO_OP_TEMP", String(30)));
+    setConfigVal("VOLT_ACTUAL", prf_config.getString("VOLT_ACTUAL", String(VDiv_Calibration)));
 
-    key = "VOLT_LIM";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(12.00)));
-    key = "VOLT_LIM_UL";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(11.40)));
-    key = "VOLT_LIM_SL_M";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(30)));
+    setConfigVal("VOLT_LIM", prf_config.getString("VOLT_LIM", String(12.00)));
+    setConfigVal("VOLT_LIM_UL", prf_config.getString("VOLT_LIM_UL", String(11.40)));
+    setConfigVal("VOLT_LIM_SL_M", prf_config.getString("VOLT_LIM_SL_M", String(30)));
 
-    key = "B_VOLT_LIM_IGN";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(0)));
+    setConfigVal("B_VOLT_LIM_IGN", prf_config.getString("B_VOLT_LIM_IGN", String(0)));
 
     // TODO: move to automation
-    key = "HEAT_ON_TEMP";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(5.00)));
-    key = "HEAT_OFF_TEMP";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(10.00)));
+    setConfigVal("HEAT_ON_TEMP", prf_config.getString("HEAT_ON_TEMP", String(5.00)));
+    setConfigVal("HEAT_OFF_TEMP", prf_config.getString("HEAT_OFF_TEMP", String(10.00)));
 
-    key = "B_AUTOMATION";
-    setConfigVal(key, prf_config.getString(key.c_str(), String(0)));
+    setConfigVal("B_AUTOMATION", prf_config.getString("B_AUTOMATION", String(0)));
 
     String last_DateTime = prf_config.getString("lastTime", "");
 
@@ -222,33 +209,21 @@ void savePreferences()
 
 void resetPreferences()
 {
-    String key = "";
-    key = "SERVO_CL_POS";
-    setConfigVal(key, String(Servo_closed_pos));
-    key = "SERVO_OP_POS";
-    setConfigVal(key, String(Servo_OPEN_pos));
-    key = "SERVO_CL_TEMP";
-    setConfigVal(key, String(20));
-    key = "SERVO_OP_TEMP";
-    setConfigVal(key, String(30));
-    key = "VOLT_ACTUAL";
-    setConfigVal(key, String(VDiv_Calibration));
+    setConfigVal("SERVO_CL_POS", String(Servo_closed_pos));
+    setConfigVal("SERVO_OP_POS", String(Servo_OPEN_pos));
+    setConfigVal("SERVO_CL_TEMP", String(20));
+    setConfigVal("SERVO_OP_TEMP", String(30));
+    setConfigVal("VOLT_ACTUAL", String(VDiv_Calibration));
 
-    key = "VOLT_LIM";
-    setConfigVal(key, String(12.00));
-    key = "VOLT_LIM_UL";
-    setConfigVal(key, String(11.40));
-    key = "VOLT_LIM_SL_M";
-    setConfigVal(key, String(30));
+    setConfigVal("VOLT_LIM", String(12.00));
+    setConfigVal("VOLT_LIM_UL", String(11.40));
+    setConfigVal("VOLT_LIM_SL_M", String(30));
 
     // TODO: move to automation
-    key = "HEAT_ON_TEMP";
-    setConfigVal(key, String(5.00));
-    key = "HEAT_OFF_TEMP";
-    setConfigVal(key, String(10.00));
+    setConfigVal("HEAT_ON_TEMP", String(5.00));
+    setConfigVal("HEAT_OFF_TEMP", String(10.00));
 
-    key = "B_AUTOMATION";
-    setConfigVal(key, String(0));
+    setConfigVal("B_AUTOMATION", String(0));
 
     // Full preferences cleanup
     prf_config.begin("CAMPER", false);

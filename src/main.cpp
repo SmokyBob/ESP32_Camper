@@ -529,10 +529,8 @@ void loop()
       }
       else
       {
-        // Allocate a temporary JsonDocument
-        // Don't forget to change the capacity to match your requirements.
-        // Use https://arduinojson.org/v6/assistant to compute the capacity.
-        StaticJsonDocument<384> doc;
+        //with v7 no need to predefine the size
+        JsonDocument doc;
         DeserializationError error = deserializeJson(doc, jsonResult);
 
         // Copy values from the JsonDocument
@@ -542,27 +540,27 @@ void loop()
         key = "EXT_TEMP";
         tmp = "";
         tmp = doc[key.c_str()].as<String>();
-        setDataVal(key, tmp);
+        setDataVal(key.c_str(), tmp);
 
         key = "EXT_HUM";
         tmp = "";
         tmp = doc[key.c_str()].as<String>();
-        setDataVal(key, tmp);
+        setDataVal(key.c_str(), tmp);
 
         key = "B_WINDOW";
         tmp = "";
         tmp = doc[key.c_str()].as<String>();
-        setDataVal(key, tmp);
+        setDataVal(key.c_str(), tmp);
 
         key = "B_FAN";
         tmp = "";
         tmp = doc[key.c_str()].as<String>();
-        setDataVal(key, tmp);
+        setDataVal(key.c_str(), tmp);
 
         key = "B_HEATER";
         tmp = "";
         tmp = doc[key.c_str()].as<String>();
-        setDataVal(key, tmp);
+        setDataVal(key.c_str(), tmp);
 
         lastAPICheck = millis();
       }
@@ -581,10 +579,8 @@ void loop()
     Serial.print("api/sensors: ");
     Serial.println(jsonResult);
 
-    // Allocate a temporary JsonDocument
-    // Don't forget to change the capacity to match your requirements.
-    // Use https://arduinojson.org/v6/assistant to compute the capacity.
-    StaticJsonDocument<384> doc;
+    //with v7 no need to predefine the size
+    JsonDocument doc;
     DeserializationError error = deserializeJson(doc, jsonResult);
 
     // Copy values from the JsonDocument
@@ -592,7 +588,7 @@ void loop()
     String key = "VOLTS";
     String tmp = "";
     tmp = doc[key.c_str()].as<String>();
-    setDataVal(key, tmp);
+    setDataVal(key.c_str(), tmp);
 
     lastAPICheck = millis();
 

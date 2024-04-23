@@ -81,15 +81,10 @@ void initLora()
     // when new packet is received/transmitted
     radio.setPacketReceivedAction(setLoraFlags);
     radio.setPacketSentAction(setLoraFlags);
-// different initial state for CAMPER and HANDHELD
-#ifdef CAMPER
+
+#if defined(CAMPER) || defined(HANDHELD)
     Serial.print(F("Starting to transmit ... "));
-    loraState = radio.startTransmit(String(DEVICE_NAME) + " online");
-    transmitFlag = true;
-#endif
-#ifdef HANDHELD
-    loraState = radio.startReceive();
-    transmitFlag = false;
+    loraSend(String(DEVICE_NAME) + " online");
 #endif
   }
 }
@@ -146,103 +141,114 @@ void handleLora()
 
       if (state == RADIOLIB_ERR_NONE)
       {
-        // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
-        int posCommand = str.indexOf('?');
-
-        // Serial.printf("posCommand: %u\n", posCommand);
-
-        if (posCommand > 0)
+        if (str == "HANDHELD online")
         {
+#if defined(CAMPER)
+          // Save when the handheld became online
+          last_handheld_hello_millis = millis();
+          Serial.println("                        HANDHELD online");
+#endif
+        }
+        else
+        {
+          // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
+          int posCommand = str.indexOf('?');
 
-          int type = str.substring(0, posCommand).toInt();
-          // Remove type from string
-          str = str.substring(posCommand + 1);
-          // Serial.println(str);
-          do
+          // Serial.printf("posCommand: %u\n", posCommand);
+
+          if (posCommand > 0)
           {
-            int dataEnum = str.substring(0, str.indexOf('=')).toInt();
-            int idxValEnd = str.indexOf('&');
-            String dataVal;
-            if (idxValEnd > 0)
-            {
-              dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
-            }
-            else
-            {
-              dataVal = str.substring(str.indexOf('=') + 1);
-            }
 
-            if (type == DATA)
+            int type = str.substring(0, posCommand).toInt();
+            // Remove type from string
+            str = str.substring(posCommand + 1);
+            // Serial.println(str);
+            do
             {
-              // Loop over the data array
-              for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+              int dataEnum = str.substring(0, str.indexOf('=')).toInt();
+              int idxValEnd = str.indexOf('&');
+              String dataVal;
+              if (idxValEnd > 0)
               {
-                // Same id, update value
-                if (data[i].id == dataEnum)
+                dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
+              }
+              else
+              {
+                dataVal = str.substring(str.indexOf('=') + 1);
+              }
+
+              if (type == DATA)
+              {
+                // Loop over the data array
+                for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
                 {
-                  data[i].value = dataVal;
-
-                  // data with commands
-                  if (strcmp(data[i].key, "B_WINDOW") == 0)
+                  // Same id, update value
+                  if (data[i].id == dataEnum)
                   {
+                    data[i].value = dataVal;
+
+                    // data with commands
+                    if (strcmp(data[i].key, "B_WINDOW") == 0)
+                    {
 #ifdef Servo_pin
-                    setWindow((dataVal == "1"));
+                      setWindow((dataVal == "1"));
 #endif
 #if defined(CAMPER)
-                    // call EXT_SENSORS API to send the command
-                    callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                    // Force a lora send on next loop
-                    lastLORASend = 0;
+                      // call EXT_SENSORS API to send the command
+                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      // Force a lora send on next loop
+                      lastLORASend = 0;
 #endif
-                  }
-                  if (strcmp(data[i].key, "B_FAN") == 0)
-                  {
+                    }
+                    if (strcmp(data[i].key, "B_FAN") == 0)
+                    {
 #ifdef Relay1_pin
-                    setFan((dataVal == "1"));
+                      setFan((dataVal == "1"));
 #endif
 #if defined(CAMPER)
-                    // call EXT_SENSORS API to send the command
-                    callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                    // Force a lora send on next loop
-                    lastLORASend = 0;
+                      // call EXT_SENSORS API to send the command
+                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      // Force a lora send on next loop
+                      lastLORASend = 0;
 #endif
-                  }
-                  if (strcmp(data[i].key, "B_HEATER") == 0)
-                  {
+                    }
+                    if (strcmp(data[i].key, "B_HEATER") == 0)
+                    {
 #ifdef Relay2_pin
-                    setHeater((dataVal == "1"));
+                      setHeater((dataVal == "1"));
 #endif
 #if defined(CAMPER)
-                    // call EXT_SENSORS API to send the command
-                    callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                    // Force a lora send on next loop
-                    lastLORASend = 0;
+                      // call EXT_SENSORS API to send the command
+                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      // Force a lora send on next loop
+                      lastLORASend = 0;
 #endif
-                  }
-                  
-                  if (strcmp(data[i].key, "DATETIME") == 0)
-                  {
-                    setDateTime(dataVal);
-                  }
+                    }
 
-                  break; // found, exit loop
+                    if (strcmp(data[i].key, "DATETIME") == 0)
+                    {
+                      setDateTime(dataVal);
+                    }
+
+                    break; // found, exit loop
+                  }
                 }
               }
-            }
 
-            // type == CONFIGS not used in lora message but only in UI config
+              // type == CONFIGS not used in lora message but only in UI config
 
-            // Remove the read data from the message
-            if (idxValEnd > 0)
-            {
-              str = str.substring(idxValEnd + 1);
-            }
-            else
-            {
-              str = "";
-            }
-            // Serial.println(str);
-          } while (str.length() > 0);
+              // Remove the read data from the message
+              if (idxValEnd > 0)
+              {
+                str = str.substring(idxValEnd + 1);
+              }
+              else
+              {
+                str = "";
+              }
+              // Serial.println(str);
+            } while (str.length() > 0);
+          }
         }
         last_SNR = radio.getSNR();
         last_RSSI = radio.getRSSI();

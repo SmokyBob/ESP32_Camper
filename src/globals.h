@@ -87,6 +87,7 @@ void resetPreferences();
 void setDateTime(String utcString);
 
 #if defined(CAMPER)
+extern unsigned long last_handheld_hello_millis;
 extern String EXT_SENSORS_URL;
 #endif
 #if defined(EXT_SENSORS)

@@ -1,4 +1,4 @@
-#include<Arduino.h>
+#include <Arduino.h>
 #include "globals.h"
 
 #if defined(CAMPER) || defined(HANDHELD)
@@ -274,34 +274,47 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
 // 1?enum.data.relay1=0
 void sendLoRaSensors()
 {
-  // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
-  if (millis() > (lastLORASend + (LORA_DC * 1000)))
+#if defined(CAMPER)
+  // Send lora only if a client might be listening
+  if (last_handheld_hello_millis > 0)
   {
-    String currVal = getDataVal("DATETIME");
-    if (currVal.length() > 0)
+    if (millis() > (lastLORASend + (HANDHELD_SLEEP_MINS * 60 * 1000)))
     {
-      struct tm timeinfo;
-      getLocalTime(&timeinfo);
-      char buf[100];
-      strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
-
-      currVal = String(buf);
-      setDateTime(currVal); // save the new time
+      // Wait for the client to be back online (a last message will be sent anyway)
+      last_handheld_hello_millis = 0;
     }
-    setDataVal("MILLIS", String(millis()));
-    String LoRaMessage = String(DATA) + "?";
-
-    // loop data[] and build the message (some values might get ignored)
-    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+#endif
+    // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
+    if (millis() > (lastLORASend + (LORA_DC * 1000)))
     {
-      LoRaMessage += String(data[i].id) + "=" + data[i].value + "&";
-    }
+      String currVal = getDataVal("DATETIME");
+      if (currVal.length() > 0)
+      {
+        struct tm timeinfo;
+        getLocalTime(&timeinfo);
+        char buf[100];
+        strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-    LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
-    Serial.println(LoRaMessage);
-    loraSend(LoRaMessage);
-    lastLORASend = millis();
+        currVal = String(buf);
+        setDateTime(currVal); // save the new time
+      }
+      setDataVal("MILLIS", String(millis()));
+      String LoRaMessage = String(DATA) + "?";
+
+      // loop data[] and build the message (some values might get ignored)
+      for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+      {
+        LoRaMessage += String(data[i].id) + "=" + data[i].value + "&";
+      }
+
+      LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+      Serial.println(LoRaMessage);
+      loraSend(LoRaMessage);
+      lastLORASend = millis();
+    }
+#if defined(CAMPER)
   }
+#endif
 }
 #endif
 
@@ -385,6 +398,12 @@ void setup()
 
 #ifdef BLE_APP
   initBLEService();
+#endif
+
+#if defined(HANDHELD)
+  // Wake on button
+  pinMode(0, INPUT_PULLUP);
+
 #endif
 }
 
@@ -677,9 +696,7 @@ void loop()
 #ifdef WIFI_PWD
         // do many stuff
         WiFi.mode(WIFI_MODE_NULL);
-        // comment one or both following lines and measure deep sleep current
         esp_wifi_stop(); // you must do esp_wifi_start() the next time you'll need wifi or esp32 will crash
-        adc_power_release();
 #endif
         esp_sleep_enable_timer_wakeup(hrSleepUs);
         esp_deep_sleep_start();
@@ -698,5 +715,23 @@ void loop()
 
 #ifdef BLE_APP
   handleBLE();
+#endif
+
+#if defined(HANDHELD)
+  // Sleep if awake for more than the configured minutes
+  if (millis() > (HANDHELD_AWAKE_MINS * 60 * 1000))
+  {
+    uint64_t minSleepUs = (HANDHELD_SLEEP_MINS * 60 * 1000 * 1000); // in micro seconds
+#ifdef WIFI_PWD
+                                                                    // do many stuff
+    WiFi.mode(WIFI_MODE_NULL);
+    // comment one or both following lines and measure deep sleep current
+    esp_wifi_stop(); // you must do esp_wifi_start() the next time you'll need wifi or esp32 will crash
+#endif
+    Serial.printf("sleep for %u microseconds\n", minSleepUs);
+    esp_sleep_enable_timer_wakeup(minSleepUs);
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, LOW); // wake on button
+    esp_deep_sleep_start();
+  }
 #endif
 }

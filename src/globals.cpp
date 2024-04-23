@@ -265,6 +265,7 @@ void setDateTime(String utcString)
 
 #if defined(CAMPER)
 String EXT_SENSORS_URL = "";
+unsigned long last_handheld_hello_millis = 0;
 #endif
 #if defined(EXT_SENSORS)
 String CAMPER_URL = "http://esp32-CAMPER.local";

@@ -73,7 +73,6 @@ void runAutomation()
       {
         // Turn heater OFF
         setHeater(false);
-        setFan(false);
       }
     }
     if (currTemp <= getConfigVal("HEAT_ON_TEMP").toFloat()) // default 15

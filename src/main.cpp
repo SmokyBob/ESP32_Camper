@@ -1,4 +1,4 @@
-#include <Arduino.h>
+#include<Arduino.h>
 #include "globals.h"
 
 #if defined(CAMPER) || defined(HANDHELD)
@@ -248,7 +248,7 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     Serial.printf("WebSocket client #%u disconnected\n", client->id());
     break;
   case WS_EVT_DATA:
-#if defined(CAMPER) ||defined(HANDHELD)
+#if defined(CAMPER) || defined(HANDHELD)
     handleWebSocketMessage(arg, data, len);
 #endif
 
@@ -529,7 +529,7 @@ void loop()
       }
       else
       {
-        //with v7 no need to predefine the size
+        // with v7 no need to predefine the size
         JsonDocument doc;
         DeserializationError error = deserializeJson(doc, jsonResult);
 
@@ -579,7 +579,7 @@ void loop()
     Serial.print("api/sensors: ");
     Serial.println(jsonResult);
 
-    //with v7 no need to predefine the size
+    // with v7 no need to predefine the size
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, jsonResult);
 
@@ -598,14 +598,6 @@ void loop()
       Serial.println(F("Wifi Not connected! Reconnecting"));
       ESP.restart(); // Reinit to reconnect
     }
-  }
-#endif
-
-#if defined(CAMPER) || defined(EXT_SENSORS)
-  // Run automation if enabled in settings
-  if (getConfigVal("B_AUTOMATION") == "1")
-  {
-    runAutomation();
   }
 #endif
 
@@ -695,7 +687,14 @@ void loop()
     }
   }
 #endif
-  // Serial.println("after receive");
+
+#if defined(CAMPER) || defined(EXT_SENSORS)
+  // Run automation if enabled in settings and we have a voltage value
+  if (getConfigVal("B_AUTOMATION") == "1" && getDataVal("VOLTS") != "")
+  {
+    runAutomation();
+  }
+#endif
 
 #ifdef BLE_APP
   handleBLE();

@@ -88,7 +88,6 @@ void initLora()
   }
 }
 
-
 ArduinoQueue<String> LoraSendQueue(20);
 
 #if defined(HANDHELD)

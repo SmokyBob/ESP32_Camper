@@ -278,14 +278,16 @@ void sendLoRaSensors()
   // Send lora only if a client might be listening
   if (last_handheld_hello_millis > 0)
   {
-    if (millis() > (lastLORASend + (HANDHELD_SLEEP_MINS * 60 * 1000)))
+    // Check if the last "hello" was received over the handheld sleep time
+    if (millis() > (last_handheld_hello_millis + (HANDHELD_SLEEP_MINS * 60 * 1000)))
     {
-      // Wait for the client to be back online (a last message will be sent anyway)
+      // Wait for the client to be back online
       last_handheld_hello_millis = 0;
+      Serial.printf("   handheld shut down, waiting for new \"hello\"\n");
     }
 #endif
     // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
-    if (millis() > (lastLORASend + (LORA_DC * 1000)))
+    if ((millis() > (lastLORASend + (LORA_DC * 1000))) && last_handheld_hello_millis > 0)
     {
       String currVal = getDataVal("DATETIME");
       if (currVal.length() > 0)
@@ -313,6 +315,25 @@ void sendLoRaSensors()
       lastLORASend = millis();
     }
 #if defined(CAMPER)
+  }
+  else
+  {
+    // Save time in case of restart
+    if (millis() > (lastLORASend + (LORA_DC * 1000)))
+    {
+      String currVal = getDataVal("DATETIME");
+      if (currVal.length() > 0)
+      {
+        struct tm timeinfo;
+        getLocalTime(&timeinfo);
+        char buf[100];
+        strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+        currVal = String(buf);
+        setDateTime(currVal); // save the new time
+      }
+      lastLORASend = millis();
+    }
   }
 #endif
 }

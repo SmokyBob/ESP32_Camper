@@ -146,33 +146,32 @@ void api_get(AsyncWebServerRequest *request)
 
       Serial.printf("Config %u : %s \n", dataEnum, dataVal);
       // check in configs
-        for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
+      for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
+      {
+        // Same id, update value
+        if (config[i].id == dataEnum)
         {
-          // Same id, update value
-          if (config[i].id == dataEnum)
+          config[i].value = dataVal;
+          // configs with actions
+          if (strcmp(config[i].key, "B_VOLT_LIM_IGN") == 0)
           {
-            config[i].value = dataVal;
-            // configs with actions
-            if (strcmp(config[i].key, "B_VOLT_LIM_IGN") == 0)
+            if (dataVal == "1")
             {
-              if (dataVal == "1")
-              {
-                struct tm timeinfo;
-                getLocalTime(&timeinfo);
-                char buf[100];
-                strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+              struct tm timeinfo;
+              getLocalTime(&timeinfo);
+              char buf[100];
+              strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-                last_IgnoreLowVolt = String(buf);
-              }
-              else
-              {
-                last_IgnoreLowVolt = "";
-              }
+              last_IgnoreLowVolt = String(buf);
             }
-            break;
+            else
+            {
+              last_IgnoreLowVolt = "";
+            }
           }
+          break;
         }
-      
+      }
 
 #if defined(CAMPER)
       // Send the config to the Ext Sesor via API
@@ -349,6 +348,7 @@ void initSite(AsyncWebSocket *webSocket)
 #endif
   Serial.println(F("Start OTA"));
   // Start ElegantOTA (async using build flag)
+  ElegantOTA.setAutoReboot(true);
   ElegantOTA.begin(&server);
 
   // Start webserver

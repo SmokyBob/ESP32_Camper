@@ -17,8 +17,8 @@
 
 #define LORA_DC 20    // Wait Seconds to be safe on duty cycle LORA Usage
 #define LORA_POWER 20 // dbi
-//Config as long_moderate in meshtastic
-#ifndef LORA_BANDWIDTH 
+// Config as long_moderate in meshtastic
+#ifndef LORA_BANDWIDTH
 #define LORA_BANDWIDTH 125
 #endif
 #define LORA_SPREDING_FACTOR 11

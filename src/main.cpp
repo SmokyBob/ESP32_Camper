@@ -1,4 +1,4 @@
-#include<Arduino.h>
+#include <Arduino.h>
 #include "globals.h"
 
 #if defined(CAMPER) || defined(HANDHELD)
@@ -703,7 +703,6 @@ void loop()
 #ifdef BLE_APP
   handleBLE();
 #endif
-
 
 #if defined(HANDHELD)
   // Sleep if awake for more than the configured minutes

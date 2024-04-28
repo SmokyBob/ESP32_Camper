@@ -78,14 +78,13 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
         {
 #if defined(CAMPER)
           callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-#else
+#endif
           // send lora command
           String LoRaMessage = String(DATA) + "?";
           LoRaMessage += String(data[i].id) + "=" + dataVal + "&";
           LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
           // Serial.println(LoRaMessage);
           loraSend(LoRaMessage);
-#endif
         }
         break; // found, exit loop
       }
@@ -105,14 +104,13 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
 #if defined(CAMPER)
             callEXT_SENSORSAPI("api/2", String(config[i].id) + "=" + dataVal);
             savePreferences();
-#else
+#endif
             // send lora command
             String LoRaMessage = String(CONFIGS) + "?";
             LoRaMessage += String(config[i].id) + "=" + dataVal + "&";
             LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
             // Serial.println(LoRaMessage);
             loraSend(LoRaMessage);
-#endif
           }
           if (strcmp(config[i].key, "B_220POWER") == 0)
           {
@@ -134,14 +132,13 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
             Serial.println(last_IgnoreLowVolt);
 #if defined(CAMPER)
             callEXT_SENSORSAPI("api/2", String(config[i].id) + "=" + dataVal);
-#else
+#endif
             // send lora command
             String LoRaMessage = String(CONFIGS) + "?";
             LoRaMessage += String(config[i].id) + "=" + dataVal + "&";
             LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
             // Serial.println(LoRaMessage);
             loraSend(LoRaMessage);
-#endif
           }
 
           break; // found, exit loop

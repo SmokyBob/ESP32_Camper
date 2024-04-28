@@ -129,8 +129,7 @@ void api_get(AsyncWebServerRequest *request)
       }
     }
 #if defined(CAMPER)
-    // Force a lora send on next loop
-    lastLORASend = 0;
+    LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
 #endif
     request->send(200, "text/html", "Command received");
   }

@@ -149,7 +149,7 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
 
 #if defined(CAMPER)
           // Force a lora send on next loop
-          lastLORASend = 0;
+          LORASendMillis = millis();
 #elif defined(HANDHELD)
           // send command to CAMPER using lora
           String LoRaMessage = String(DATA) + "?";
@@ -261,7 +261,8 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
 }
 #endif
 
-#if defined(CAMPER) || defined(HANDHELD)
+#if defined(CAMPER)
+
 // LoRaData format:
 // String examples (0 = Sensor Data):
 // 0?enum.data.TEMP=36
@@ -274,7 +275,7 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
 // 1?enum.data.relay1=0
 void sendLoRaSensors()
 {
-#if defined(CAMPER)
+
   // Send lora only if a client might be listening
   if (last_handheld_hello_millis > 0)
   {
@@ -285,21 +286,10 @@ void sendLoRaSensors()
       last_handheld_hello_millis = 0;
       Serial.printf("   handheld shut down, waiting for new \"hello\"\n");
     }
-#endif
-    // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
-    if ((millis() > (lastLORASend + (LORA_DC * 1000))) && last_handheld_hello_millis > 0)
-    {
-      String currVal = getDataVal("DATETIME");
-      if (currVal.length() > 0)
-      {
-        struct tm timeinfo;
-        getLocalTime(&timeinfo);
-        char buf[100];
-        strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
 
-        currVal = String(buf);
-        setDateTime(currVal); // save the new time
-      }
+    // Send lora messages when the handheld is online, when events are triggered, or the handheld request and update
+    if (last_handheld_hello_millis > 0 && LORASendMillis > 0 && (millis() > LORASendMillis))
+    {
       setDataVal("MILLIS", String(millis()));
       String LoRaMessage = String(DATA) + "?";
 
@@ -312,30 +302,9 @@ void sendLoRaSensors()
       LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
       Serial.println(LoRaMessage);
       loraSend(LoRaMessage);
-      lastLORASend = millis();
-    }
-#if defined(CAMPER)
-  }
-  else
-  {
-    // Save time in case of restart
-    if (millis() > (lastLORASend + (LORA_DC * 1000)))
-    {
-      String currVal = getDataVal("DATETIME");
-      if (currVal.length() > 0)
-      {
-        struct tm timeinfo;
-        getLocalTime(&timeinfo);
-        char buf[100];
-        strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
-
-        currVal = String(buf);
-        setDateTime(currVal); // save the new time
-      }
-      lastLORASend = millis();
+      LORASendMillis = 0; // wait for the next request from the handheld
     }
   }
-#endif
 }
 #endif
 
@@ -460,6 +429,8 @@ String getUrl(String ReqUrl)
   return toRet;
 }
 #endif
+
+unsigned long lastTimeSave = 0;
 
 void loop()
 {
@@ -649,6 +620,22 @@ void loop()
 
 #ifdef CAMPER
   sendLoRaSensors();
+  // Save time in case of restart
+  if (millis() > (lastTimeSave + (10 * 1000)))
+  {
+    String currVal = getDataVal("DATETIME");
+    if (currVal.length() > 0)
+    {
+      struct tm timeinfo;
+      getLocalTime(&timeinfo);
+      char buf[100];
+      strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+      currVal = String(buf);
+      setDateTime(currVal); // save the new time
+    }
+    lastTimeSave = millis();
+  }
 #endif
 
 #if defined(CAMPER) || defined(HANDHELD)

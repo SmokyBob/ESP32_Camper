@@ -349,6 +349,7 @@ void initSite(AsyncWebSocket *webSocket)
 #endif
   Serial.println(F("Start OTA"));
   // Start ElegantOTA (async using build flag)
+  ElegantOTA.setAutoReboot(true);
   ElegantOTA.begin(&server);
 
   // Start webserver

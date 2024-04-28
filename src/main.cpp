@@ -277,17 +277,6 @@ void sendLoRaSensors()
   // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
   if (millis() > (lastLORASend + (LORA_DC * 1000)))
   {
-    String currVal = getDataVal("DATETIME");
-    if (currVal.length() > 0)
-    {
-      struct tm timeinfo;
-      getLocalTime(&timeinfo);
-      char buf[100];
-      strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
-
-      currVal = String(buf);
-      setDateTime(currVal); // save the new time
-    }
     setDataVal("MILLIS", String(millis()));
     String LoRaMessage = String(DATA) + "?";
 
@@ -425,6 +414,10 @@ String getUrl(String ReqUrl)
   http.end();
   return toRet;
 }
+#endif
+
+#ifdef CAMPER
+unsigned long lastTimeSave = 0;
 #endif
 
 void loop()
@@ -615,6 +608,22 @@ void loop()
 
 #ifdef CAMPER
   sendLoRaSensors();
+  // Save time in case of restart
+  if (millis() > (lastTimeSave + (10 * 1000)))
+  {
+    String currVal = getDataVal("DATETIME");
+    if (currVal.length() > 0)
+    {
+      struct tm timeinfo;
+      getLocalTime(&timeinfo);
+      char buf[100];
+      strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+      currVal = String(buf);
+      setDateTime(currVal); // save the new time
+    }
+    lastTimeSave = millis();
+  }
 #endif
 
 #if defined(CAMPER) || defined(HANDHELD)

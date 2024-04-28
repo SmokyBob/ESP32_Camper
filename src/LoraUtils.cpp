@@ -81,6 +81,9 @@ void initLora()
     radio.setPacketReceivedAction(setLoraFlags);
     radio.setPacketSentAction(setLoraFlags);
 
+#if defined(CAMPER)
+    last_handheld_hello_millis = millis();//trick to force the first send from the camper
+#endif
 #if defined(CAMPER) || defined(HANDHELD)
     Serial.print(F("Starting to transmit ... "));
     loraSend(String(DEVICE_NAME) + " online");
@@ -133,6 +136,7 @@ void handleLora()
       //  RF switch is powered down etc.
 
       radio.finishTransmit();
+      Serial.println("finshed transmit");
 
       // Start recieve mode back up
       radio.startReceive();
@@ -140,139 +144,6 @@ void handleLora()
     }
     else
     {
-
-      // you can read received data as an Arduino String
-      String str;
-      int state = radio.readData(str);
-      // you can also read received data as byte array
-      /*
-        byte byteArr[8];
-        int state = radio.readData(byteArr, 8);
-      */
-
-      Serial.print("receivedStr:");
-      Serial.println(str);
-
-      if (state == RADIOLIB_ERR_NONE)
-      {
-        if (str == "HANDHELD online")
-        {
-#if defined(CAMPER)
-          // Save when the handheld became online
-          last_handheld_hello_millis = millis();
-          Serial.println("                        HANDHELD online");
-#endif
-        }
-        else
-        {
-          // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
-          int posCommand = str.indexOf('?');
-
-          // Serial.printf("posCommand: %u\n", posCommand);
-
-          if (posCommand > 0)
-          {
-
-            int type = str.substring(0, posCommand).toInt();
-            // Remove type from string
-            str = str.substring(posCommand + 1);
-#if defined(HANDHELD)
-            // save millis message received
-            lastLoraReceive = millis();
-            forceHello_dc = (LORA_DC + 2); // Force send 2 secs over DC in case camper restart
-#endif
-            // Serial.println(str);
-            do
-            {
-              int dataEnum = str.substring(0, str.indexOf('=')).toInt();
-              int idxValEnd = str.indexOf('&');
-              String dataVal;
-              if (idxValEnd > 0)
-              {
-                dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
-              }
-              else
-              {
-                dataVal = str.substring(str.indexOf('=') + 1);
-              }
-
-              if (type == DATA)
-              {
-                // Loop over the data array
-                for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
-                {
-                  // Same id, update value
-                  if (data[i].id == dataEnum)
-                  {
-                    data[i].value = dataVal;
-
-                    // data with commands
-                    if (strcmp(data[i].key, "B_WINDOW") == 0)
-                    {
-#ifdef Servo_pin
-                      setWindow((dataVal == "1"));
-#endif
-#if defined(CAMPER)
-                      // call EXT_SENSORS API to send the command
-                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                      // Force a lora send on next loop
-                      lastLORASend = 0;
-#endif
-                    }
-                    if (strcmp(data[i].key, "B_FAN") == 0)
-                    {
-#ifdef Relay1_pin
-                      setFan((dataVal == "1"));
-#endif
-#if defined(CAMPER)
-                      // call EXT_SENSORS API to send the command
-                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                      // Force a lora send on next loop
-                      lastLORASend = 0;
-#endif
-                    }
-                    if (strcmp(data[i].key, "B_HEATER") == 0)
-                    {
-#ifdef Relay2_pin
-                      setHeater((dataVal == "1"));
-#endif
-#if defined(CAMPER)
-                      // call EXT_SENSORS API to send the command
-                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                      // Force a lora send on next loop
-                      lastLORASend = 0;
-#endif
-                    }
-
-                    if (strcmp(data[i].key, "DATETIME") == 0)
-                    {
-                      setDateTime(dataVal);
-                    }
-
-                    break; // found, exit loop
-                  }
-                }
-              }
-
-              // type == CONFIGS not used in lora message but only in UI config
-
-              // Remove the read data from the message
-              if (idxValEnd > 0)
-              {
-                str = str.substring(idxValEnd + 1);
-              }
-              else
-              {
-                str = "";
-              }
-              // Serial.println(str);
-            } while (str.length() > 0);
-          }
-        }
-        last_SNR = radio.getSNR();
-        last_RSSI = radio.getRSSI();
-      }
-
       // Check if there are elements to send in the queue
       if (LoraSendQueue.isEmpty())
       {
@@ -301,15 +172,160 @@ void handleLora()
         Serial.print("sent Message:");
         Serial.println(message);
       }
+
+      // if still in lisening mode
+      if (transmitFlag == false)
+      {
+        // you can read received data as an Arduino String
+        String str;
+        int state = radio.readData(str);
+        // you can also read received data as byte array
+        /*
+          byte byteArr[8];
+          int state = radio.readData(byteArr, 8);
+        */
+
+        Serial.print("receivedStr:");
+        Serial.println(str);
+
+        if (state == RADIOLIB_ERR_NONE)
+        {
+          if (str == "HANDHELD online")
+          {
+#if defined(CAMPER)
+            Serial.println("                        HANDHELD online");
+            last_handheld_hello_millis = millis();
+            LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
+#endif
+          }
+          else
+          {
+            // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
+            int posCommand = str.indexOf('?');
+
+            // Serial.printf("posCommand: %u\n", posCommand);
+
+            if (posCommand > 0)
+            {
+
+              int type = str.substring(0, posCommand).toInt();
+              // Remove type from string
+              str = str.substring(posCommand + 1);
+#if defined(HANDHELD)
+              // save millis message received
+              lastLoraReceive = millis();
+              forceHello_dc = (LORA_DC + 2); // Force send 2 secs over DC in case camper restart
+#endif
+              // Serial.println(str);
+              do
+              {
+                int dataEnum = str.substring(0, str.indexOf('=')).toInt();
+                int idxValEnd = str.indexOf('&');
+                String dataVal;
+                if (idxValEnd > 0)
+                {
+                  dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
+                }
+                else
+                {
+                  dataVal = str.substring(str.indexOf('=') + 1);
+                }
+
+                if (type == DATA)
+                {
+                  // Loop over the data array
+                  for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+                  {
+                    // Same id, update value
+                    if (data[i].id == dataEnum)
+                    {
+                      data[i].value = dataVal;
+
+                      // data with commands
+                      if (strcmp(data[i].key, "B_WINDOW") == 0)
+                      {
+#ifdef Servo_pin
+                        setWindow((dataVal == "1"));
+#endif
+#if defined(CAMPER)
+                        // call EXT_SENSORS API to send the command
+                        callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                        // Force a lora send on next loop
+                        LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
+#endif
+                      }
+                      if (strcmp(data[i].key, "B_FAN") == 0)
+                      {
+#ifdef Relay1_pin
+                        setFan((dataVal == "1"));
+#endif
+#if defined(CAMPER)
+                        // call EXT_SENSORS API to send the command
+                        callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                        // Force a lora send on next loop
+                        LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
+#endif
+                      }
+                      if (strcmp(data[i].key, "B_HEATER") == 0)
+                      {
+#ifdef Relay2_pin
+                        setHeater((dataVal == "1"));
+#endif
+#if defined(CAMPER)
+                        // call EXT_SENSORS API to send the command
+                        callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                        // Force a lora send on next loop
+                        LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
+#endif
+                      }
+
+                      if (strcmp(data[i].key, "DATETIME") == 0)
+                      {
+                        setDateTime(dataVal);
+                      }
+
+                      break; // found, exit loop
+                    }
+                  }
+                }
+
+                // type == CONFIGS not used in lora message but only in UI config
+
+                // Remove the read data from the message
+                if (idxValEnd > 0)
+                {
+                  str = str.substring(idxValEnd + 1);
+                }
+                else
+                {
+                  str = "";
+                }
+                // Serial.println(str);
+              } while (str.length() > 0);
+            }
+          }
+          last_SNR = radio.getSNR();
+          last_RSSI = radio.getRSSI();
+        }
+      }
     }
   }
 };
 
 void loraSend(String message)
 {
-  // Add string to Queue
-  LoraSendQueue.enqueue(message);
-  // Force lora handle in next loop
-  loraOperationDone = true;
+#if defined(CAMPER)
+  // Enqueue only if handheld is listening
+  if (last_handheld_hello_millis > 0)
+  {
+#endif
+    // Add string to Queue
+    LoraSendQueue.enqueue(message);
+    // Force lora handle in next loop
+    loraOperationDone = true;
+    Serial.println("lora message enqueued");
+#if defined(CAMPER)
+  }
+#endif
 };
 #endif

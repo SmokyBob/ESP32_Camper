@@ -6,9 +6,8 @@
 #include "NimBLEDevice.h"
 #if defined(CAMPER)
 #include "site.h"
-#else
-#include "LoraUtils.h"
 #endif
+#include "LoraUtils.h"
 
 extern void initBLEService();
 

@@ -75,7 +75,7 @@ struct batt_perc
 extern batt_perc batt_perc_12_list[14];
 extern batt_perc batt_perc_3_7_list[21];
 
-extern unsigned long lastLORASend;
+extern unsigned long LORASendMillis;
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
 

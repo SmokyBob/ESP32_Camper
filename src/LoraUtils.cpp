@@ -1,4 +1,3 @@
-
 #if defined(CAMPER) || defined(HANDHELD)
 #include "Arduino.h"
 #include "LoraUtils.h"
@@ -84,23 +83,39 @@ void initLora()
 
     Serial.print(F("Starting to transmit ... "));
     loraSend(String(DEVICE_NAME) + " online");
+
   }
 }
 
 ArduinoQueue<String> LoraSendQueue(20);
 
+#if defined(HANDHELD)
+unsigned long lastLoraReceive = 0;
+unsigned long forceHello_dc = (LORA_DC / 2);
+#endif
+
 // LoRaData format:
 // String examples (0 = Sensor Data):
-//  0?enum.data.TEMP=36
-//  0?enum.data.TEMP=36&enum.data.humidity=90&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
-//  0?enum.data.relay1=0
+// 0?enum.data.TEMP=36
+// 0?enum.data.TEMP=36&enum.data.humidity=90&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
+// 0?enum.data.relay1=0
 // RealString
-//  0?0=20&1=35&2=13.23&3=12065&4=20230416113532
+// 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
 // String examples (1 = Commands):
-//  1?enum.data.relay1=1
-//  1?enum.data.relay1=0
+// 1?enum.data.relay1=1
+// 1?enum.data.relay1=0
 void handleLora()
 {
+#if defined(HANDHELD)
+  // Check if the last received message was 1 sec more than the DC
+  if (millis() > (lastLoraReceive + (forceHello_dc * 1000)))
+  {
+    // Force send a new "hello"
+    loraSend(String(DEVICE_NAME) + " online");
+    lastLoraReceive = millis();
+    forceHello_dc = (LORA_DC / 2); // Force send half lora DC
+  }
+#endif
   // check if the flag is set
   if (loraOperationDone)
   {
@@ -117,6 +132,7 @@ void handleLora()
       //  RF switch is powered down etc.
 
       radio.finishTransmit();
+      Serial.println("finshed transmit");
 
       // Reset the flag to process new messages / start receiving
       transmitFlag = false;
@@ -132,6 +148,7 @@ void handleLora()
       {
         // put module back to listen mode
         radio.startReceive();
+
         Serial.println(F("Force receive"));
 
         // if needed, 'listen' mode can be disabled by calling
@@ -157,6 +174,7 @@ void handleLora()
       }
 
       // if still in lisening mode read received message
+
       if (transmitFlag == false)
       {
         // you can read received data as an Arduino String
@@ -173,6 +191,7 @@ void handleLora()
 
         if (state == RADIOLIB_ERR_NONE)
         {
+
           // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
           int posCommand = str.indexOf('?');
 
@@ -270,6 +289,7 @@ void handleLora()
               }
               // Serial.println(str);
             } while (str.length() > 0);
+
           }
           last_SNR = radio.getSNR();
           last_RSSI = radio.getRSSI();
@@ -281,9 +301,18 @@ void handleLora()
 
 void loraSend(String message)
 {
-  // Add string to Queue
-  LoraSendQueue.enqueue(message);
-  // Force lora handle in next loop
-  loraOperationDone = true;
+#if defined(CAMPER)
+  // Enqueue only if handheld is listening
+  if (last_handheld_hello_millis > 0)
+  {
+#endif
+    // Add string to Queue
+    LoraSendQueue.enqueue(message);
+    // Force lora handle in next loop
+    loraOperationDone = true;
+    Serial.println("lora message enqueued");
+#if defined(CAMPER)
+  }
+#endif
 };
 #endif

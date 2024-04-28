@@ -143,7 +143,7 @@ batt_perc batt_perc_3_7_list[21] = {
     {3.61, 5},
     {3.27, 0}};
 
-unsigned long lastLORASend = 0;
+unsigned long LORASendMillis = 0;
 
 #if defined(CAMPER) || defined(EXT_SENSORS)
 // Redefine default value for MCU without these values, just to keep settings consistents on init
@@ -265,6 +265,7 @@ void setDateTime(String utcString)
 
 #if defined(CAMPER)
 String EXT_SENSORS_URL = "";
+unsigned long last_handheld_hello_millis = 0;
 #endif
 #if defined(EXT_SENSORS)
 String CAMPER_URL = "http://esp32-CAMPER.local";

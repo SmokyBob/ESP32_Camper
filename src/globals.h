@@ -24,7 +24,7 @@ void setDataVal(const char *key, const String value);
 extern keys_t config[12]; // See .c file for details and to add values
 keys_t *getConfigObj(const char *key);
 String getConfigVal(const char *key);
-void setConfigVal(const char *key,const String value);
+void setConfigVal(const char *key, const String value);
 
 enum automation_conditions
 {

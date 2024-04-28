@@ -279,13 +279,8 @@ void sendLoRaSensors()
   // Send lora only if a client might be listening
   if (last_handheld_hello_millis > 0)
   {
-    // Check if the last "hello" was received over the handheld sleep time
-    if (millis() > (last_handheld_hello_millis + (HANDHELD_SLEEP_MINS * 60 * 1000)))
-    {
-      // Wait for the client to be back online
-      last_handheld_hello_millis = 0;
-      Serial.printf("   handheld shut down, waiting for new \"hello\"\n");
-    }
+    setDataVal("MILLIS", String(millis()));
+    String LoRaMessage = String(DATA) + "?";
 
     // Send lora messages when the handheld is online, when events are triggered, or the handheld request and update
     if (last_handheld_hello_millis > 0 && LORASendMillis > 0 && (millis() > LORASendMillis))
@@ -430,7 +425,9 @@ String getUrl(String ReqUrl)
 }
 #endif
 
+#ifdef CAMPER
 unsigned long lastTimeSave = 0;
+#endif
 
 void loop()
 {

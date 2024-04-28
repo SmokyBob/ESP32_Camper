@@ -81,13 +81,9 @@ void initLora()
     radio.setPacketReceivedAction(setLoraFlags);
     radio.setPacketSentAction(setLoraFlags);
 
-#if defined(CAMPER)
-    last_handheld_hello_millis = millis();//trick to force the first send from the camper
-#endif
-#if defined(CAMPER) || defined(HANDHELD)
     Serial.print(F("Starting to transmit ... "));
     loraSend(String(DEVICE_NAME) + " online");
-#endif
+
   }
 }
 
@@ -138,9 +134,12 @@ void handleLora()
       radio.finishTransmit();
       Serial.println("finshed transmit");
 
-      // Start recieve mode back up
-      radio.startReceive();
+      // Reset the flag to process new messages / start receiving
       transmitFlag = false;
+      Serial.println(F("transmitFlag = false"));
+      // put module back to listen mode
+      radio.startReceive();
+      Serial.println(F("Start receive"));
     }
     else
     {
@@ -149,7 +148,8 @@ void handleLora()
       {
         // put module back to listen mode
         radio.startReceive();
-        transmitFlag = false;
+
+        Serial.println(F("Force receive"));
 
         // if needed, 'listen' mode can be disabled by calling
         // any of the following methods:
@@ -173,7 +173,8 @@ void handleLora()
         Serial.println(message);
       }
 
-      // if still in lisening mode
+      // if still in lisening mode read received message
+
       if (transmitFlag == false)
       {
         // you can read received data as an Arduino String
@@ -190,119 +191,105 @@ void handleLora()
 
         if (state == RADIOLIB_ERR_NONE)
         {
-          if (str == "HANDHELD online")
-          {
-#if defined(CAMPER)
-            Serial.println("                        HANDHELD online");
-            last_handheld_hello_millis = millis();
-            LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
-#endif
-          }
-          else
-          {
-            // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
-            int posCommand = str.indexOf('?');
 
-            // Serial.printf("posCommand: %u\n", posCommand);
+          // Ex. 0?0=20&1=35&2=13.23&3=12065&4=20230416113532
+          int posCommand = str.indexOf('?');
 
-            if (posCommand > 0)
+          // Serial.printf("posCommand: %u\n", posCommand);
+
+          if (posCommand > 0)
+          {
+
+            int type = str.substring(0, posCommand).toInt();
+            // Remove type from string
+            str = str.substring(posCommand + 1);
+            // Serial.println(str);
+            do
             {
-
-              int type = str.substring(0, posCommand).toInt();
-              // Remove type from string
-              str = str.substring(posCommand + 1);
-#if defined(HANDHELD)
-              // save millis message received
-              lastLoraReceive = millis();
-              forceHello_dc = (LORA_DC + 2); // Force send 2 secs over DC in case camper restart
-#endif
-              // Serial.println(str);
-              do
+              int dataEnum = str.substring(0, str.indexOf('=')).toInt();
+              int idxValEnd = str.indexOf('&');
+              String dataVal;
+              if (idxValEnd > 0)
               {
-                int dataEnum = str.substring(0, str.indexOf('=')).toInt();
-                int idxValEnd = str.indexOf('&');
-                String dataVal;
-                if (idxValEnd > 0)
-                {
-                  dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
-                }
-                else
-                {
-                  dataVal = str.substring(str.indexOf('=') + 1);
-                }
+                dataVal = str.substring(str.indexOf('=') + 1, idxValEnd);
+              }
+              else
+              {
+                dataVal = str.substring(str.indexOf('=') + 1);
+              }
 
-                if (type == DATA)
+              if (type == DATA)
+              {
+                // Loop over the data array
+                for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
                 {
-                  // Loop over the data array
-                  for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+                  // Same id, update value
+                  if (data[i].id == dataEnum)
                   {
-                    // Same id, update value
-                    if (data[i].id == dataEnum)
+                    data[i].value = dataVal;
+
+                    // data with commands
+                    if (strcmp(data[i].key, "B_WINDOW") == 0)
                     {
-                      data[i].value = dataVal;
-
-                      // data with commands
-                      if (strcmp(data[i].key, "B_WINDOW") == 0)
-                      {
 #ifdef Servo_pin
-                        setWindow((dataVal == "1"));
+                      setWindow((dataVal == "1"));
 #endif
 #if defined(CAMPER)
-                        // call EXT_SENSORS API to send the command
-                        callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                        // Force a lora send on next loop
-                        LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
+                      // call EXT_SENSORS API to send the command
+                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      // Force a lora send on next loop
+                      lastLORASend = 0;
 #endif
-                      }
-                      if (strcmp(data[i].key, "B_FAN") == 0)
-                      {
-#ifdef Relay1_pin
-                        setFan((dataVal == "1"));
-#endif
-#if defined(CAMPER)
-                        // call EXT_SENSORS API to send the command
-                        callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                        // Force a lora send on next loop
-                        LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
-#endif
-                      }
-                      if (strcmp(data[i].key, "B_HEATER") == 0)
-                      {
-#ifdef Relay2_pin
-                        setHeater((dataVal == "1"));
-#endif
-#if defined(CAMPER)
-                        // call EXT_SENSORS API to send the command
-                        callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
-                        // Force a lora send on next loop
-                        LORASendMillis = millis() + 1000; // force send in 1 sec to ensure handheld is listening
-#endif
-                      }
-
-                      if (strcmp(data[i].key, "DATETIME") == 0)
-                      {
-                        setDateTime(dataVal);
-                      }
-
-                      break; // found, exit loop
                     }
+                    if (strcmp(data[i].key, "B_FAN") == 0)
+                    {
+#ifdef Relay1_pin
+                      setFan((dataVal == "1"));
+#endif
+#if defined(CAMPER)
+                      // call EXT_SENSORS API to send the command
+                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      // Force a lora send on next loop
+                      lastLORASend = 0;
+#endif
+                    }
+                    if (strcmp(data[i].key, "B_HEATER") == 0)
+                    {
+#ifdef Relay2_pin
+                      setHeater((dataVal == "1"));
+#endif
+#if defined(CAMPER)
+                      // call EXT_SENSORS API to send the command
+                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      // Force a lora send on next loop
+                      lastLORASend = 0;
+#endif
+                    }
+
+                    if (strcmp(data[i].key, "DATETIME") == 0)
+                    {
+                      setDateTime(dataVal);
+                    }
+
+                    break; // found, exit loop
                   }
                 }
+              }
 
-                // type == CONFIGS not used in lora message but only in UI config
+              // type == CONFIGS not used in lora message but only in UI config
 
-                // Remove the read data from the message
-                if (idxValEnd > 0)
-                {
-                  str = str.substring(idxValEnd + 1);
-                }
-                else
-                {
-                  str = "";
-                }
-                // Serial.println(str);
-              } while (str.length() > 0);
-            }
+              // Remove the read data from the message
+              if (idxValEnd > 0)
+              {
+                str = str.substring(idxValEnd + 1);
+              }
+              else
+              {
+                str = "";
+              }
+              // Serial.println(str);
+            } while (str.length() > 0);
+
           }
           last_SNR = radio.getSNR();
           last_RSSI = radio.getRSSI();

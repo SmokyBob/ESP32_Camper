@@ -386,6 +386,12 @@ void setup()
 #ifdef BLE_APP
   initBLEService();
 #endif
+
+#if defined(HANDHELD)
+  // Wake on button
+  pinMode(0, INPUT_PULLUP);
+
+#endif
 }
 
 u_long webSockeUpdate = 0;
@@ -677,9 +683,7 @@ void loop()
 #ifdef WIFI_PWD
         // do many stuff
         WiFi.mode(WIFI_MODE_NULL);
-        // comment one or both following lines and measure deep sleep current
         esp_wifi_stop(); // you must do esp_wifi_start() the next time you'll need wifi or esp32 will crash
-        adc_power_release();
 #endif
         esp_sleep_enable_timer_wakeup(hrSleepUs);
         esp_deep_sleep_start();
@@ -698,5 +702,24 @@ void loop()
 
 #ifdef BLE_APP
   handleBLE();
+#endif
+
+
+#if defined(HANDHELD)
+  // Sleep if awake for more than the configured minutes
+  if (millis() > (HANDHELD_AWAKE_MINS * 60 * 1000))
+  {
+    uint64_t minSleepUs = (HANDHELD_SLEEP_MINS * 60 * 1000 * 1000); // in micro seconds
+#ifdef WIFI_PWD
+                                                                    // do many stuff
+    WiFi.mode(WIFI_MODE_NULL);
+    // comment one or both following lines and measure deep sleep current
+    esp_wifi_stop(); // you must do esp_wifi_start() the next time you'll need wifi or esp32 will crash
+#endif
+    Serial.printf("sleep for %u microseconds\n", minSleepUs);
+    esp_sleep_enable_timer_wakeup(minSleepUs);
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, LOW); // wake on button
+    esp_deep_sleep_start();
+  }
 #endif
 }

@@ -84,8 +84,7 @@ void initLora()
 // different initial state for CAMPER and HANDHELD
 #ifdef CAMPER
     Serial.print(F("Starting to transmit ... "));
-    loraState = radio.startTransmit(String(DEVICE_NAME) + " online");
-    transmitFlag = true;
+    loraSend(String(DEVICE_NAME) + " online");
 #endif
 #ifdef HANDHELD
     loraState = radio.startReceive();

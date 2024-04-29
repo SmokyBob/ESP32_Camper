@@ -442,7 +442,7 @@ void poolExtSensors()
   }
 }
 #endif
-#if defined(CAMPER) || defined(HANDHELD)
+#if defined(CAMPER)
 // LoRaData format:
 // String examples (0 = Sensor Data):
 // 0?enum.data.TEMP=36

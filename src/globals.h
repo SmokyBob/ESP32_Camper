@@ -92,4 +92,5 @@ extern String EXT_SENSORS_URL;
 #if defined(EXT_SENSORS)
 extern String CAMPER_URL;
 #endif
+extern bool clientConnected;
 #endif

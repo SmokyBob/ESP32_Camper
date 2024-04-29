@@ -35,11 +35,13 @@ class MyServerCallbacks : public BLEServerCallbacks
   void onConnect(BLEServer *pServer)
   {
     deviceConnected = true;
+    clientConnected = true;
   };
 
   void onDisconnect(BLEServer *pServer)
   {
     deviceConnected = false;
+    clientConnected = false;
   }
 };
 
@@ -48,6 +50,7 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
 {
   void onWrite(NimBLECharacteristic *pCharacteristic)
   {
+    clientConnected = true; // data exchanged, force client connected
     Serial.print(pCharacteristic->getUUID().toString().c_str());
     Serial.print(": onWrite(), value: ");
     std::string value = pCharacteristic->getValue();
@@ -212,6 +215,7 @@ void handleBLE()
   {
     if ((millis() - lastBLENotify) > 1000)
     {
+      clientConnected = true; // data exchanged, force client connected
       for (size_t i = 0; i < (sizeof(charArray) / sizeof(myCharacteristics)); i++)
       {
         String dataVal;

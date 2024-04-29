@@ -269,3 +269,5 @@ String EXT_SENSORS_URL = "";
 #if defined(EXT_SENSORS)
 String CAMPER_URL = "http://esp32-CAMPER.local";
 #endif
+
+bool clientConnected = false;

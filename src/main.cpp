@@ -242,12 +242,15 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
   {
   case WS_EVT_CONNECT:
     Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+    clientConnected = true;
     sendWebSocketMessage(); // update the webpage accordingly
     break;
   case WS_EVT_DISCONNECT:
     Serial.printf("WebSocket client #%u disconnected\n", client->id());
+    clientConnected = false;
     break;
   case WS_EVT_DATA:
+    clientConnected = true; // data exchanged, force client connected
 #if defined(CAMPER) || defined(HANDHELD)
     handleWebSocketMessage(arg, data, len);
 #endif
@@ -257,39 +260,6 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     break;
   case WS_EVT_ERROR:
     break;
-  }
-}
-#endif
-
-#if defined(CAMPER) || defined(HANDHELD)
-// LoRaData format:
-// String examples (0 = Sensor Data):
-// 0?enum.data.TEMP=36
-// 0?enum.data.TEMP=36.00&enum.data.humidity=90.00&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
-// 0?enum.data.relay1=0
-// RealString
-// 0?3=12065&0=20.00&1=35.00&2=13.23&4=20230416113532
-// String examples (1 = Commands):
-// 1?enum.data.relay1=1
-// 1?enum.data.relay1=0
-void sendLoRaSensors()
-{
-  // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
-  if (millis() > (lastLORASend + (LORA_DC * 1000)))
-  {
-    setDataVal("MILLIS", String(millis()));
-    String LoRaMessage = String(DATA) + "?";
-
-    // loop data[] and build the message (some values might get ignored)
-    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
-    {
-      LoRaMessage += String(data[i].id) + "=" + data[i].value + "&";
-    }
-
-    LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
-    Serial.println(LoRaMessage);
-    loraSend(LoRaMessage);
-    lastLORASend = millis();
   }
 }
 #endif
@@ -349,8 +319,7 @@ void setup()
     if ((millis() - connectTimeout) > (5 * 60 * 1000))
     {
       Serial.println("Wifi Not connected with ssid: "
-                     "ESP32 CAMPER"
-                     " ! Force AP Mode");
+                     "ESP32 CAMPER");
       break;
     }
   }
@@ -418,6 +387,98 @@ String getUrl(String ReqUrl)
 
 #ifdef CAMPER
 unsigned long lastTimeSave = 0;
+#endif
+#if defined(CAMPER)
+void poolExtSensors()
+{
+  // Read sensor data from EXT_SENSORS
+  String jsonResult = getUrl(EXT_SENSORS_URL + "/api/sensors");
+
+  Serial.print("api/sensors: ");
+  Serial.println(jsonResult);
+
+  if (jsonResult == "")
+  {
+    // Lost connection with ext_sensor
+    // Reinit to reconnect
+    EXT_SENSORS_URL = "";
+  }
+  else
+  {
+    // with v7 no need to predefine the size
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, jsonResult);
+
+    // Copy values from the JsonDocument
+    // only the values from ext_sensors
+    String tmp = "";
+    String key = "";
+    key = "EXT_TEMP";
+    tmp = "";
+    tmp = doc[key.c_str()].as<String>();
+    setDataVal(key.c_str(), tmp);
+
+    key = "EXT_HUM";
+    tmp = "";
+    tmp = doc[key.c_str()].as<String>();
+    setDataVal(key.c_str(), tmp);
+
+    key = "B_WINDOW";
+    tmp = "";
+    tmp = doc[key.c_str()].as<String>();
+    setDataVal(key.c_str(), tmp);
+
+    key = "B_FAN";
+    tmp = "";
+    tmp = doc[key.c_str()].as<String>();
+    setDataVal(key.c_str(), tmp);
+
+    key = "B_HEATER";
+    tmp = "";
+    tmp = doc[key.c_str()].as<String>();
+    setDataVal(key.c_str(), tmp);
+
+    lastAPICheck = millis();
+  }
+}
+#endif
+#if defined(CAMPER)
+// LoRaData format:
+// String examples (0 = Sensor Data):
+// 0?enum.data.TEMP=36
+// 0?enum.data.TEMP=36.00&enum.data.humidity=90.00&enum.data.VOLTS=13.22&enum.data.DATETIME=20230416113532
+// 0?enum.data.relay1=0
+// RealString
+// 0?3=12065&0=20.00&1=35.00&2=13.23&4=20230416113532
+// String examples (1 = Commands):
+// 1?enum.data.relay1=1
+// 1?enum.data.relay1=0
+void sendLoRaSensors()
+{
+  // Duty Cycle enforced on sensor data, we ignore it for commands (which go straight to sendLoRaData)
+  if (millis() > (lastLORASend + (LORA_DC * 1000)))
+  {
+    if (!clientConnected)
+    {
+      // Client not connected via BLE or web, get updated Ext_Sensors
+      poolExtSensors();
+    }
+
+    setDataVal("MILLIS", String(millis()));
+    String LoRaMessage = String(DATA) + "?";
+
+    // loop data[] and build the message (some values might get ignored)
+    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+    {
+      LoRaMessage += String(data[i].id) + "=" + data[i].value + "&";
+    }
+
+    LoRaMessage = LoRaMessage.substring(0, LoRaMessage.length() - 1);
+    Serial.println(LoRaMessage);
+    loraSend(LoRaMessage);
+    lastLORASend = millis();
+  }
+}
 #endif
 
 void loop()
@@ -512,57 +573,10 @@ void loop()
 #if defined(CAMPER)
   if (EXT_SENSORS_URL != "")
   {
-    if (millis() > lastAPICheck + maxAPIPool)
+    // Pool Sensors only if client connected
+    if (clientConnected && (millis() > lastAPICheck + maxAPIPool))
     {
-      // Read sensor data from EXT_SENSORS
-      String jsonResult = getUrl(EXT_SENSORS_URL + "/api/sensors");
-
-      Serial.print("api/sensors: ");
-      Serial.println(jsonResult);
-
-      if (jsonResult == "")
-      {
-        // Lost connection with ext_sensor
-        // Reinit to reconnect
-        EXT_SENSORS_URL = "";
-      }
-      else
-      {
-        // with v7 no need to predefine the size
-        JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, jsonResult);
-
-        // Copy values from the JsonDocument
-        // only the values from ext_sensors
-        String tmp = "";
-        String key = "";
-        key = "EXT_TEMP";
-        tmp = "";
-        tmp = doc[key.c_str()].as<String>();
-        setDataVal(key.c_str(), tmp);
-
-        key = "EXT_HUM";
-        tmp = "";
-        tmp = doc[key.c_str()].as<String>();
-        setDataVal(key.c_str(), tmp);
-
-        key = "B_WINDOW";
-        tmp = "";
-        tmp = doc[key.c_str()].as<String>();
-        setDataVal(key.c_str(), tmp);
-
-        key = "B_FAN";
-        tmp = "";
-        tmp = doc[key.c_str()].as<String>();
-        setDataVal(key.c_str(), tmp);
-
-        key = "B_HEATER";
-        tmp = "";
-        tmp = doc[key.c_str()].as<String>();
-        setDataVal(key.c_str(), tmp);
-
-        lastAPICheck = millis();
-      }
+      poolExtSensors();
     }
   }
 
@@ -572,8 +586,17 @@ void loop()
 
   if (millis() > lastAPICheck + maxAPIPool)
   {
-    // Read sensor data from CAMPER
-    String jsonResult = getUrl(CAMPER_URL + "/api/sensors");
+    // Check if connected to WIFI
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      Serial.println(F("Wifi Not connected! Reconnecting"));
+      ESP.restart(); // Reinit to reconnect
+    }
+
+    Serial.println("call /api/sensors?key=VOLTS");
+
+    // Read Volts data from CAMPER
+    String jsonResult = getUrl(CAMPER_URL + "/api/sensors?key=VOLTS");
 
     Serial.print("api/sensors: ");
     Serial.println(jsonResult);
@@ -590,13 +613,6 @@ void loop()
     setDataVal(key.c_str(), tmp);
 
     lastAPICheck = millis();
-
-    // Check if connected to WIFI
-    if (WiFi.status() != WL_CONNECTED)
-    {
-      Serial.println(F("Wifi Not connected! Reconnecting"));
-      ESP.restart(); // Reinit to reconnect
-    }
   }
 #endif
 
@@ -607,6 +623,7 @@ void loop()
   // Serial.println("after OLED");
 
 #ifdef CAMPER
+
   sendLoRaSensors();
   // Save time in case of restart
   if (millis() > (lastTimeSave + (10 * 1000)))

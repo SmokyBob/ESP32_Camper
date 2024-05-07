@@ -6,7 +6,7 @@ AsyncWebServer server(80);
 #if defined(CAMPER) || defined(EXT_SENSORS)
 void api_get(AsyncWebServerRequest *request)
 {
-  Serial.print("api URL:");
+  Serial.print("      api URL:");
   Serial.println(request->url());
   Serial.println("");
 
@@ -15,9 +15,31 @@ void api_get(AsyncWebServerRequest *request)
   if (request->url().indexOf("api/sensors") > 0)
   {
     String jsonString = "{";
-    for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+
+    // Specific data requested
+    bool isPost = true;
+
+    if (request->methodToString() == "GET")
+      isPost = false;
+
+    if (request->hasParam("key", isPost))
     {
-      jsonString += "\"" + String(data[i].key) + "\":\"" + data[i].value + "\",";
+      String tmp = request->getParam("key", isPost)->value();
+
+      Serial.printf("     sensors Get %s \n", tmp);
+
+      keys_t *currData;
+      currData = getDataObj(tmp.c_str());
+
+      jsonString += "\"" + String(currData->key) + "\":\"" + currData->value + "\",";
+    }
+    else
+    {
+      // No specific param, return all parameters
+      for (size_t i = 0; i < (sizeof(data) / sizeof(keys_t)); i++)
+      {
+        jsonString += "\"" + String(data[i].key) + "\":\"" + data[i].value + "\",";
+      }
     }
 
 #if defined(CAMPER)

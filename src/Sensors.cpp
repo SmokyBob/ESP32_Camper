@@ -385,22 +385,19 @@ void setWindow(bool isOpen)
     windowServo.write(closePos);
   }
 
-  if (last_WINDOW != isOpen)
+  if (isOpen)
   {
-    if (isOpen)
-    {
-      // Save value first than move to avoid multiple same command
-      setDataVal("B_WINDOW", "1");
-      windowServo.write(openPos);
-      lastPos = openPos;
-    }
-    else
-    {
-      // Save value first than move to avoid multiple same command
-      setDataVal("B_WINDOW", "0");
-      windowServo.write(closePos);
-      lastPos = closePos;
-    }
+    // Save value first than move to avoid multiple same command
+    setDataVal("B_WINDOW", "1");
+    windowServo.write(openPos);
+    lastPos = openPos;
+  }
+  else
+  {
+    // Save value first than move to avoid multiple same command
+    setDataVal("B_WINDOW", "0");
+    windowServo.write(closePos);
+    lastPos = closePos;
   }
 
   Serial.printf("windowServo.read: %d\n", windowServo.read());

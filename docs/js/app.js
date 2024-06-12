@@ -189,6 +189,35 @@ function onDisconnected(event) {
   connectToDevice();
 }
 
+var batt_perc_12_list = [
+  { voltage: 13.60, percentage: 100 },
+  { voltage: 13.40, percentage: 99 },
+  { voltage: 13.32, percentage: 90 },
+  { voltage: 13.28, percentage: 80 },
+  { voltage: 13.20, percentage: 70 },
+  { voltage: 13.16, percentage: 60 },
+  { voltage: 13.13, percentage: 50 },
+  { voltage: 13.10, percentage: 40 },
+  { voltage: 13.00, percentage: 30 },
+  { voltage: 12.90, percentage: 20 },
+  { voltage: 12.80, percentage: 17 },
+  { voltage: 12.50, percentage: 14 },
+  { voltage: 12.00, percentage: 9 },
+  { voltage: 10.00, percentage: 0 }];
+
+function getPercentage(currVoltage) {
+  var toRet = "";
+  var last_Voltage = parseFloat(currVoltage);
+  for (i = 0; i < batt_perc_12_list.length; i++) {
+    /* table lookup */
+    if (last_Voltage >= batt_perc_12_list[i].voltage) {
+      toRet = "" + batt_perc_12_list[i].percentage;
+      break;
+    }
+  }
+  return toRet;
+}
+
 function handleCharacteristicChange(event) {
   var newValueReceived = new TextDecoder().decode(event.target.value);
   var characteristicFound = false;
@@ -200,6 +229,9 @@ function handleCharacteristicChange(event) {
       characteristicFound = true;
       if (event.target.value.byteLength > 0) {
         document.getElementById(cfg.id).innerHTML = newValueReceived;
+        if (cfg.id == "VOLTS") {
+          document.getElementById(cfg.id).innerHTML = newValueReceived + " - " + getPercentage(newValueReceived) + "%";
+        }
         if (Notification.permission === "granted") {
           //Check what to notify 
           if (cfg.id == "VOLTS") {

@@ -5,7 +5,7 @@ if (location.href.startsWith('http://localhost')) {
 }
 var GHPATH = base;
 var APP_PREFIX = 'esp32_camper_';
-var VERSION = 'version_030';
+var VERSION = 'version_031';
 var URLS = [
   `${GHPATH}/`,
   `${GHPATH}/index.html`,

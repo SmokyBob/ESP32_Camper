@@ -492,7 +492,7 @@ void loop()
   // Update via websocket
   if ((u_long)(millis() - webSockeUpdate) >= 1000)
   {
-    if (webSocket->getClients().length() > 0)
+    if (!webSocket->getClients().empty())
     {
       String currVal = getDataVal("DATETIME");
       if (currVal.length() > 0)

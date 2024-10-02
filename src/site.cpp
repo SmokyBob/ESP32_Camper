@@ -65,7 +65,7 @@ void api_get(AsyncWebServerRequest *request)
     // Command/data
     for (size_t p = 0; p < request->params(); p++)
     {
-      AsyncWebParameter *param = request->getParam(p);
+      const AsyncWebParameter* param = request->getParam(p) ;
       int dataEnum = param->name().toInt();
       String dataVal = param->value();
 
@@ -162,7 +162,7 @@ void api_get(AsyncWebServerRequest *request)
     Serial.println("API get Config");
     for (size_t p = 0; p < request->params(); p++)
     {
-      AsyncWebParameter *param = request->getParam(p);
+      const AsyncWebParameter *param = request->getParam(p);
       int dataEnum = param->name().toInt();
       String dataVal = param->value();
 

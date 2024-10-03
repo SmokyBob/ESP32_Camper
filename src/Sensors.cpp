@@ -92,7 +92,7 @@ unsigned long lastCheck = 0;
 unsigned long maxSensorsPool = 2500;
 
 #if defined(Voltage_pin) || defined(VDiv_Batt_pin)
-float _voltArray[5];
+float _voltArray[50];
 bool voltInitComplete = false;
 byte voltArrayindex = 0;
 
@@ -136,7 +136,7 @@ void calculateVoltage()
   _voltArray[voltArrayindex] = result;
   voltArrayindex = voltArrayindex + 1;
   // Serial.printf("Voltage idx: %u\n", voltArrayindex);
-  if (voltArrayindex == 5)
+  if (voltArrayindex == 50)
   {
     voltArrayindex = 0;
     if (voltInitComplete == false)
@@ -153,7 +153,7 @@ float getVoltage()
   {
 
     double sum = 0.00; // sum will be larger than an item, double for safety.
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 50; i++)
     {
       sum += _voltArray[i];
 
@@ -163,7 +163,7 @@ float getVoltage()
       // Serial.println(_voltArray[i]);
     }
 
-    return ((float)sum) / 5; // average will be fractional, so float may be appropriate.
+    return ((float)sum) / 50; // average will be fractional, so float may be appropriate.
   }
   else
   {
@@ -178,8 +178,8 @@ void readSensors()
 {
   String currVal = "";
 #if defined(Voltage_pin) || defined(VDiv_Batt_pin)
-  // Calculate the voltage every second
-  if ((millis() - voltTick) > 1000)
+  // Calculate the voltage every 10 ms
+  if ((millis() - voltTick) > 10)
   {
     calculateVoltage();
     voltTick = millis();

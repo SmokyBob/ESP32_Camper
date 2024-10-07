@@ -22,8 +22,10 @@
 
 void initSite(AsyncWebSocket *webSocket);
 
+#if defined(CAMPER) || defined(EXT_SENSORS)
+String getUrl(String ReqUrl);
+#endif
+
 #if defined(CAMPER)
-
 void callEXT_SENSORSAPI(String rawUrl, String payload);
-
 #endif

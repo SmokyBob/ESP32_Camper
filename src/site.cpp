@@ -4,6 +4,31 @@
 
 AsyncWebServer server(80);
 #if defined(CAMPER) || defined(EXT_SENSORS)
+String getUrl(String ReqUrl)
+{
+  String toRet = "";
+  HTTPClient http;
+  // Your Domain name with URL path or IP address with path
+  http.begin(ReqUrl.c_str());
+
+  // Send HTTP GET request
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode > 0)
+  {
+    toRet = http.getString();
+  }
+  else
+  {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+  return toRet;
+}
+#endif
+#if defined(CAMPER) || defined(EXT_SENSORS)
 void api_get(AsyncWebServerRequest *request)
 {
   Serial.print("      api URL:");
@@ -14,6 +39,30 @@ void api_get(AsyncWebServerRequest *request)
 
   if (request->url().indexOf("api/sensors") > 0)
   {
+#if defined(CAMPER)
+    if (EXT_SENSORS_URL == "")
+    {
+      // Test the IP to check if it's the ext_sensors
+      String str_ip = request->client()->remoteIP().toString();
+      Serial.print("\nIP: ");
+      Serial.println(str_ip);
+      // Test the API Get
+      String testURL = "http://" + String(str_ip) + "/api/sensors";
+
+      // Serial.print("testURL: ");
+      // Serial.println(testURL);
+
+      String tmpRes = getUrl(testURL);
+      if (tmpRes.length() != 0)
+      {
+        // Got the result, save the base address for future calls
+        EXT_SENSORS_URL = "http://" + String(str_ip);
+        Serial.print("EXT_SENSORS_URL :");
+        Serial.println(EXT_SENSORS_URL);
+      }
+    }
+
+#endif
     String jsonString = "{";
 
     // Specific data requested
@@ -65,7 +114,7 @@ void api_get(AsyncWebServerRequest *request)
     // Command/data
     for (size_t p = 0; p < request->params(); p++)
     {
-      const AsyncWebParameter* param = request->getParam(p) ;
+      const AsyncWebParameter *param = request->getParam(p);
       int dataEnum = param->name().toInt();
       String dataVal = param->value();
 

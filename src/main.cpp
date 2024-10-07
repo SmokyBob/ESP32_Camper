@@ -358,33 +358,6 @@ unsigned long lastAPICheck = 0;
 unsigned long maxAPIPool = 2500;
 unsigned long lastLowVolt = 0;
 #endif
-
-#if defined(CAMPER) || defined(EXT_SENSORS)
-String getUrl(String ReqUrl)
-{
-  String toRet = "";
-  HTTPClient http;
-  // Your Domain name with URL path or IP address with path
-  http.begin(ReqUrl.c_str());
-
-  // Send HTTP GET request
-  int httpResponseCode = http.GET();
-
-  if (httpResponseCode > 0)
-  {
-    toRet = http.getString();
-  }
-  else
-  {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
-  }
-  // Free resources
-  http.end();
-  return toRet;
-}
-#endif
-
 #ifdef CAMPER
 unsigned long lastTimeSave = 0;
 #endif
@@ -512,59 +485,6 @@ void loop()
   // Serial.println("after ws");
 
   webSocket->cleanupClients();
-#endif
-#if defined(CAMPER)
-  if (EXT_SENSORS_URL == "")
-  {
-    // Search connected devices
-    wifi_sta_list_t wifi_sta_list;
-    tcpip_adapter_sta_list_t adapter_sta_list;
-
-    memset(&wifi_sta_list, 0, sizeof(wifi_sta_list));
-    memset(&adapter_sta_list, 0, sizeof(adapter_sta_list));
-
-    esp_wifi_ap_get_sta_list(&wifi_sta_list);
-    tcpip_adapter_get_sta_list(&wifi_sta_list, &adapter_sta_list);
-
-    for (int i = 0; i < adapter_sta_list.num; i++)
-    {
-
-      tcpip_adapter_sta_info_t station = adapter_sta_list.sta[i];
-
-      // Serial.print("station nr ");
-      // Serial.println(i);
-
-      // Serial.print("MAC: ");
-
-      // for (int i = 0; i < 6; i++)
-      // {
-
-      //   Serial.printf("%02X", station.mac[i]);
-      //   if (i < 5)
-      //     Serial.print(":");
-      // }
-
-      Serial.print("\nIP: ");
-      char str_ip[16];
-      esp_ip4addr_ntoa(&station.ip, str_ip, IP4ADDR_STRLEN_MAX);
-      Serial.println(str_ip);
-
-      // Test the API Get
-      String testURL = "http://" + String(str_ip) + "/api/sensors";
-
-      // Serial.print("testURL: ");
-      // Serial.println(testURL);
-
-      String tmpRes = getUrl(testURL);
-      if (tmpRes.length() != 0)
-      {
-        // Got the result, save the base address for future calls
-        EXT_SENSORS_URL = "http://" + String(str_ip);
-        Serial.print("EXT_SENSORS_URL :");
-        Serial.println(EXT_SENSORS_URL);
-      }
-    }
-  }
 #endif
 #endif
 

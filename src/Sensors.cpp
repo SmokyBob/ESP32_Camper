@@ -43,10 +43,16 @@ void initSensors()
 #endif
 
 #ifdef Servo_pin
-  windowServo.setPeriodHertz(50);
-  windowServo.attach(Servo_pin); // attach servo
+  // Servo config init
+  ESP32PWM::allocateTimer(0);
+  ESP32PWM::allocateTimer(1);
+  ESP32PWM::allocateTimer(2);
+  ESP32PWM::allocateTimer(3);
+  windowServo.setPeriodHertz(50); // standard 50 hz servo
+
   // Init the window closed
   setWindow(false);
+
 #endif
 
 #ifdef Relay2_pin
@@ -372,6 +378,12 @@ int lastPos = -1;
 void setWindow(bool isOpen)
 {
 #ifdef Servo_pin
+
+  // Attach only when needed
+  windowServo.attach(Servo_pin, 500, 2400); // attaches the servo pin to the servo object
+                                            // using SG90 servo min/max of 500us and 2400us
+                                            // for MG995 large servo, use 1000us and 2000us
+
   int closePos = getConfigVal("SERVO_CL_POS").toInt();
   int openPos = getConfigVal("SERVO_OP_POS").toInt();
 
@@ -402,7 +414,7 @@ void setWindow(bool isOpen)
 
   Serial.printf("windowServo.read: %d\n", windowServo.read());
 
-  // windowServo.detach(); // detach to avoid jitter
+  windowServo.detach(); // detach to avoid jitter / burnout
 #endif
 }
 

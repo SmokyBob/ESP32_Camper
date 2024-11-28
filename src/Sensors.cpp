@@ -98,10 +98,10 @@ unsigned long lastCheck = 0;
 unsigned long maxSensorsPool = 2500;
 
 #if defined(Voltage_pin) || defined(VDiv_Batt_pin)
-float _voltArray[50];
-bool voltInitComplete = false;
-byte voltArrayindex = 0;
 
+const int BATTERY_SENSE_SAMPLES = 5000;
+
+float curr_voltage;
 void calculateVoltage()
 {
   float result;
@@ -118,7 +118,10 @@ void calculateVoltage()
   voltCalibration = VDiv_Calibration;
 #endif
 
-  readValue = analogRead(voltPin);
+  for (uint32_t i = 0; i < BATTERY_SENSE_SAMPLES; i++) {
+      readValue += analogRead(voltPin);
+  }
+  readValue = readValue / BATTERY_SENSE_SAMPLES;
 
   // Serial.printf("Voltage read: %.2f\n", readValue);
 
@@ -139,42 +142,13 @@ void calculateVoltage()
   //- 3: VDiv_Calibration = MULTIMETER_VOLTS/result
   //- 4: update platformio.ini and rebuild
 
-  _voltArray[voltArrayindex] = result;
-  voltArrayindex = voltArrayindex + 1;
-  // Serial.printf("Voltage idx: %u\n", voltArrayindex);
-  if (voltArrayindex == 50)
-  {
-    voltArrayindex = 0;
-    if (voltInitComplete == false)
-    {
-      voltInitComplete = true;
-      Serial.printf("Voltage Init complete\n\n");
-    }
-  }
+  curr_voltage = result;
+  
 }
 
 float getVoltage()
 {
-  if (voltInitComplete)
-  {
-
-    double sum = 0.00; // sum will be larger than an item, double for safety.
-    for (int i = 0; i < 50; i++)
-    {
-      sum += _voltArray[i];
-
-      // Serial.print("  volt[");
-      // Serial.print(i);
-      // Serial.print("] : ");
-      // Serial.println(_voltArray[i]);
-    }
-
-    return ((float)sum) / 50; // average will be fractional, so float may be appropriate.
-  }
-  else
-  {
-    return _voltArray[voltArrayindex];
-  }
+  return curr_voltage;
 }
 #endif
 
@@ -184,8 +158,8 @@ void readSensors()
 {
   String currVal = "";
 #if defined(Voltage_pin) || defined(VDiv_Batt_pin)
-  // Calculate the voltage every 10 ms
-  if ((millis() - voltTick) > 10)
+  // Calculate the voltage every 1 s
+  if ((millis() - voltTick) > 1000)
   {
     calculateVoltage();
     voltTick = millis();

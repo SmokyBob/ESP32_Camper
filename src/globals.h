@@ -62,6 +62,7 @@ enum dataType
 
 extern u_long last_Millis;
 extern String last_IgnoreLowVolt;
+extern String last_FanOn;
 
 extern float last_SNR;
 extern float last_RSSI;

@@ -636,6 +636,30 @@ void loop()
       }
     }
   }
+
+  if (last_FanOn != "")
+  {
+    // diff with current time, if more than an hour set to "" to stop ignoring the low voltage
+    struct tm tm;
+    strptime(last_FanOn.c_str(), "%FT%T", &tm);
+
+    time_t time_last = mktime(&tm);
+    char buf[100];
+    strftime(buf, sizeof(buf), "%FT%T", &tm);
+    // Serial.printf("last_FanOn: %s \n", buf);
+
+    struct tm timeinfo;
+    getLocalTime(&timeinfo);
+    time_t time_curr = mktime(&timeinfo);
+
+    float minutes_passed = (time_curr - time_last) / 60.0;
+    // Serial.printf("           mins passed: %.2f \n", minutes_passed);
+    if (minutes_passed >= 60.00)
+    {
+      //turn the heater off
+      setHeater(false);
+    }
+  }
 #endif
 
 #if defined(CAMPER) || defined(EXT_SENSORS)

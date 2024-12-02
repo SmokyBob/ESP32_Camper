@@ -118,8 +118,9 @@ void calculateVoltage()
   voltCalibration = VDiv_Calibration;
 #endif
 
-  for (uint32_t i = 0; i < BATTERY_SENSE_SAMPLES; i++) {
-      readValue += analogRead(voltPin);
+  for (uint32_t i = 0; i < BATTERY_SENSE_SAMPLES; i++)
+  {
+    readValue += analogRead(voltPin);
   }
   readValue = readValue / BATTERY_SENSE_SAMPLES;
 
@@ -143,7 +144,6 @@ void calculateVoltage()
   //- 4: update platformio.ini and rebuild
 
   curr_voltage = result;
-  
 }
 
 float getVoltage()
@@ -421,12 +421,19 @@ void setHeater(bool isOn)
     }
     // Turn Heater Off
     digitalWrite(Relay2_pin, HIGH);
+    struct tm timeinfo;
+    getLocalTime(&timeinfo);
+    char buf[100];
+    strftime(buf, sizeof(buf), "%FT%T", &timeinfo);
+
+    last_FanOn = String(buf);
   }
   else
   {
     setDataVal("B_HEATER", "0");
     // Turn Heater Off, leave fan on
     digitalWrite(Relay2_pin, LOW);
+    last_FanOn = "";
   }
 #endif
 };

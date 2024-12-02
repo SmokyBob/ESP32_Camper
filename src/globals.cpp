@@ -100,6 +100,7 @@ automation_t **automationArray = NULL;
 
 u_long last_Millis;
 String last_IgnoreLowVolt;
+String last_FanOn;
 
 float last_SNR;
 float last_RSSI;

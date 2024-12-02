@@ -194,7 +194,31 @@ void readSensors()
 #endif
     if (!isnan(last_Ext_Temperature))
     {
-      setDataVal("EXT_TEMP", String(last_Ext_Temperature));
+      currVal = getDataVal("EXT_TEMP");
+      if (currVal == "")
+      {
+        setDataVal("EXT_TEMP", String(last_Ext_Temperature));
+      }
+      else
+      {
+        if (last_Ext_Temperature >= -40)
+        {
+
+          // allow only change of 40 degs between readings otherwise consider it as an error
+          if ((last_Ext_Temperature - currVal.toFloat()) <= 40)
+          {
+            setDataVal("EXT_TEMP", String(last_Ext_Temperature));
+          }
+          else
+          {
+            Serial.printf("                    Read temperature %.2f \n", last_Ext_Temperature);
+          }
+        }
+        else
+        {
+          Serial.printf("                    Read temperature %.2f \n", last_Ext_Temperature);
+        }
+      }
     }
 
     if (!isnan(last_Ext_Humidity))
@@ -225,7 +249,7 @@ void readSensors()
           if (tmpTemp >= -40)
           {
 
-            // allow only change of 40 degs between readings otherwise treat it as an error
+            // allow only change of 40 degs between readings otherwise consider it as an error
             if ((tmpTemp - currVal.toFloat()) <= 40)
             {
               setDataVal("EXT_TEMP", String(tmpTemp));
@@ -258,7 +282,7 @@ void readSensors()
         }
         else
         {
-          // allow only change of 40 degs between readings otherwise treat it as an error
+          // allow only change of 40 degs between readings otherwise consider it as an error
           if ((tmpTemp - currVal.toFloat()) <= 40)
           {
             setDataVal("TEMP", String(tmpTemp));
@@ -278,7 +302,7 @@ void readSensors()
         }
         else
         {
-          // allow only change of 40 degs between readings otherwise treat it as an error
+          // allow only change of 40 degs between readings otherwise consider it as an error
           if ((tmpTemp - currVal.toFloat()) <= 40)
           {
             setDataVal("AMB_TEMP", String(tmpTemp));

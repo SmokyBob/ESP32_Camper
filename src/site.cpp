@@ -1,6 +1,5 @@
 #include "site.h"
 #include "globals.h"
-#include <ElegantOTA.h>
 
 AsyncWebServer server(80);
 #if defined(CAMPER) || defined(EXT_SENSORS)
@@ -28,7 +27,7 @@ String getUrl(String ReqUrl)
   return toRet;
 }
 #endif
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
 void api_get(AsyncWebServerRequest *request)
 {
   Serial.print("      api URL:");
@@ -55,16 +54,37 @@ void api_get(AsyncWebServerRequest *request)
       String tmpRes = getUrl(testURL);
       if (tmpRes.length() != 0)
       {
-        // Got the result, save the base address for future calls
-        EXT_SENSORS_URL = "http://" + String(str_ip);
-        Serial.print("EXT_SENSORS_URL :");
-        Serial.println(EXT_SENSORS_URL);
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, tmpRes);
+
+        // Copy values from the JsonDocument
+        // only the values from ext_sensors
+        String tmp = "";
+        String key = "";
+        key = "DEVICE_NAME";
+        tmp = "";
+        tmp = doc[key.c_str()].as<String>();
+        if (tmp == "EXT_SENSORS")
+        {
+          // Got the result, save the base address for future calls
+          EXT_SENSORS_URL = "http://" + String(str_ip);
+          Serial.print("EXT_SENSORS_URL :");
+          Serial.println(EXT_SENSORS_URL);
+        }
+
+        if (tmp == "CAR")
+        {
+          // Got the result, save the base address for future calls
+          CAR_SENSORS_URL = "http://" + String(str_ip);
+          Serial.print("CAR_SENSORS_URL :");
+          Serial.println(CAR_SENSORS_URL);
+        }
       }
     }
 
 #endif
     String jsonString = "{";
-
+    jsonString += "\"DEVICE_NAME\":\"" + String(DEVICE_NAME) + "\",";
     // Specific data requested
     bool isPost = true;
 
@@ -137,7 +157,7 @@ void api_get(AsyncWebServerRequest *request)
 #endif
 #if defined(CAMPER)
             // call EXT_SENSORS API to send the command
-            callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+            callEXT_API("api/1", String(data[i].id) + "=" + dataVal);
 #endif
           }
           if (strcmp(data[i].key, "B_FAN") == 0)
@@ -147,7 +167,7 @@ void api_get(AsyncWebServerRequest *request)
 #endif
 #if defined(CAMPER)
             // call EXT_SENSORS API to send the command
-            callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+            callEXT_API("api/1", String(data[i].id) + "=" + dataVal);
 #endif
           }
           if (strcmp(data[i].key, "B_HEATER") == 0)
@@ -157,12 +177,12 @@ void api_get(AsyncWebServerRequest *request)
 #endif
 #if defined(CAMPER)
             // call EXT_SENSORS API to send the command
-            callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+            callEXT_API("api/1", String(data[i].id) + "=" + dataVal);
 #endif
-            if (strcmp(data[i].key, "DATETIME") == 0)
-            {
-              setDateTime(dataVal);
-            }
+          }
+          if (strcmp(data[i].key, "DATETIME") == 0)
+          {
+            setDateTime(dataVal);
           }
 
           break; // found, exit loop
@@ -245,8 +265,8 @@ void api_get(AsyncWebServerRequest *request)
       }
 
 #if defined(CAMPER)
-      // Send the config to the Ext Sesor via API
-      callEXT_SENSORSAPI(rawUrl, param->name() + "=" + dataVal);
+      // Send the config to the Ext Sensors or Car controller via API
+      callEXT_API(rawUrl, param->name() + "=" + dataVal);
 #endif
     }
     savePreferences();
@@ -261,7 +281,7 @@ void api_get(AsyncWebServerRequest *request)
 }
 #endif
 #if defined(CAMPER)
-void callEXT_SENSORSAPI(String rawUrl, String payload)
+void call_API(String baseURL, String rawUrl, String payload)
 {
 
   String ReqUrl = EXT_SENSORS_URL + "/" + rawUrl + "?" + payload;
@@ -292,12 +312,23 @@ void callEXT_SENSORSAPI(String rawUrl, String payload)
   // Free resources
   http.end();
 }
+void callEXT_API(String rawUrl, String payload)
+{
+  if (EXT_SENSORS_URL != "")
+  {
+    call_API(EXT_SENSORS_URL, rawUrl, payload);
+  }
+  if (CAR_SENSORS_URL != "")
+  {
+    call_API(CAR_SENSORS_URL, rawUrl, payload);
+  }
+}
 
 #endif
 
 void setWebHandles()
 {
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
   // API Endpoints
   server.on("/api/sensors", HTTP_GET, api_get);
   server.on("/api/1", HTTP_GET, api_get); // Command/data
@@ -308,23 +339,39 @@ void setWebHandles()
   server.serveStatic("/", LittleFS, "/"); // Try the FS first for static files
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-              String html = "";
-              File file = LittleFS.open("/index.html");
-              if (!file)
-              {
-                html = "";
-              }
-              else
-              {
-                html = file.readString();
-              }
-              file.close();
+            String html = "";
+            File file = LittleFS.open("/index.html");
+            if (!file)
+            {
+              html = "";
+            }
+            else
+            {
+              html = file.readString();
+            }
+            file.close();
 #if defined(CAMPER)
-            String EXT_OTA = "<a href='{IP}/update'><span style='color: red;'>OTA Update EXT SENSORS</span> </a><br>";
-            EXT_OTA.replace("{IP}",EXT_SENSORS_URL);
-            html.replace("{EXT_SENSOR_OTA}",EXT_OTA);
+            if (EXT_SENSORS_URL != "")
+            {
+              String EXT_OTA = "<a href='{IP}/update'><span style='color: red;'>OTA Update EXT SENSORS</span> </a><br>";
+              EXT_OTA.replace("{IP}", EXT_SENSORS_URL);
+              html.replace("{EXT_SENSOR_OTA}", EXT_OTA);
+            }
+            else
+            {
+              html.replace("{EXT_SENSOR_OTA}", "");
+            }
+            if (CAR_SENSORS_URL != "")
+            {
+              String CAR_OTA = "<a href='{IP}/update'><span style='color: red;'>OTA Update CAR</span> </a><br>";
+              CAR_OTA.replace("{IP}", CAR_SENSORS_URL);
+              html.replace("{CAR_OTA}", CAR_OTA);
+            }else{
+            html.replace("{CAR_OTA}", "");
+            }
 #else
             html.replace("{EXT_SENSOR_OTA}","");
+            html.replace("{CAR_OTA}","");
 #endif
             request->send(200, "text/html", html); });
 
@@ -354,10 +401,15 @@ void setWebHandles()
                 {
                   js.replace("{2}", getDataVal("VOLTS"));
                 }
-                else
-                {
-                  js.replace("{2}", String(config[i].value));
-                }
+                else 
+                  if (strcmp(config[i].key,"VOLT_CAR_ACT")==0)
+                  {
+                    js.replace("{2}", getDataVal("CAR_VOLTS"));
+                  }else
+                  {
+                    js.replace("{2}", String(config[i].value));
+                  }
+                
                 Serial.print("js: ");
                 Serial.println(js);
                 html += "\n" + js;
@@ -367,7 +419,7 @@ void setWebHandles()
 #endif
               request->send(200, "text/html", html); });
 #endif
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER)
 // TODO: automation page similar to config with dinamic rows and postback values
 #endif
   server.onNotFound([](AsyncWebServerRequest *request)

@@ -255,7 +255,7 @@ void doubleClick()
     // Forward Data
 #if defined(CAMPER)
     // call EXT_SENSORS API to send the command
-    callEXT_SENSORSAPI("api/1", String(currData->id) + "=" + currData->value);
+    callEXT_API("api/1", String(currData->id) + "=" + currData->value);
 #else
     // send lora command
     LoRaMessage = String(DATA) + "?";
@@ -690,7 +690,7 @@ void drawVoltagePage()
   y = (row - 1) * iconH;
   // Icon
   u8g2->setFont(u8g2_font_open_iconic_all_6x_t);
-  if (isnan(_hand_camp))
+  if (isnan(_hand_camp))//TODO CAR_VOLTS manage like the different temperatures
   {
     _hand_camp = 0;
   }

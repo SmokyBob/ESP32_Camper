@@ -1,9 +1,10 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include "Arduino.h"
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
 #include "Preferences.h"
 #endif
+#include <ElegantOTA.h>
 
 struct keys_t
 {
@@ -16,12 +17,12 @@ struct keys_t
    bool auto_action;
 };
 
-extern keys_t data[15]; // See .c file for details and to add values
+extern keys_t data[16]; // See .c file for details and to add values
 keys_t *getDataObj(const char *key);
 String getDataVal(const char *key);
 void setDataVal(const char *key, const String value);
 
-extern keys_t config[12]; // See .c file for details and to add values
+extern keys_t config[13]; // See .c file for details and to add values
 keys_t *getConfigObj(const char *key);
 String getConfigVal(const char *key);
 void setConfigVal(const char *key, const String value);
@@ -78,7 +79,7 @@ extern batt_perc batt_perc_3_7_list[21];
 
 extern unsigned long lastLORASend;
 
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
 
 void loadPreferences();
 void savePreferences();
@@ -89,8 +90,9 @@ void setDateTime(String utcString);
 
 #if defined(CAMPER)
 extern String EXT_SENSORS_URL;
+extern String CAR_SENSORS_URL;
 #endif
-#if defined(EXT_SENSORS)
+#if defined(EXT_SENSORS) || defined(CAR)
 extern String CAMPER_URL;
 #endif
 extern bool clientConnected;

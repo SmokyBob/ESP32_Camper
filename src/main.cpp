@@ -19,7 +19,6 @@
 #include "driver/adc.h"
 #if defined(CAMPER) || defined(EXT_SENSORS)
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
 #endif
 #ifdef BLE_APP
 #include "BLEService.h"
@@ -66,7 +65,7 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
     Serial.print("      ws command received: ");
     Serial.println(str);
 
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
     if (str == "resetParams")
     {
       resetPreferences();
@@ -85,12 +84,12 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
       if (type == CONFIGS)
       {
         // Send the config to the Ext Sensor via API
-        callEXT_SENSORSAPI("api/2", str);
+        callEXT_API("api/2", str);
       }
       if (type == DATA)
       {
         // Send the commands to the Ext Sensor via API
-        callEXT_SENSORSAPI("api/1", str);
+        callEXT_API("api/1", str);
       }
 
 #endif
@@ -159,7 +158,7 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
           loraSend(LoRaMessage);
 #endif
         }
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
         if (type == CONFIGS)
         { // Loop over the config array
           for (size_t i = 0; i < (sizeof(config) / sizeof(keys_t)); i++)
@@ -188,6 +187,26 @@ void handleWebSocketMessage(void *arg, uint8_t *dataPointer, size_t len)
               }
 
               if (strcmp(config[i].key, "VOLT_ACTUAL") == 0)
+              {
+                storeData = false; // don't store the data from the UI, we need to calculate the correct value
+
+                float currVal = dataVal.substring(0, dataVal.indexOf('|')).toFloat();
+                float tmpVolt = dataVal.substring(dataVal.indexOf('|') + 1).toFloat();
+
+                // Serial.printf("     voltage currVal: %.2f tmpVolt:%.2f \n", currVal, tmpVolt);
+                // Serial.printf("     VDiv_Calibration (str / float): %s / %.2f \n", config[i].value, config[i].value.toFloat());
+
+                if (currVal != tmpVolt)
+                {
+                  tmpVolt = tmpVolt / config[i].value.toFloat();
+                  tmpVolt = currVal / tmpVolt; // calculate the new VDiv_Calibration;
+
+                  // Serial.printf("     stored calibration currVal: %s\n", String(tmpVolt));
+
+                  config[i].value = String(tmpVolt);
+                }
+              }
+              if (strcmp(config[i].key, "VOLT_CAR_ACT") == 0)
               {
                 storeData = false; // don't store the data from the UI, we need to calculate the correct value
 
@@ -251,7 +270,7 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsE
     break;
   case WS_EVT_DATA:
     clientConnected = true; // data exchanged, force client connected
-#if defined(CAMPER) || defined(HANDHELD)
+#if defined(CAMPER) || defined(HANDHELD) || defined(VDiv_Calibration)
     handleWebSocketMessage(arg, data, len);
 #endif
 
@@ -268,7 +287,7 @@ void setup()
 {
   Serial.begin(115200);
 
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
   loadPreferences();
 #endif
   initSensors();
@@ -297,6 +316,7 @@ void setup()
   {
     Serial.println("http://" + tmpDN + ".local registered");
   }
+
   Serial.println(F(""));
   Serial.println(F("IP address: "));
   Serial.println(WiFi.softAPIP());
@@ -323,13 +343,16 @@ void setup()
       break;
     }
   }
-  setWindow(false); // reset the window to closed
+
   Serial.println(F(""));
   Serial.println(F("IP address: "));
   Serial.println(WiFi.localIP());
 
 #endif
 
+#if defined(CAMPER) || defined(EXT_SENSORS)
+  setWindow(false); // reset the window to closed
+#endif
 #if defined(CAMPER) || defined(HANDHELD)
   // Init Websocket
   webSocket = new AsyncWebSocket("/ws");
@@ -365,53 +388,85 @@ unsigned long lastTimeSave = 0;
 void poolExtSensors()
 {
   // Read sensor data from EXT_SENSORS
-  String jsonResult = getUrl(EXT_SENSORS_URL + "/api/sensors");
-
-  Serial.print("api/sensors: ");
-  Serial.println(jsonResult);
-
-  if (jsonResult == "")
+  String jsonResult;
+  if (EXT_SENSORS_URL != "")
   {
-    // Lost connection with ext_sensor
-    // Reinit to reconnect
-    EXT_SENSORS_URL = "";
+    jsonResult = getUrl(EXT_SENSORS_URL + "/api/sensors");
+
+    Serial.print("api/sensors: ");
+    Serial.println(jsonResult);
+
+    if (jsonResult == "")
+    {
+      // Lost connection with ext_sensor
+      // Reinit to reconnect
+      EXT_SENSORS_URL = "";
+    }
+    else
+    {
+      // with v7 no need to predefine the size
+      JsonDocument doc;
+      DeserializationError error = deserializeJson(doc, jsonResult);
+
+      // Copy values from the JsonDocument
+      // only the values from ext_sensors
+      String tmp = "";
+      String key = "";
+      key = "EXT_TEMP";
+      tmp = "";
+      tmp = doc[key.c_str()].as<String>();
+      setDataVal(key.c_str(), tmp);
+
+      key = "EXT_HUM";
+      tmp = "";
+      tmp = doc[key.c_str()].as<String>();
+      setDataVal(key.c_str(), tmp);
+
+      key = "B_WINDOW";
+      tmp = "";
+      tmp = doc[key.c_str()].as<String>();
+      setDataVal(key.c_str(), tmp);
+
+      key = "B_FAN";
+      tmp = "";
+      tmp = doc[key.c_str()].as<String>();
+      setDataVal(key.c_str(), tmp);
+
+      key = "B_HEATER";
+      tmp = "";
+      tmp = doc[key.c_str()].as<String>();
+      setDataVal(key.c_str(), tmp);
+
+      lastAPICheck = millis();
+    }
   }
-  else
+  if (CAR_SENSORS_URL != "")
   {
-    // with v7 no need to predefine the size
-    JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, jsonResult);
+    jsonResult = getUrl(CAR_SENSORS_URL + "/api/sensors");
 
-    // Copy values from the JsonDocument
-    // only the values from ext_sensors
-    String tmp = "";
-    String key = "";
-    key = "EXT_TEMP";
-    tmp = "";
-    tmp = doc[key.c_str()].as<String>();
-    setDataVal(key.c_str(), tmp);
+    Serial.print("api/sensors: ");
+    Serial.println(jsonResult);
+    if (jsonResult == "")
+    {
+      // Lost connection with ext_sensor
+      // Reinit to reconnect
+      CAR_SENSORS_URL = "";
+    }
+    else
+    {
+      // with v7 no need to predefine the size
+      JsonDocument doc;
+      DeserializationError error = deserializeJson(doc, jsonResult);
 
-    key = "EXT_HUM";
-    tmp = "";
-    tmp = doc[key.c_str()].as<String>();
-    setDataVal(key.c_str(), tmp);
-
-    key = "B_WINDOW";
-    tmp = "";
-    tmp = doc[key.c_str()].as<String>();
-    setDataVal(key.c_str(), tmp);
-
-    key = "B_FAN";
-    tmp = "";
-    tmp = doc[key.c_str()].as<String>();
-    setDataVal(key.c_str(), tmp);
-
-    key = "B_HEATER";
-    tmp = "";
-    tmp = doc[key.c_str()].as<String>();
-    setDataVal(key.c_str(), tmp);
-
-    lastAPICheck = millis();
+      // Copy values from the JsonDocument
+      // only the values from ext_sensors
+      String tmp = "";
+      String key = "";
+      key = "CAR_VOLTS";
+      tmp = "";
+      tmp = doc[key.c_str()].as<String>();
+      setDataVal(key.c_str(), tmp);
+    }
   }
 }
 #endif
@@ -491,7 +546,7 @@ void loop()
   readSensors();
 
 #if defined(CAMPER)
-  if (EXT_SENSORS_URL != "")
+  if (EXT_SENSORS_URL != "" || CAR_SENSORS_URL != "")
   {
     // Pool Sensors only if client connected
     if (clientConnected && (millis() > lastAPICheck + maxAPIPool))
@@ -656,7 +711,7 @@ void loop()
     // Serial.printf("           mins passed: %.2f \n", minutes_passed);
     if (minutes_passed >= 60.00)
     {
-      //turn the heater off
+      // turn the heater off
       setHeater(false);
     }
   }
@@ -691,4 +746,7 @@ void loop()
     esp_deep_sleep_start();
   }
 #endif
+
+  // ElegantOTA.loop required
+  ElegantOTA.loop();
 }

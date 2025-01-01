@@ -25,6 +25,7 @@ myCharacteristics charArray[9]{
     {"B_HEATER", DATA, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
     {"B_AUTOMATION", CONFIGS, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
     {"B_VOLT_LIM_IGN", CONFIGS, NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, nullptr},
+    //TODO CAR_VOLTS
 };
 
 bool deviceConnected = false;
@@ -80,7 +81,7 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
         if (strcmp(data[i].key, "B_WINDOW") == 0 || strcmp(data[i].key, "B_FAN") == 0 || strcmp(data[i].key, "B_HEATER") == 0)
         {
 #if defined(CAMPER)
-          callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+          callEXT_API("api/1", String(data[i].id) + "=" + dataVal);
 #endif
           // send lora command
           String LoRaMessage = String(DATA) + "?";
@@ -105,7 +106,7 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
           if (strcmp(config[i].key, "B_AUTOMATION") == 0)
           {
 #if defined(CAMPER)
-            callEXT_SENSORSAPI("api/2", String(config[i].id) + "=" + dataVal);
+            callEXT_API("api/2", String(config[i].id) + "=" + dataVal);
             savePreferences();
 #endif
             // send lora command
@@ -134,7 +135,7 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
             Serial.print("            last_IgnoreLowVolt: ");
             Serial.println(last_IgnoreLowVolt);
 #if defined(CAMPER)
-            callEXT_SENSORSAPI("api/2", String(config[i].id) + "=" + dataVal);
+            callEXT_API("api/2", String(config[i].id) + "=" + dataVal);
 #endif
             // send lora command
             String LoRaMessage = String(CONFIGS) + "?";

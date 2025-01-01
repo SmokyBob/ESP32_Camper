@@ -1,6 +1,6 @@
 #include "globals.h"
 
-keys_t data[15] = {
+keys_t data[16] = {
     {1, "TEMP", "Temperature", "", "", true, false},
     {2, "HUM", "Humidity", "", "", true, false},
     {3, "VOLTS", "Battery Voltage", "", "5b4c2c35-8a17-4d41-aec2-04a7dc1eaf91", true, false},
@@ -16,6 +16,7 @@ keys_t data[15] = {
     {13, "IR_TEMP", "IR sensor Temperature", "", "", false, false},
     {14, "HAND_VOLTS", "Handheld Battery Voltage", "", "", false, false},
     {15, "TIME", "Time", "", "", true, false},
+    {16, "CAR_VOLTS", "CAR Battery Voltage", "", "TODO:GUID", true, false}
 };
 // TODO: add week day value
 keys_t *getDataObj(const char *key)
@@ -50,7 +51,7 @@ void setDataVal(const char *key, const String value)
     }
 }
 
-keys_t config[12] = {
+keys_t config[13] = {
     {1, "SERVO_CL_POS", "Window Closed (servo degs)", "", "", false, false},
     {2, "SERVO_OP_POS", "Window OPEN (servo degs)", "", "", false, false},
     {3, "SERVO_CL_TEMP", "AUTOMATION: Window Closed (temp)", "", "", false, false}, // TODO: move to automation
@@ -63,6 +64,7 @@ keys_t config[12] = {
     {10, "HEAT_ON_TEMP", "AUTOMATION: Turn HEATER ON (temp)", "", "", false, false},   // TODO: move to automation
     {11, "HEAT_OFF_TEMP", "AUTOMATION: Turn HEATER OFF (temp)", "", "", false, false}, // TODO: move to automation
     {12, "B_AUTOMATION", "Enable automation", "", "ea7614e2-7eb9-4e1c-8ac4-5e64c3994264", false, false},
+    {13, "VOLT_CAR_ACT", "Current voltage of the CAR for calibration", "", "", false, false}, // stored preference value is VDiv_Calibration
 };
 
 keys_t *getConfigObj(const char *key)
@@ -146,7 +148,7 @@ batt_perc batt_perc_3_7_list[21] = {
 
 unsigned long lastLORASend = 0;
 
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
 // Redefine default value for MCU without these values, just to keep settings consistents on init
 #ifndef VDiv_Calibration
 #define VDiv_Calibration 1.0555
@@ -266,6 +268,7 @@ void setDateTime(String utcString)
 
 #if defined(CAMPER)
 String EXT_SENSORS_URL = "";
+String CAR_SENSORS_URL = "";
 #endif
 #if defined(EXT_SENSORS)
 String CAMPER_URL = "http://esp32-CAMPER.local";

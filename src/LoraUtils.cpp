@@ -217,7 +217,7 @@ void handleLora()
 #endif
 #if defined(CAMPER)
                       // call EXT_SENSORS API to send the command
-                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      callEXT_API("api/1", String(data[i].id) + "=" + dataVal);
                       // Force a lora send on next loop
                       lastLORASend = 0;
 #endif
@@ -229,7 +229,7 @@ void handleLora()
 #endif
 #if defined(CAMPER)
                       // call EXT_SENSORS API to send the command
-                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      callEXT_API("api/1", String(data[i].id) + "=" + dataVal);
                       // Force a lora send on next loop
                       lastLORASend = 0;
 #endif
@@ -241,7 +241,7 @@ void handleLora()
 #endif
 #if defined(CAMPER)
                       // call EXT_SENSORS API to send the command
-                      callEXT_SENSORSAPI("api/1", String(data[i].id) + "=" + dataVal);
+                      callEXT_API("api/1", String(data[i].id) + "=" + dataVal);
                       // Force a lora send on next loop
                       lastLORASend = 0;
 #endif

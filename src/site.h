@@ -14,10 +14,11 @@
 #include <LittleFS.h>
 #endif
 
-#if defined(CAMPER) || defined(EXT_SENSORS)
+#if defined(CAMPER) || defined(EXT_SENSORS) || defined(CAR)
 #include "Sensors.h"
 #include "automation.h"
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
 #endif
 
 void initSite(AsyncWebSocket *webSocket);
@@ -27,5 +28,5 @@ String getUrl(String ReqUrl);
 #endif
 
 #if defined(CAMPER)
-void callEXT_SENSORSAPI(String rawUrl, String payload);
+void callEXT_API(String rawUrl, String payload);
 #endif

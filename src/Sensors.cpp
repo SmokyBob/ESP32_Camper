@@ -37,7 +37,7 @@ void initSensors()
 #if defined(Voltage_pin) || defined(VDiv_Batt_pin)
 #if !defined(ARDUINO_heltec_wifi_lora_32_V3)
   esp_adc_cal_characteristics_t adc_chars;
-  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
+  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_12, ADC_WIDTH_BIT_12, 1100, &adc_chars);
   _vref = adc_chars.vref; // Obtain the device ADC reference voltage
 #endif
 #endif
@@ -111,7 +111,13 @@ void calculateVoltage()
 
 #if defined(Voltage_pin)
   voltPin = Voltage_pin;
-  voltCalibration = getConfigVal("VOLT_ACTUAL").toFloat();
+  #if defined(CAMPER)
+    voltCalibration = getConfigVal("VOLT_ACTUAL").toFloat();
+  #endif
+  #if defined(CAR)
+    voltCalibration = getConfigVal("VOLT_CAR_ACT").toFloat();
+  #endif
+
 #elif defined(VDiv_Batt_pin)
 
   voltPin = VDiv_Batt_pin;
@@ -203,9 +209,10 @@ void readSensors()
       {
         if (last_Ext_Temperature >= -40)
         {
-
+          float temp_calc = currVal.toFloat();
+          temp_calc = (last_Ext_Temperature - temp_calc);
           // allow only change of 40 degs between readings otherwise consider it as an error
-          if ((last_Ext_Temperature - currVal.toFloat()) <= 40)
+          if (temp_calc <= 40)
           {
             setDataVal("EXT_TEMP", String(last_Ext_Temperature));
           }
@@ -342,11 +349,14 @@ void readSensors()
 
 #endif
 
-#if defined(Voltage_pin)
+#if defined(CAMPER) 
     setDataVal("VOLTS", String(getVoltage()));
 #endif
 #if defined(VDiv_Batt_pin)
     setDataVal("HAND_VOLTS", String(getVoltage()));
+#endif
+#if defined(CAR) 
+    setDataVal("CAR_VOLTS", String(getVoltage()));
 #endif
 
 #if defined(USE_MLX90614)

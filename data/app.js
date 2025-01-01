@@ -82,6 +82,7 @@ function processCommand(event) {
   //ccess properties and update UI elements
   document.getElementById("DATETIME").innerHTML = obj["DATETIME"];
   document.getElementById("VOLTS").innerHTML = obj["VOLTS"] + " - " + getPercentage(obj["VOLTS"]) + "%";
+  document.getElementById("CAR_VOLTS").innerHTML = obj["CAR_VOLTS"] + " - " + getPercentage(obj["CAR_VOLTS"]) + "%";
   document.getElementById("EXT_TEMP").innerHTML = obj["EXT_TEMP"];
   document.getElementById("EXT_HUM").innerHTML = obj["EXT_HUM"];
 

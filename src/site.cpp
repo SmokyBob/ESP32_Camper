@@ -39,7 +39,7 @@ void api_get(AsyncWebServerRequest *request)
   if (request->url().indexOf("api/sensors") > 0)
   {
 #if defined(CAMPER)
-    if (EXT_SENSORS_URL == "")
+    if (EXT_SENSORS_URL == "" || CAR_SENSORS_URL == "")
     {
       // Test the IP to check if it's the ext_sensors
       String str_ip = request->client()->remoteIP().toString();
@@ -64,15 +64,14 @@ void api_get(AsyncWebServerRequest *request)
         key = "DEVICE_NAME";
         tmp = "";
         tmp = doc[key.c_str()].as<String>();
-        if (tmp == "EXT_SENSORS")
+        if (tmp == "EXT_SENSORS" || EXT_SENSORS_URL = "")
         {
           // Got the result, save the base address for future calls
           EXT_SENSORS_URL = "http://" + String(str_ip);
           Serial.print("EXT_SENSORS_URL :");
           Serial.println(EXT_SENSORS_URL);
         }
-
-        if (tmp == "CAR")
+        if (tmp == "CAR" || CAR_SENSORS_URL == "")
         {
           // Got the result, save the base address for future calls
           CAR_SENSORS_URL = "http://" + String(str_ip);

@@ -64,7 +64,7 @@ void api_get(AsyncWebServerRequest *request)
         key = "DEVICE_NAME";
         tmp = "";
         tmp = doc[key.c_str()].as<String>();
-        if (tmp == "EXT_SENSORS" || EXT_SENSORS_URL = "")
+        if (tmp == "EXT_SENSORS" || EXT_SENSORS_URL == "")
         {
           // Got the result, save the base address for future calls
           EXT_SENSORS_URL = "http://" + String(str_ip);
